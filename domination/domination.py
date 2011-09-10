@@ -774,7 +774,7 @@ class Field(object):
         return tilemap
         
     def create_wall_map(self, width, height, routes=[], 
-                        fill=0.20, min_len=6, max_len=7, 
+                        fill=0.30, min_len=6, max_len=7, 
                         thickness=1, horizontal=0.5, coarse=3):
         # Create outer walls
         halfwidth = int(0.5+ width/2.0)
