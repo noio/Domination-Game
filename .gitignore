@@ -12,3 +12,5 @@ domination/domination.pyc
 domination/libs/munkres.pyc
 
 domination/utilities.pyc
+
+test.py

@@ -122,6 +122,7 @@ class Game(object):
             raise Exception("Cannot record and play replay at the same time.")
         # Set up a new game
         if replay is None:
+            self.log('[Game]: Playing "%s" vs. "%s"'%(red_brain, blue_brain))
             self.settings = settings
             self.red_brain = red_brain
             self.blue_brain = blue_brain
@@ -232,7 +233,6 @@ class Game(object):
         
     def run(self):
         """ Start and loop the game. """
-        self.log('[Game]: Playing "%s" vs. "%s"'%(self.red_brain, self.blue_brain))
         if self.state != Game.STATE_READY:
             self.setup()
         res      = Game.SIMULATION_SUBSTEPS
