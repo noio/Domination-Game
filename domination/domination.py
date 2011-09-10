@@ -1279,7 +1279,7 @@ if __name__ == '__main__':
     default_settings = Settings()
     parser.add_option("-g", "--games", help="Number of games to play [default: %default]", default=1)
     parser.add_option("-r", "--red", help="Filename for the red agent [default: %default]", default="agent.py")
-    parser.add_option("-b", "--blue", help="Filename for the blue agent [default: %default]", default="agent_adjustable.py")
+    parser.add_option("-b", "--blue", help="Filename for the blue agent [default: %default]", default="agent.py")
     parser.add_option("--red_init", help="Extra arguments that will be passed to the red agents' constructors, formatted as a python dict.", default='{}',metavar='"{key:val}"')
     parser.add_option("--blue_init", help="Extra arguments for blue agents.", default='{}',metavar='"{key:val}"')
     parser.add_option("-p", "--play", help="Filename of replay to play back.", default=None)

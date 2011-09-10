@@ -20,7 +20,7 @@ domination.run_games('domination/agent.py','domination/agent.py')
 
 #### Creating the Game object directly
 
-Another way to run a game is to create a Game object and call its `start()` method directly. This is mainly useful if you need some of the game's properties, like its `replay`.
+From Python you can also create a Game object and call its `start()` method directly. This is useful mainly if you need some of the game's properties, like its replay.
 
 ```python
 from domination import domination
@@ -43,6 +43,16 @@ playback.run()
 
 ### Using the command-line
 
+If you're not using Python for your agent's evaluation scripts, you can also run the script from the command-line. Use the `-h` argument to see usage.
+
+    ./domination.py -h
+    
+The most straightforward way to run a game would be as follows.
+
+    ./domination.py -r agent.py -b agent.py
+
 
 Writing Agents
 --------------
+
+Writing agents consists of creating a Python class that implements *five* methods, some of which are optional. It is probably easiest to refer to and modify the [default agent](https://github.com/noio/Domination-Game/blob/master/domination/agent.py). But there is a quick rundown of the functions below as well.
