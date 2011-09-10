@@ -43,11 +43,7 @@ playback.run()
 
 ### Using the command-line
 
-If you're not using Python for your agent's evaluation scripts, you can also run the script from the command-line. Use the `-h` argument to see usage.
-
-    ./domination.py -h
-    
-The most straightforward way to run a game would be as follows.
+If you're not using Python for your agent's evaluation scripts, you can also run the script from the command-line. Use the `-h` argument to see usage. The most straightforward way to run a game would be as follows.
 
     ./domination.py -r agent.py -b agent.py
 
@@ -57,11 +53,28 @@ Writing Agents
 
 Writing agents consists of creating a Python class that implements *five* methods, some of which are optional. The agents are imported using Python's [execfile method](http://docs.python.org/library/functions.html#execfile), after which the class named `Agent` is extracted. It is probably easiest to refer to and modify the [default agent](https://github.com/noio/Domination-Game/blob/master/domination/agent.py). But there is a quick rundown of the functions below as well.
 
-The first thing you need to do is create a new file with a class named `Agent`.
+The first thing you need to do is create a new file with a class named `Agent` that contains these 5 methods
 
 ```python
 class Agent(object):
+    def __init__(self, id, team, settings=None, field_rects=None, field_grid=None, nav_mesh=None):
+        pass
+        
+    def observe(self, observation):
+        pass
+        
+    def action(self):
+        return (0,0,False)
+        
+    def debug(self, surface):
+        pass
+        
+    def finalize(self, interrupted=False):
+        pass
 ```
+
+### Initialize
+
 It needs to implement an `__init__` method that accepts a number of setup arguments. This method will be called for each agent at the beginning of each game.
 
 ```python
@@ -73,62 +86,19 @@ The `settings` object is an instance of `Settings`, and contains all the game se
 Finally, you can provide extra arguments to "parametrize" your agents. You can set these arguments when you start a new game. For example, if your initialization looks as follows:
 
 ```python
-    def __init__(self, id, team, settings, field_rects, field_grid, nav_mesh, aggressiveness):
+    def __init__(self, id, team, settings, field_rects, field_grid, nav_mesh, aggressiveness=0.0):
 ```
 
 Then you can set this parameter to different values when you start the game:
 
 ```python
 domination.run_games('my_agent.py','opponent.py',red_init={'aggressiveness':10.0})
+domination.run_games('my_agent.py','opponent.py',red_init={'aggressiveness':20.0})
 ```
 
-```python
+### Observe
 
-class Agent(object):
-    
-    def __init__(self, id, team, settings=None, field_rects=None, field_grid=None, nav_mesh=None):
-        """ Each agent is initialized at the beginning of each game.
-            The first agent (id==0) can use this to set up global variables.
-            Note that the properties pertaining to the game field might not be
-            given for each game.
-        """
-        pass
-        
-    def observe(self, observation):
-        """ Each agent is passed an observation using this function,
-            before being asked for an action. You can store either
-            the observation object or its properties to use them
-            to determine your action. Note that the observation object
-            is modified in place.
-        """
-        pass
-        
-    def action(self):
-        """ This function is called every step and should
-            return a tuple in the form: (turn, speed, shoot)
-        """
-        return (0,0,False)
-        
-    def debug(self, surface):
-        """ Allows the agents to draw on the game UI,
-            Refer to the pygame reference to see how you can
-            draw on a pygame.surface. The given surface is
-            not cleared automatically. Additionally, this
-            function will only be called when the renderer is
-            active, and it will only be called for the active team.
-        """
-        pass
-        
-    def finalize(self, interrupted=False):
-        """ This function is called after the game ends, 
-            either due to time/score limits, or due to an
-            interrupt (CTRL+C) by the user. Use it to
-            store any learned variables and write logs/reports.
-        """
-        pass
-```
-
-### The Observation
+The second method you need to implement is `observe(self, observation)`. This method is passed an *observation* of the current game state, depending on the settings, agents usually don't observe the entire game field, but only a part of it. Agents use this function to update what they know about the game, e.g. computing the most likely locations of enemies. The properties of the `Observation` object are listed below.
 
 ```python
 class Observation(object):
@@ -144,11 +114,10 @@ class Observation(object):
         self.ammo       = 0     # Ammo count
         self.score      = (0,0) # Current game score
         self.collided   = False # Whether the agent has collided in the previous turn
-        self.respawn_in = -1    # Respawn timer
+        self.respawn_in = -1    # How many timesteps left before this agent can move again.
         # The following properties are only set when
         # the renderer is enabled:
         self.selected = False   # Indicates if the agent is selected in the UI
         self.clicked = None     # Indicates the position of a right-button click, if there was one
         self.keys = []          # A list of all keys pressed in the previous turn
 ```
-The imp
