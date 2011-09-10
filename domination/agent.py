@@ -43,6 +43,10 @@ class Agent(object):
         ammopacks = filter(lambda x: x[2], obs.aps)
         if ammopacks:
             self.goal = ammopacks[0][0:2]
+            
+        # Drive to where the user clicked
+        if self.selected and self.observation.clicked:
+            self.goal = self.observation.clicked
         
         # Walk to random CP
         if self.goal is None:
@@ -87,7 +91,6 @@ class Agent(object):
         # Selected agents draw their info
         if self.selected:
             if self.goal is not None:
-                print self.goal
                 pygame.draw.line(surface,(0,0,0),self.observation.loc, self.goal)
         
     def finalize(self, interrupted=False):

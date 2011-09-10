@@ -1139,22 +1139,23 @@ class TankSpawn(GameObject):
 
 class Observation(object):
     def __init__(self):
-        self.step       = 0    # Current timestep
-        self.loc        = (0,0)
-        self.angle      = 0    
-        self.walls      = []   # Visible wall blocks in a small grid
-        self.friends    = []   # All/Visible friends: (x,y,angle)
-        self.foes       = []   # Visible Foes          idem
-        self.cps        = []   # All Controlpoints    (x,y,TEAM_RED/TEAM_BLUE)
-        self.aps        = []   # Visible Ammopacks    (x,y)
-        self.ammo       = 0    # Ammo count
-        self.score      = (0,0)
-        self.collided   = False
-        self.respawn_in = -1   # Respawn timer
-        # WITH RENDERING ONLY:
-        self.selected = False
-        self.clicked = None
-        self.keys = []
+        self.step       = 0     # Current timestep
+        self.loc        = (0,0) # Agent's location (x,y)
+        self.angle      = 0     # Current angle in radians
+        self.walls      = []    # Visible walls around the agent: a 2D binary array
+        self.friends    = []    # All/Visible friends: a list of (x,y,angle)-tuples
+        self.foes       = []    # Visible foes: a list of (x,y,angle)-tuples
+        self.cps        = []    # Controlpoints: a list of (x,y,TEAM_RED/TEAM_BLUE)-tuples
+        self.aps        = []    # Visible ammopacks: a list of (x,y)-tuples
+        self.ammo       = 0     # Ammo count
+        self.score      = (0,0) # Current game score
+        self.collided   = False # Whether the agent has collided in the previous turn
+        self.respawn_in = -1    # How many timesteps left before this agent can move again.
+        # The following properties are only set when
+        # the renderer is enabled:
+        self.selected = False   # Indicates if the agent is selected in the UI
+        self.clicked = None     # Indicates the position of a right-button click, if there was one
+        self.keys = []          # A list of all keys pressed in the previous turn
         
 ## Replay Classes
 
