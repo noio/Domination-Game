@@ -3,6 +3,8 @@ Domination Game
 
 A simulation engine for a multi-agent competitive game. 
 
+![Screenshot of the Domination Game](https://github.com/noio/Domination-Game/raw/master/screenshot.png)
+
 
 Running a Game
 --------------
