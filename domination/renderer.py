@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Domination game engine for Reinforcement Learning research.
+""" Renderer for domination game engine.
 
 Description goes here.
 """
@@ -8,6 +8,7 @@ __version__ = "0.1"
 
 ### IMPORTS ###
 # Python 
+import os
 import time
 import sys
 import math
@@ -25,6 +26,8 @@ cos        = math.cos
 sin        = math.sin
 
 ### CONSTANTS
+
+ASSETS_PATH = os.path.join(os.path.dirname(__file__),'assets')
 
 C_RED               = (229,100,92)
 C_BLUE              = (81,142,221)
@@ -46,29 +49,29 @@ class Renderer(object):
         pg.init()
         
         # Load assets
-        self.font_mono = pg.font.Font('assets/proggy.ttf', 16)
-        self.font = pg.font.Font('assets/nokiafc22.ttf', 16)
-        self.font_small = pg.font.Font('assets/nokiafc22.ttf', 8)
+        self.font_mono = pg.font.Font(os.path.join(ASSETS_PATH,'proggy.ttf'), 16)
+        self.font = pg.font.Font(os.path.join(ASSETS_PATH,'nokiafc22.ttf'), 16)
+        self.font_small = pg.font.Font(os.path.join(ASSETS_PATH,'nokiafc22.ttf'), 8)
         self.ims = {
-            "icon":pg.image.load("assets/icon.png"),
-            "default":pg.image.load("assets/default.png"),
-            "wall":pg.image.load("assets/wall.png"),
-            "autowall":pg.image.load("assets/autowalls.png"),
-            "concrete":pg.image.load("assets/concrete.png"),
-            "tank_red":pg.image.load("assets/tank-red.png"),
-            "tank_blue":pg.image.load("assets/tank-blue.png"),
-            "cp_red":pg.image.load("assets/cp-red.png"),
-            "cp_blue":pg.image.load("assets/cp-blue.png"),
-            "cp_neutral":pg.image.load("assets/cp-neutral.png"),
-            "spawn_red":pg.image.load("assets/spawn-red.png"),
-            "spawn_blue":pg.image.load("assets/spawn-blue.png"),
-            "muzzle":[pg.image.load("assets/muzzle.png").subsurface(i*32,0,32,32) for i in xrange(10)],
-            "explode":[pg.image.load("assets/explode.png").subsurface(i*12,0,12,12) for i in xrange(10)],
-            "ammo_empty":pg.image.load("assets/ammo-empty.png"),
-            "ammo_full":pg.image.load("assets/ammo-full.png"),
-            "switch_red":pg.image.load("assets/switch-red.png"),
-            "switch_blue":pg.image.load("assets/switch-blue.png"),
-            "ui_overlay":pg.image.load("assets/ui-overlay.png")
+            "icon":pg.image.load(os.path.join(ASSETS_PATH,"icon.png")),
+            "default":pg.image.load(os.path.join(ASSETS_PATH,"default.png")),
+            "wall":pg.image.load(os.path.join(ASSETS_PATH,"wall.png")),
+            "autowall":pg.image.load(os.path.join(ASSETS_PATH,"autowalls.png")),
+            "concrete":pg.image.load(os.path.join(ASSETS_PATH,"concrete.png")),
+            "tank_red":pg.image.load(os.path.join(ASSETS_PATH,"tank-red.png")),
+            "tank_blue":pg.image.load(os.path.join(ASSETS_PATH,"tank-blue.png")),
+            "cp_red":pg.image.load(os.path.join(ASSETS_PATH,"cp-red.png")),
+            "cp_blue":pg.image.load(os.path.join(ASSETS_PATH,"cp-blue.png")),
+            "cp_neutral":pg.image.load(os.path.join(ASSETS_PATH,"cp-neutral.png")),
+            "spawn_red":pg.image.load(os.path.join(ASSETS_PATH,"spawn-red.png")),
+            "spawn_blue":pg.image.load(os.path.join(ASSETS_PATH,"spawn-blue.png")),
+            "muzzle":[pg.image.load(os.path.join(ASSETS_PATH,"muzzle.png")).subsurface(i*32,0,32,32) for i in xrange(10)],
+            "explode":[pg.image.load(os.path.join(ASSETS_PATH,"explode.png")).subsurface(i*12,0,12,12) for i in xrange(10)],
+            "ammo_empty":pg.image.load(os.path.join(ASSETS_PATH,"ammo-empty.png")),
+            "ammo_full":pg.image.load(os.path.join(ASSETS_PATH,"ammo-full.png")),
+            "switch_red":pg.image.load(os.path.join(ASSETS_PATH,"switch-red.png")),
+            "switch_blue":pg.image.load(os.path.join(ASSETS_PATH,"switch-blue.png")),
+            "ui_overlay":pg.image.load(os.path.join(ASSETS_PATH,"ui-overlay.png"))
         }
         
         # Variables
