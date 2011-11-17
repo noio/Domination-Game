@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 """ Renderer for domination game engine.
 
-Description goes here.
+This is the rendering module for the Domination Game engine. To use it you 
+will pygame, but you can run games without it. You'll never need to call
+anything from this module explicitly. 
+
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
 __version__ = "0.1"
