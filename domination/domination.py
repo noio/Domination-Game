@@ -1317,8 +1317,3 @@ if __name__ == '__main__':
                   record=options.record, 
                   rendered=options.rendered,
                   output=options.output)
-    # parser.add_option("-g", "--generations", help="Number of generations [default: %default]", default=40)
-    # parser.add_option("-p", "--popdir", help="Population dir [default: %default]", default='populations-5')
-    # (options, args) = parser.parse_args()
-    # os.chdir(BASE_DIR)
-    # comp_coevolve(options.popdir,int(options.generations))
