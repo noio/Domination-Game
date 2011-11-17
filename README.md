@@ -9,11 +9,14 @@ A simulation engine for a multi-agent competitive game.
 Running a Game
 --------------
 
-There are two ways to run a game, you can either start the engine using a command-line interface, or import it as a Python module, we recommend the latter.
+There are two ways to run a game, you can either start the engine using a command-line 
+interface, or import it as a Python module, we recommend the latter.
 
 ### From Python
 
-This is the recommended way of running a game. You can import the domination module, and call `run_games(path_to_red_agent, path_to_blue_agent)`, this function has arguments to expose pretty much all the functionality you need.
+This is the recommended way of running a game. You can import the domination module, 
+and call `run_games(path_to_red_agent, path_to_blue_agent)`, this function has arguments 
+to expose pretty much all the functionality you need.
 
 ```python
 from domination import domination
@@ -22,7 +25,8 @@ domination.run_games('domination/agent.py','domination/agent.py')
 
 #### Creating the Game object directly
 
-From Python you can also create a Game object and call its `start()` method directly. This is useful mainly if you need some of the game's properties, like its replay.
+From Python you can also create a Game object and call its `start()` method directly. 
+This is useful mainly if you need some of the game's properties, like its replay.
 
 ```python
 from domination import domination
@@ -45,7 +49,9 @@ playback.run()
 
 ### Using the command-line
 
-If you're not using Python for your agent's evaluation scripts, you can also run the script from the command-line. Use the `-h` argument to see usage. The most straightforward way to run a game would be as follows.
+If you're not using Python for your agent's evaluation scripts, you can also run the 
+script from the command-line. Use the `-h` argument to see usage. The most 
+straightforward way to run a game would be as follows.
 
     ./domination.py -r agent.py -b agent.py
 
@@ -53,9 +59,15 @@ If you're not using Python for your agent's evaluation scripts, you can also run
 Writing Agents
 --------------
 
-Writing agents consists of creating a Python class that implements *five* methods, some of which are optional. The agents are imported using Python's [execfile method](http://docs.python.org/library/functions.html#execfile), after which the class named `Agent` is extracted. It is probably easiest to refer to and modify the [default agent](https://github.com/noio/Domination-Game/blob/master/domination/agent.py). But there is a quick rundown of the functions below as well.
+Writing agents consists of creating a Python class that implements *five* methods, some 
+of which are optional. The agents are imported using Python's 
+[execfile method](http://docs.python.org/library/functions.html#execfile), after which 
+the class named `Agent` is extracted. It is probably easiest to refer to and modify 
+the [default agent](https://github.com/noio/Domination-Game/blob/master/domination/agent.py). 
+But there is a quick rundown of the functions below as well.
 
-The first thing you need to do is create a new file with a class named `Agent` that contains these 5 methods
+The first thing you need to do is create a new file with a class named `Agent` 
+that contains these 5 methods
 
 ```python
 class Agent(object):
@@ -77,15 +89,22 @@ class Agent(object):
 
 ### Initialize
 
-It needs to implement an `__init__` method that accepts a number of setup arguments. This method will be called for each agent at the beginning of each game.
+It needs to implement an `__init__` method that accepts a number of setup arguments. 
+This method will be called for each agent at the beginning of each game.
 
 ```python
     def __init__(self, id, team, settings, field_rects, field_grid, nav_mesh, **kwargs):
 ```
 
-The `settings` object is an instance of `Settings`, and contains all the game settings such as game length and maximum score. The `field_rects`,`field_grid`, and `nav_mesh` arguments provide some information about the map that the game will be played on. The first contains a list of walls on the map as `(x,y,width,height)` tuples, the second contains the same information, but as a 2D binary array instead. The third contains a graph that you can use for navigating the map, but more on that later.
+The `settings` object is an instance of `Settings`, and contains all the game 
+settings such as game length and maximum score. The `field_rects`,`field_grid`, 
+and `nav_mesh` arguments provide some information about the map that the game 
+will be played on. The first contains a list of walls on the map as `(x,y,width,height)` 
+tuples, the second contains the same information, but as a 2D binary array instead. 
+The third contains a graph that you can use for navigating the map, but more on that later.
 
-Finally, you can provide extra arguments to "parametrize" your agents. You can set these arguments when you start a new game. For example, if your initialization looks as follows:
+Finally, you can provide extra arguments to "parametrize" your agents. You can set 
+these arguments when you start a new game. For example, if your initialization looks as follows:
 
 ```python
     def __init__(self, id, team, settings, field_rects, field_grid, nav_mesh, aggressiveness=0.0):
@@ -100,7 +119,11 @@ domination.run_games('my_agent.py','opponent.py',red_init={'aggressiveness':20.0
 
 ### Observe
 
-The second method you need to implement is `observe(self, observation)`. This method is passed an *observation* of the current game state, depending on the settings, agents usually don't observe the entire game field, but only a part of it. Agents use this function to update what they know about the game, e.g. computing the most likely locations of enemies. The properties of the `Observation` object are listed below.
+The second method you need to implement is `observe(self, observation)`. This method 
+is passed an *observation* of the current game state, depending on the settings, 
+agents usually don't observe the entire game field, but only a part of it. Agents 
+use this function to update what they know about the game, e.g. computing the most 
+likely locations of enemies. The properties of the `Observation` object are listed below.
 
 ```python
 class Observation(object):
@@ -123,3 +146,17 @@ class Observation(object):
         self.clicked = None     # Indicates the position of a right-button click, if there was one
         self.keys = []          # A list of all keys pressed in the previous turn
 ```
+
+### Action
+
+This is the most important function you have to implement. It should return a tuple containing 
+a representation of the action you want the agent to perform. In this game, the action tuples
+are supposed to look like `(turn, speed, shoot)`. 
+
+- **Turn** indicates how much your tank should spin around it's center.
+- **Speed** indicates how much you want your tank to drive forward after it has turned.
+- **Shoot** is set to True if you want to fire a projectile in this turn.
+
+**Turn** is given in radians, and **Speed** is given in game units (corresponding to pixels
+in the renderer). Note that any exceptions raised by your agent are ignored, and the agent
+simply loses it's turn.
