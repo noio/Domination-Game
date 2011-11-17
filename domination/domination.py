@@ -69,21 +69,21 @@ class Settings(object):
                        think_time=0.010,
                        capture_mode=0,
                        num_agents=5):
-        self.max_steps    = max_steps
-        self.max_score    = max_score
-        self.max_speed    = max_speed
-        self.max_turn     = max_turn
-        self.max_range    = max_range
-        self.max_see      = max_see
-        self.ammo_rate    = ammo_rate
-        self.ammo_amount  = ammo_amount
-        self.spawn_time   = spawn_time
-        self.field_width  = field_width
-        self.field_height = field_height
-        self.tilesize     = tilesize
-        self.think_time   = think_time
-        self.capture_mode = capture_mode
-        self.num_agents   = num_agents
+        self.max_steps    = max_steps     # How long the game will last at most
+        self.max_score    = max_score     # If either team scores this much, the game is finished
+        self.max_speed    = max_speed     # Number of game units each tank can drive in its turn
+        self.max_turn     = max_turn      # The maximum angle that a tank can rotate in a turn
+        self.max_range    = max_range     # The shooting range of tanks in game units
+        self.max_see      = max_see       # How far tanks can see (Manhattan distance)
+        self.ammo_rate    = ammo_rate     # How long it takes for ammo to reappear
+        self.ammo_amount  = ammo_amount   # How many bullets there are in each ammo pack
+        self.spawn_time   = spawn_time    # Time that it takes for tanks to respawn
+        self.field_width  = field_width   # How wide the field is in tiles, should be odd
+        self.field_height = field_height  # Height of the field in tiles
+        self.tilesize     = tilesize      # How big a single tile is (game units), change at own risk
+        self.think_time   = think_time    # How long the tanks have to do their computations (in seconds)
+        self.capture_mode = capture_mode  # Behavior of controlpoints when multiple agents are on them
+        self.num_agents   = num_agents    # Number of agents per team
         # Validate
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
