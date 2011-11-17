@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 """ Domination game engine for Reinforcement Learning research.
 
-Description goes here.
+This is the game engine module that can simulate games, without rendering them.
+Refer to the readme for usage instructions.
+
+In short, the most easy way to get started (after importing) is to
+give two paths to the run_games() function.
+
+>>> domination.run_games('agent.py','agent.py')
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
 __version__ = "1.0"
