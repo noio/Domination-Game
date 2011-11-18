@@ -96,6 +96,14 @@ class Settings(object):
         args = ('%s=%r'%(v,getattr(self,v)) for v in vars(self) if getattr(self,v) != getattr(default,v))
         args = ','.join(args)
         return 'Settings(%s)'%args
+        
+class FieldSettings(object):
+    def __init__(self, width=47,
+                       height=32,
+                       num_agents=5):
+        self.width = width
+        self.height = height
+        self.num_agents = num_agents
 
 class Game(object):
     
@@ -132,8 +140,9 @@ class Game(object):
                                         Overrides red_brain argument.
             :param blue_brain_string: Same as red_brain_string.
             :param settings:          Instance of the settings class.
+            :param field_settings:    Settings for generating the field.
             :param field:             An instance of Field to play this game on. 
-                                        If not passed, field is generated.
+                                        If not passed, field is generated from field_settings.
             :param red_init:          A dictionary of keyword arguments passed to the red
                                         agent constructor.
             :param blue_init:         Like red_init.
@@ -150,7 +159,6 @@ class Game(object):
             raise Exception("Cannot record and play replay at the same time.")
         # Set up a new game
         if replay is None:
-            self.log('[Game]: Playing "%s" vs. "%s"'%(red_brain, blue_brain))
             self.settings = settings
             self.red_brain = red_brain
             self.blue_brain = blue_brain
@@ -696,7 +704,7 @@ class Field(object):
     """ Class holding all the map properties, among which
         is the tilemap. Should be picklable.
     """
-    def __init__(self, width=11, height=11, num_spawns=5, tilesize=16, from_file=None):
+    def __init__(self, width=11, height=11, num_spawns=5, tilesize=16, from_string=None):
         self.width         = width
         self.height        = height
         self.tilesize      = tilesize
@@ -707,7 +715,7 @@ class Field(object):
         self.controlpoints = []
         self.ammo          = []
         
-        if from_file is None:
+        if from_string is None:
             print "[Field]: Generating map...",
             tic()
             ## 1) Place objects on map
@@ -719,8 +727,8 @@ class Field(object):
             self.walls           = self.create_wall_map(width, height, free_routes)
             print 'done. (%.3fs)'%(toc())
         else:
-            print "Loading map '%s'."%from_file,
-            self.from_file(from_file)
+            print "Loading map from string"
+            self.from_string(from_string)
         ## 3) Clear walls under objects
         self.clear_walls_under_objects()
         ## 4) Make rects from walls and generate mesh
@@ -739,9 +747,9 @@ class Field(object):
                                     simplify=0.3,additional_points=add_points)
         print "done. (%.3fs)"%(toc())
         
-    def from_file(self, filename):
-        f = open(filename,'rb').read()
-        lines = f.split('\n')
+    def from_string(self, s):
+        s = s.strip()
+        lines = s.split('\n')
         lines = [l.split() for l in lines]
         self.height,self.width = len(lines),len(lines[0])
         self.tilesize = 16
@@ -763,8 +771,9 @@ class Field(object):
                 elif tile.lower() == 'a':
                     self.ammo.append((j,i))
             self.walls.append(row)
-            
-    def to_file(self, filename):
+        return self # For chaining
+        
+    def __str__(self):
         s = []
         for row in self.walls:
             s.append([])
@@ -778,7 +787,10 @@ class Field(object):
             s[i][j] = 'R'
         for (j,i,d) in self.spawns_blue:
             s[i][j] = 'B'
-        o = '\n'.join([' '.join(row) for row in s])
+        return '\n'.join([' '.join(row) for row in s])
+        
+    def to_file(self, filename):
+        o = str(self)
         f = open(filename,'w')
         f.write(o)
         
@@ -1219,6 +1231,7 @@ class ReplayData(object):
         """
         g = Game(replay=self,rendered=True)
         g.run()
+        return g
 
 ### HELPER FUNCTIONS ###
 
@@ -1297,7 +1310,7 @@ def run_games(red_brain='agent.py',
         if new_maps or game is None:
             game = Game(red_brain, blue_brain, red_brain_string, blue_brain_string,
                         red_init=red_init, blue_init=blue_init,
-                        field=Field(from_file=field) if field is not None else None,
+                        field=Field(from_string=open(field,'r').read()) if field is not None else None,
                         settings=settings,
                         record=record is not None,
                         rendered=rendered, verbose=False)
