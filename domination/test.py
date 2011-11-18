@@ -65,8 +65,8 @@ def test_replay():
     settings = domination.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=200)
     for i in range(40):
         game = domination.Game(settings=settings,
-                               red_brain_string=RANDOM_AGENT, 
-                               blue_brain_string=RANDOM_AGENT, 
+                               # red_brain_string=RANDOM_AGENT, 
+                               # blue_brain_string=RANDOM_AGENT, 
                                record=True,
                                rendered=False)
         game.run()

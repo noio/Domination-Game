@@ -703,30 +703,57 @@ class Field(object):
         is the tilemap. Should be picklable.
     """
     def __init__(self, width=11, height=11, num_spawns=5, tilesize=16, from_string=None):
-        self.width         = width
-        self.height        = height
-        self.tilesize      = tilesize
-        self.num_spawns    = num_spawns
+        # Settings variables
+        self.width            = width
+        self.height           = height
+        self.tilesize         = tilesize
+        self.num_spawns       = num_spawns
+        self.num_points       = num_points
+        self.num_ammo         = num_ammo
+        self.wall_fill        = wall_fill
+        self.wall_len         = wall_len
+        self.wall_width       = wall_width
+        self.wall_orientation = wall_orientation
+        self.wall_gridsize    = wall_gridsize
+        
+        # Instantiated variables
+        self.instantiated  = False
         self.walls         = [] # The tilemap of the walls
         self.spawns_red    = [] # Separate lists of red/blue spawns
         self.spawns_blue   = []
         self.controlpoints = []
         self.ammo          = []
         
-        if from_string is None:
-            print "[Field]: Generating map...",
-            tic()
-            ## 1) Place objects on map
-            spawn, cpleft, cpmid = self.place_objects(num_spawns=num_spawns)
-            # Reachable cps
-            free_routes = [(spawn, cpleft), (cpleft,cpmid)]
-            free_routes.extend([(spawn, am) for am in self.ammo[:len(self.ammo)//2]])
-            ## 2) Generate tilemap
-            self.walls           = self.create_wall_map(width, height, free_routes)
-            print 'done. (%.3fs)'%(toc())
-        else:
-            print "Loading map from string"
-            self.from_string(from_string)
+    @classmethod
+    def from_string(cls, s):
+        """ Returns a new Field from given ASCII representation. """
+        field = cls()
+        lines = [l.split() for l in s.strip().split('\n')]
+        field.height,field.width = len(lines),len(lines[0])
+        for i,line in enumerate(lines):
+            row = []
+            for j, tile in enumerate(line):
+                row.append(1 if tile=='w' else 0)
+                if tile.lower() == 'c':
+                    field.controlpoints.append((j,i))
+                elif tile.lower() == 'r':
+                    field.spawns_red.append((j,i,0))
+                elif tile.lower() == 'b':
+                    field.spawns_blue.append((j,i,-pi))
+                elif tile.lower() == 'a':
+                    field.ammo.append((j,i))
+            field.walls.append(row)
+        field.instantiated = True
+        return field # For chaining
+        
+    def instantiate(self):
+        ## 1) Place objects on map
+        spawn, cpleft, cpmid = self.place_objects(num_spawns=num_spawns)
+        # Reachable cps
+        free_routes = [(spawn, cpleft), (cpleft,cpmid)]
+        free_routes.extend([(spawn, am) for am in self.ammo[:len(self.ammo)//2]])
+        ## 2) Generate tilemap
+        self.create_wall_map(free_routes)
         ## 3) Clear walls under objects
         self.clear_walls_under_objects()
         ## 4) Make rects from walls and generate mesh
@@ -745,31 +772,6 @@ class Field(object):
                                     simplify=0.3,additional_points=add_points)
         print "done. (%.3fs)"%(toc())
         
-    def from_string(self, s):
-        s = s.strip()
-        lines = s.split('\n')
-        lines = [l.split() for l in lines]
-        self.height,self.width = len(lines),len(lines[0])
-        self.tilesize = 16
-        self.walls = []
-        self.controlpoints = []
-        self.spawns_red = []
-        self.spawns_blue = []
-        self.ammo = []
-        for i,line in enumerate(lines):
-            row = []
-            for j, tile in enumerate(line):
-                row.append(1 if tile=='w' else 0)
-                if tile.lower() == 'c':
-                    self.controlpoints.append((j,i))
-                elif tile.lower() == 'r':
-                    self.spawns_red.append((j,i,0))
-                elif tile.lower() == 'b':
-                    self.spawns_blue.append((j,i,-pi))
-                elif tile.lower() == 'a':
-                    self.ammo.append((j,i))
-            self.walls.append(row)
-        return self # For chaining
         
     def __str__(self):
         s = []
@@ -807,7 +809,6 @@ class Field(object):
             if i >= spawn[0] + 2:
                 j += 1
                 i = spawn[0]
-
         # Controlpoints
         self.controlpoints.append((cpleft[0], cpleft[1]))
         self.controlpoints.append((cpmid[0], cpmid[1]))
@@ -879,7 +880,7 @@ class Field(object):
             self.walls[y][x] = 0
         
     def reflect_tilemap(self, tilemap, newsize, axis_vertical=True):
-        """ Reflects a tilemap (2d-list) along an arbitrary horizontal
+        """ Reflects a tilemap (2D-list) along an arbitrary horizontal
             or vertical axis. Odd-sized arrays will work too.
         """
         # Transpose
@@ -894,7 +895,7 @@ class Field(object):
             return [list(l) for l in zip(*newtiles)]
         
     def get_objects(self):
-        """ Generates all map objects and returns them. """
+        """ Generates all GameObjects and returns them. """
         ts = self.tilesize
         ## Walls
         walls = [Wall(x=w[0],y=w[1],width=w[2],height=w[3]) for w in self.wallrects]
