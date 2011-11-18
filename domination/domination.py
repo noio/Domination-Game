@@ -17,6 +17,7 @@ __version__ = "1.0"
 import random
 import sys
 import os
+import re
 import math
 import time
 import datetime
@@ -170,11 +171,14 @@ class Game(object):
             else:
                 execfile(red_brain, g)
             self.red_brain_class = g['Agent']
+            self.red_name = self.agent_name(self.red_brain_class)
+            # Blue brain
             if blue_brain_string is not None:
                 exec(blue_brain_string, g)
             else:
                 execfile(blue_brain, g)
             self.blue_brain_class = g['Agent']
+            self.blue_name = self.agent_name(self.blue_brain_class)
         # Load up a replay
         else:
             self.log('[Game]: Playing replay.')
@@ -195,6 +199,17 @@ class Game(object):
         self.clicked = None
         self.keys = []
         self.state = Game.STATE_NEW
+        
+    def agent_name(self, agent_class):
+        """ Retrieves the name of an agent
+            This is defined by a static property NAME in the agent's class.
+        """
+        unsafe_chars = r'[^a-z0-9\-]+'
+        if hasattr(agent_class, "NAME"):
+            n = re.sub(unsafe_chars, '-', agent_class.NAME)
+            return n[:16]
+        else:
+            return "noname"
         
     def add_renderer(self):
         import renderer
@@ -668,8 +683,8 @@ class Game(object):
             print message
             
     def __repr__(self):
-        args = ','.join(['%r'%self.red_brain,
-                         '%r'%self.blue_brain,
+        args = ','.join(['%r'%self.red_name,
+                         '%r'%self.blue_name,
                          'settings=%r'%self.settings])
         if self.red_init != {}:
             args += ',red_init=%r'%self.red_init
@@ -1258,7 +1273,7 @@ def run_games(red_brain='agent.py',
               settings=Settings(),
               field=None, 
               games=1, 
-              record=False, 
+              record=None, 
               rendered=True,
               output=None,
               new_maps=True):
@@ -1301,11 +1316,12 @@ def run_games(red_brain='agent.py',
         f.write(','.join('%.3f'%s for s in scores))
         f.write('\n')
     # Store replays if desired
-    if record:
+    if record is not None:
         replays = [pickle.dumps(r) for r in replays]
-        rb = red_brain.replace('.py','')
-        bb = blue_brain.replace('.py','')
-        filename = 'replay_%s_%s_vs_%s'%(now.strftime("%Y%m%d_%H%M"),rb,bb)
+        if record == 'AUTO':
+            filename = 'replay_%s_%s_vs_%s'%(now.strftime("%Y%m%d_%H%M"),game.red_name,game.blue_name)
+        else:
+            filename = record
         if games == 1:
             f = open(filename+'.pickle','wb')
             f.write(replays[0])
@@ -1316,10 +1332,6 @@ def run_games(red_brain='agent.py',
                 zf.writestr('replay_%04d.pickle'%i,r)
             zf.close()
     return scores
-
-def test_all()::
-    """ Run tests to see if all is working correctly. """
-    pass
 
 ### COMMAND LINE ###
 if __name__ == '__main__':
@@ -1333,7 +1345,7 @@ if __name__ == '__main__':
     parser.add_option("-p", "--play", help="Filename of replay to play back.", default=None)
     parser.add_option("-o", "--output", help="Output file to which results will be appended.", default=None)
     parser.add_option("-i", "--invisible", help="Run the game without rendering.", action="store_false", dest='rendered', default=True)
-    parser.add_option("-c", "--record", help="File to record replay(s) to. AUTO for automatic filename.", default=None)
+    parser.add_option("-c", "--record", help="File to record replay(s) to (w/o extension). AUTO for automatic filename.", default=None)
     # Game Settings
     parser.add_option("-f", "--field", help="Filename of the field file to play on.", default=None)
     parser.add_option("--max_steps", help="Maximum game length. [default: %default]", default=default_settings.max_steps)
@@ -1346,7 +1358,7 @@ if __name__ == '__main__':
         parser.print_help()
         print
         print "Now running a default game as demo."
-        run_games(record=True,games=3,rendered=False)
+        run_games(record="test",games=1,rendered=False)
         quit()
         
     if options.play is not None:
