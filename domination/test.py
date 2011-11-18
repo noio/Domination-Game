@@ -45,15 +45,18 @@ w w w w w w w w w w w w w w w w w w w
 def test_basic():
     print "Testing basic game..."
     settings = domination.Settings(max_steps=50)
-    domination.run_games(settings=settings)
-    game = domination.Game(settings=settings)
+    domination.run_games(settings=settings, rendered=False)
+    game = domination.Game(settings=settings, rendered=False)
     game.run()
     print "Succes!"
 
 def test_string_agent():
     print "Testing agents from strings..."
     settings = domination.Settings(max_steps=50)
-    game = domination.Game(red_brain_string=RANDOM_AGENT, blue_brain_string=RANDOM_AGENT, settings=settings)
+    game = domination.Game(red_brain_string=RANDOM_AGENT, 
+                           blue_brain_string=RANDOM_AGENT, 
+                           settings=settings,
+                           rendered=False)
     game.run()
     print "Succes!"
     

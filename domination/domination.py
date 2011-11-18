@@ -140,9 +140,7 @@ class Game(object):
                                         Overrides red_brain argument.
             :param blue_brain_string: Same as red_brain_string.
             :param settings:          Instance of the settings class.
-            :param field_settings:    Settings for generating the field.
             :param field:             An instance of Field to play this game on. 
-                                        If not passed, field is generated from field_settings.
             :param red_init:          A dictionary of keyword arguments passed to the red
                                         agent constructor.
             :param blue_init:         Like red_init.
