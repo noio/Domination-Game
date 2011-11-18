@@ -67,7 +67,7 @@ class Settings(object):
                        field_height=32,
                        tilesize=16,
                        think_time=0.010,
-                       capture_mode=0,
+                       capture_mode=CAPTURE_MODE_NEUTRAL,
                        num_agents=5):
         self.max_steps    = max_steps     # How long the game will last at most
         self.max_score    = max_score     # If either team scores this much, the game is finished
@@ -97,9 +97,10 @@ class Settings(object):
         return 'Settings(%s)'%args
 
 class Game(object):
-    TILE_SIZE  = 16
-    MAP_WIDTH  = 50
-    MAP_HEIGHT = 40
+    
+    """ The main game class. Contains game data and methods for
+        simulation.
+    """
     
     SIMULATION_SUBSTEPS = 10
     SIMULATION_MAXITER  = 10
@@ -112,6 +113,8 @@ class Game(object):
         
     def __init__(self, red_brain='agent.py',
                        blue_brain='agent.py',
+                       red_brain_string=None,
+                       blue_brain_string=None,
                        settings=Settings(),
                        field=None,
                        red_init={},
@@ -120,6 +123,24 @@ class Game(object):
                        replay=None,
                        rendered=True, 
                        verbose=True):
+        """ Constructor for Game class 
+            
+            :param red_brain:         File that the red brain class resides in.
+            :param blue_brain:        File that the blue brain class resides in.
+            :param red_brain_string:  If passed, a string containing the blue brain class. 
+                                        Overrides red_brain argument.
+            :param blue_brain_string: Same as red_brain_string.
+            :param settings:          Instance of the settings class.
+            :param field:             An instance of Field to play this game on. 
+                                        If not passed, field is generated.
+            :param red_init:          A dictionary of keyword arguments passed to the red
+                                        agent constructor.
+            :param blue_init:         Like red_init.
+            :param record:            Store all actions in a game replay.
+            :param replay:            Pass a game replay to play it.
+            :param rendered:          Enable/disable the renderer.
+            :param verbose:           Print game log to output.
+        """
 
         self.record = record
         self.replay = replay
@@ -142,11 +163,17 @@ class Game(object):
                                    settings.field_height, 
                                    tilesize=settings.tilesize, 
                                    num_spawns=settings.num_agents)
-            # Read agent brains
+            # Read agent brains (from string or file)
             g = AGENT_GLOBALS.copy()
-            execfile(red_brain, g)
+            if red_brain_string is not None:
+                exec(red_brain_string, g)
+            else:
+                execfile(red_brain, g)
             self.red_brain_class = g['Agent']
-            execfile(blue_brain, g)
+            if blue_brain_string is not None:
+                exec(blue_brain_string, g)
+            else:
+                execfile(blue_brain, g)
             self.blue_brain_class = g['Agent']
         # Load up a replay
         else:
@@ -1224,26 +1251,37 @@ def grid_path_length((x,y),(gx,gy),g):
 
 def run_games(red_brain='agent.py', 
               blue_brain='agent.py',
+              red_brain_string=None,
+              blue_brain_string=None,
               red_init={},
               blue_init={},
               settings=Settings(),
               field=None, 
               games=1, 
-              record=None, 
+              record=False, 
               rendered=True,
               output=None,
               new_maps=True):
     """ Convenience function for running a number of games, storing
         the score as ( red_score / max_score ) for each game.
         Can also score replays as a zip file.
+        
+        :param field:    Contrary to Game(), the field argument here is an
+                           ASCII representation of the desired field, as output
+                           by field.to_file()
+        :param record:   If set to true, records replay to a .pickle file.
+                           For multiple games, a .zip file. 
+        :param output:   Filename of file to APPEND scores to (or None).
+        :param new_maps: Set to True to use a new map for each game.
+        
     """
     scores  = []
     replays = []
     game    = None
     for i in xrange(games):
         if new_maps or game is None:
-            game = Game(red_brain,blue_brain,
-                        red_init=red_init,blue_init=blue_init,
+            game = Game(red_brain, blue_brain, red_brain_string, blue_brain_string,
+                        red_init=red_init, blue_init=blue_init,
                         field=Field(from_file=field) if field is not None else None,
                         settings=settings,
                         record=record is not None,
@@ -1263,22 +1301,25 @@ def run_games(red_brain='agent.py',
         f.write(','.join('%.3f'%s for s in scores))
         f.write('\n')
     # Store replays if desired
-    if record is not None:
+    if record:
         replays = [pickle.dumps(r) for r in replays]
-        if record == 'AUTO':
-            rb = red_brain.replace('.py','')
-            bb = blue_brain.replace('.py','')
-            filename = '%s_%s_vs_%s'%(now.strftime("%Y%m%d_%H%M"),rb,bb)
+        rb = red_brain.replace('.py','')
+        bb = blue_brain.replace('.py','')
+        filename = 'replay_%s_%s_vs_%s'%(now.strftime("%Y%m%d_%H%M"),rb,bb)
         if games == 1:
             f = open(filename+'.pickle','wb')
             f.write(replays[0])
+            f.close()
         else:
             zf = zipfile.ZipFile(filename+'.zip','w')
             for i,r in enumerate(replays):
                 zf.writestr('replay_%04d.pickle'%i,r)
-        f.close()
+            zf.close()
     return scores
 
+def test_all()::
+    """ Run tests to see if all is working correctly. """
+    pass
 
 ### COMMAND LINE ###
 if __name__ == '__main__':
@@ -1304,6 +1345,9 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         parser.print_help()
         print
+        print "Now running a default game as demo."
+        run_games(record=True,games=3,rendered=False)
+        quit()
         
     if options.play is not None:
         pickle.load(open(options.play)).play()

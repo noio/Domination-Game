@@ -1,6 +1,8 @@
 
 class Agent(object):
     
+    NAME = "default_agent"
+    
     def __init__(self, id, team, settings=None, field_rects=None, field_grid=None, nav_mesh=None):
         """ Each agent is initialized at the beginning of each game.
             The first agent (id==0) can use this to set up global variables.
