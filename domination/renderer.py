@@ -218,9 +218,18 @@ class Renderer(object):
         ui.blit(txt, dest=(482,7))
         txt = self.font_small.render("%dms"%(game.think_time_blue*1000),False,(255,255,255))
         ui.blit(txt, dest=(482,16))
-        
+        # LOWER LINE
+        # Switch team interface
         g = self.ims['switch_red'] if self.active_team == 0 else self.ims['switch_blue']
         ui.blit(g, (6,37))
+        # Indicate mode
+        m = "Simulating"
+        if game.replay and not game.record:
+            m = "Replay"
+        elif game.record:
+            m = "Recording"
+        txt = self.font.render(m,False,(255,255,255))
+        ui.blit(txt, dest=(100, 37))
         # Render time
         # txt = self.font_mono.render("R:% 3dms"%(self.render_time*1000),False,(255,255,255))
         # ui.blit(txt, dest=(500,3))

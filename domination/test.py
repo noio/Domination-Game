@@ -59,18 +59,19 @@ def test_string_agent():
     
 def test_replay():
     print "Testing replays..."
-    settings = domination.Settings(field_width=17, field_height=12, num_agents = 2)
-    game = domination.Game(settings=settings, 
-                           red_brain_string=RANDOM_AGENT, 
-                           blue_brain_string=RANDOM_AGENT, 
-                           record=True,
-                           rendered=False)
-    game.run()
-    score = game.score_red
-    r = game.replay
-    replaygame = r.play()
-    if replaygame.score_red != score:
-        raise Exception("Replay has different score from original game")
+    settings = domination.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=200)
+    for i in range(40):
+        game = domination.Game(settings=settings,
+                               red_brain_string=RANDOM_AGENT, 
+                               blue_brain_string=RANDOM_AGENT, 
+                               record=True,
+                               rendered=False)
+        game.run()
+        score = game.score_red
+        replaygame = domination.Game(replay=game.replay, rendered=False)
+        replaygame.run()
+        if replaygame.score_red != score:
+            raise Exception("Replay has different score from original game")
     print "Succes!"
 
 if __name__ == "__main__":
