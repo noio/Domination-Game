@@ -79,8 +79,8 @@ def line_intersects_rect(p0, p1, r):
         Returns False if no intersection found.
         Uses the Liang-Barsky line clipping algorithm.
         
-        >>> line_intersects_rect((1.0,0.0),(1.0,4.0),(0.0,1.0,3.0,1.0))
-        ((0.25, (1.0, 1.0)), (0.5, (1.0, 2.0)))
+        >>> line_intersects_rect((1.0,0.0),(1.0,3.0),(0.0,1.0,3.0,1.0))
+        ((0.33333333333333331, (1.0, 1.0)), (0.66666666666666663, (1.0, 2.0)))
         
         >>> line_intersects_rect((1.0,0.0),(3.0,0.0),(0.0,1.0,3.0,1.0))
         False
