@@ -381,6 +381,7 @@ class Game(object):
         except KeyboardInterrupt:
             self.state = Game.STATE_INTERRUPT
         self.end(interrupted=(self.state==Game.STATE_INTERRUPT))
+        return self # For chaining, if you're into that.
     
     def end(self, interrupted=False):
         """ End the game, writes scores to a file and tells all the agents
@@ -702,7 +703,10 @@ class Field(object):
     """ Class holding all the map properties, among which
         is the tilemap. Should be picklable.
     """
-    def __init__(self, width=11, height=11, num_spawns=5, tilesize=16, from_string=None):
+    def __init__(self, width=11, height=11, tilesize=16, 
+                       num_spawns=5, num_points=3, num_ammo=6, 
+                       wall_fill=0.3, wall_len=(6,7), wall_width=1, wall_orientation=0.5, wall_gridsize=3,
+                       from_string=None):
         # Settings variables
         self.width            = width
         self.height           = height
