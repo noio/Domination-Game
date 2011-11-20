@@ -14,3 +14,5 @@ domination/libs/munkres.pyc
 domination/utilities.pyc
 
 domination/.DS_Store
+
+domination/test.pickle

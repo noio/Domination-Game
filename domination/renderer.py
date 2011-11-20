@@ -229,7 +229,7 @@ class Renderer(object):
         elif game.record:
             m = "Recording"
         txt = self.font.render(m,False,(255,255,255))
-        ui.blit(txt, dest=(100, 37))
+        ui.blit(txt, dest=(120, 39))
         # Render time
         # txt = self.font_mono.render("R:% 3dms"%(self.render_time*1000),False,(255,255,255))
         # ui.blit(txt, dest=(500,3))
