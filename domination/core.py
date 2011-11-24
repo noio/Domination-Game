@@ -158,14 +158,11 @@ class Game(object):
             self.blue_brain = blue_brain
             self.red_init = red_init
             self.blue_init = blue_init
-            # Generate new game field only if None is passed
-            if field is not None:
-                self.field = field.instantiate()
-            else: 
-                self.field = Field(settings.field_width, 
-                                   settings.field_height, 
-                                   tilesize=settings.tilesize, 
-                                   num_spawns=settings.num_agents).instantiate()
+            # Generate new game field if a generator was passed
+            if field is None:
+                self.field = FieldGenerator().generate()
+            elif isinstance(field, FieldGenerator):
+                self.field = field.generate()
             # Read agent brains (from string or file)
             g = AGENT_GLOBALS.copy()
             if red_brain_string is not None:
@@ -695,29 +692,21 @@ class Game(object):
             args += ',blue_init=%r'%self.blue_init
         return 'Game(%s)'%args
 
+
+
 class Field(object):
-    """ Class holding all the map properties, among which
-        is the tilemap. Should be picklable.
+    """ Class representing a playing field.
+        
+        Any way to create these is fine, the included FieldGenerator
+        does a pretty good job!
     """
-    def __init__(self, width=11, height=11, tilesize=16, 
-                       num_spawns=5, num_points=3, num_ammo=6, 
-                       wall_fill=0.3, wall_len=(6,7), wall_width=1, wall_orientation=0.5, wall_gridsize=3,
-                       from_string=None):
+    def __init__(self, width, height, tilesize):
         # Settings variables
         self.width            = width
         self.height           = height
         self.tilesize         = tilesize
-        self.num_spawns       = num_spawns
-        self.num_points       = num_points
-        self.num_ammo         = num_ammo
-        self.wall_fill        = wall_fill
-        self.wall_len         = wall_len
-        self.wall_width       = wall_width
-        self.wall_orientation = wall_orientation
-        self.wall_gridsize    = wall_gridsize
         
         # Instantiated variables
-        self.instantiated  = False
         self.walls         = [] # The tilemap of the walls
         self.spawns_red    = [] # Separate lists of red/blue spawns
         self.spawns_blue   = []
@@ -745,37 +734,7 @@ class Field(object):
             field.walls.append(row)
         field.instantiated = True
         return field
-        
-    def instantiate(self):
-        """ Instantiates this field using the parameters for random 
-            distribution set in the constructor. 
-        """
-        ## 1) Place objects on map
-        spawn, cpleft, cpmid = self.place_objects()
-        # Reachable cps
-        free_routes = [(spawn, cpleft), (cpleft,cpmid)]
-        free_routes.extend([(spawn, am) for am in self.ammo[:len(self.ammo)//2]])
-        ## 2) Generate tilemap
-        self.create_wall_map(free_routes)
-        ## 3) Clear walls under objects
-        self.clear_walls_under_objects()
-        ## 4) Make rects from walls and generate mesh
-        tic()
-        wallrects = []
-        ts = self.tilesize
-        for i,row in enumerate(self.walls):
-            for j,tile in enumerate(row):
-                if tile:
-                    wallrects.append((j*ts,i*ts,ts,ts))
-        self.wallrects = rects_merge(wallrects)
-        self.instantiated = True
-        all_objects = self.get_objects()[0]
-        add_points = [(o.cx, o.cy) for o in all_objects if (isinstance(o,Ammo) or isinstance(o,ControlPoint))]
-        self.mesh = make_nav_mesh(self.wallrects, (0,0,self.width*self.tilesize,self.height*self.tilesize),
-                                    simplify=0.3,additional_points=add_points)
-        return self
-        
-        
+    
     def __str__(self):
         s = []
         for row in self.walls:
@@ -791,116 +750,14 @@ class Field(object):
         for (j,i,d) in self.spawns_blue:
             s[i][j] = 'B'
         return '\n'.join([' '.join(row) for row in s])
-        
+    
     def to_file(self, filename):
         o = str(self)
         f = open(filename,'w')
         f.write(o)
-        
-    def place_objects(self, num_points=3, num_ammo=6):
-        """ (Randomly) places important objects on the map. """
-        spawn  = (2,1)
-        cpleft = ((self.width-1)/4, (self.height-1)-3)
-        cpmid  = (self.width/2, random.randint(3,self.height/2+1))
-        ## Generate mirrored object locations
-        # Spawn regions
-        i,j = spawn[0], spawn[1]
-        while len(self.spawns_red) < self.num_spawns:
-            self.spawns_red.append((i, j, 0))
-            self.spawns_blue.append((self.width-1-i, j, -pi))
-            i += 1
-            if i >= spawn[0] + 2:
-                j += 1
-                i = spawn[0]
-        # Controlpoints
-        self.controlpoints.append((cpleft[0], cpleft[1]))
-        self.controlpoints.append((cpmid[0], cpmid[1]))
-        self.controlpoints.append((self.width-1-cpleft[0], cpleft[1]))
-        # Ammo
-        while len(self.ammo) < num_ammo//2:
-            x,y = (random.randint(5,self.width//2-1),random.randint(5,self.height-2))
-            # if not self.walls[y][x]:
-            self.ammo.append((x,y))
-        self.ammo.extend([(self.width-1-x,y) for (x,y) in self.ammo]) # Add mirrored version
-        return (spawn, cpleft, cpmid)
-                    
-    def create_empty_map(self, width, height):
-        """ Returns an empty map with only bounding walls. """
-        t         = [1] * width
-        m         = [1] + [0] * (width-2) + [1]
-        b         = [1] * width
-        tilemap   = [t]
-        for i in xrange(height-2):
-            tilemap.append(m[:])
-        tilemap.append(b)
-        return tilemap
-        
-    def create_wall_map(self, routes=[], 
-                        fill=0.30, min_len=6, max_len=7, 
-                        thickness=1, horizontal=0.5, coarse=3):
-        # Create outer walls
-        halfwidth = int(0.5+ self.width/2.0)
-        t         = [1] * halfwidth
-        m         = [1] + [0] * (halfwidth-1)
-        b         = [1] * halfwidth
-        tilemap   = [t]
-        for i in xrange(self.height-2):
-            tilemap.append(m[:])
-        tilemap.append(b)
-        min_filled = 0.5*self.height*self.width*fill
-        
-        while sum(sum(row) for row in tilemap) < min_filled:
-            new = copy.deepcopy(tilemap)
-            # Create horizontal section
-            if rand() < horizontal:
-                sec_width = random.randint(min_len,max_len)
-                sec_height = thickness
-            # Create vertical section
-            else:
-                sec_width = thickness
-                sec_height = random.randint(min_len,max_len)
-            x,y = (random.randint(1,halfwidth-sec_width), random.randint(1,self.height-sec_height-1))
-            x = (x // coarse) * coarse
-            y = (y // coarse) * coarse
-            for i in xrange(y, y + sec_height):
-                for j in xrange(x, x + sec_width):
-                    new[i][j] = 1
-            if all(grid_path_length(p1,p2,new) is not None for (p1,p2) in routes):
-                tilemap = new
-            
-        # Mirror the tilemap
-        self.walls = self.reflect_tilemap(tilemap, self.width)
-        
-    def clear_walls_under_objects(self):
-        for (x,y,r) in self.spawns_red + self.spawns_blue:
-            self.walls[y][x] = 0
-            self.walls[int(y+sin(r)+0.5)][int(x+cos(r)+0.5)] = 0
-        for (x,y) in self.controlpoints:
-            for i in xrange(y-1,y+2):
-                for j in xrange(x-1,x+2):
-                    self.walls[i][j] = 0
-        for (x,y) in self.ammo:
-            self.walls[y][x] = 0
-        
-    def reflect_tilemap(self, tilemap, newsize, axis_vertical=True):
-        """ Reflects a tilemap (2D-list) along an arbitrary horizontal
-            or vertical axis. Odd-sized arrays will work too.
-        """
-        # Transpose
-        if axis_vertical:
-            tilemap = zip(*tilemap)
-        # Build new tilemap
-        newtiles = []
-        for i in xrange(newsize):
-            newtiles.append(tilemap[i][:] if i < newsize//2 else tilemap[newsize-1-i][:])
-        # Transpose back
-        if axis_vertical:
-            return [list(l) for l in zip(*newtiles)]
-        
+    
     def get_objects(self):
         """ Generates all GameObjects and returns them. """
-        if not self.instantiated:
-            raise Exception("Field has not been instantiated yet.")
         ts = self.tilesize
         ## Walls
         walls = [Wall(x=w[0],y=w[1],width=w[2],height=w[3]) for w in self.wallrects]
@@ -916,6 +773,153 @@ class Field(object):
         bluespawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_BLUE) for (x,y,r) in self.spawns_blue]
         allobjects = walls+cps+ammo+redspawns+bluespawns
         return (allobjects, cps, redspawns, bluespawns)
+        
+class FieldGenerator(object):
+    """ Generates field objects from random distribution """
+    
+    def __init__(self, width=31, height=21, tilesize=16,
+                       num_spawns=5, num_points=3, num_ammo=6, 
+                       wall_fill=0.3, wall_len=(6,7), wall_width=1, 
+                       wall_orientation=0.5, wall_gridsize=3):
+        self.width            = width
+        self.height           = height
+        self.tilesize         = tilesize
+        self.num_spawns       = num_spawns
+        self.num_points       = num_points
+        self.num_ammo         = num_ammo
+        self.wall_fill        = wall_fill
+        self.wall_len         = wall_len
+        self.wall_width       = wall_width
+        self.wall_orientation = wall_orientation
+        self.wall_gridsize    = wall_gridsize
+    
+    @classmethod
+    def reflect_tilemap(cls, tilemap, newsize, axis_vertical=True):
+        """ Reflects a tilemap (2D-list) along an arbitrary horizontal
+            or vertical axis. Odd-sized arrays will work too.
+        """
+        # Transpose
+        if axis_vertical:
+            tilemap = zip(*tilemap)
+        # Build new tilemap
+        newtiles = []
+        for i in xrange(newsize):
+            newtiles.append(tilemap[i][:] if i < newsize//2 else tilemap[newsize-1-i][:])
+        # Transpose back
+        if axis_vertical:
+            return [list(l) for l in zip(*newtiles)]
+    
+    @classmethod
+    def clear_walls_under_objects(cls, field):
+        for (x,y,r) in field.spawns_red + field.spawns_blue:
+            field.walls[y][x] = 0
+            field.walls[int(y+sin(r)+0.5)][int(x+cos(r)+0.5)] = 0
+        for (x,y) in field.controlpoints:
+            for i in xrange(y-1,y+2):
+                for j in xrange(x-1,x+2):
+                    field.walls[i][j] = 0
+        for (x,y) in field.ammo:
+            field.walls[y][x] = 0
+            
+    def generate(self):
+        """ Generates a new field using the parameters for random 
+            distribution set in the constructor. 
+        """
+        # Create a new field
+        field = Field(width=self.width, height=self.height, tilesize=self.tilesize)
+        ## 1) Place objects on map
+        self.place_objects(field)
+        ## 2) Generate tilemap
+        self.create_wall_map(field)
+        ## 3) Clear walls under objects
+        self.clear_walls_under_objects(field)
+        ## 4) Make rects from walls and generate mesh
+        wallrects = []
+        ts = self.tilesize
+        for i,row in enumerate(field.walls):
+            for j,tile in enumerate(row):
+                if tile:
+                    wallrects.append((j*ts,i*ts,ts,ts))
+        field.wallrects = rects_merge(wallrects)
+        all_objects = field.get_objects()[0]
+        add_points = [(o.cx, o.cy) for o in all_objects if (isinstance(o,Ammo) or isinstance(o,ControlPoint))]
+        field.mesh = make_nav_mesh(field.wallrects, (0,0,self.width*self.tilesize,self.height*self.tilesize),
+                                    simplify=0.3,additional_points=add_points)
+        return field
+    
+    def place_objects(self, field):
+        """ (Randomly) places important objects on the map. """
+        spawn  = (2,1)
+        cpleft = ((self.width-1)/4, (self.height-1)-3)
+        cpmid  = (self.width/2, random.randint(3,self.height/2+1))
+        ## Generate mirrored object locations
+        # Spawn regions
+        i,j = spawn[0], spawn[1]
+        while len(field.spawns_red) < self.num_spawns:
+            field.spawns_red.append((i, j, 0))
+            field.spawns_blue.append((self.width-1-i, j, -pi))
+            i += 1
+            if i >= spawn[0] + 2:
+                j += 1
+                i = spawn[0]
+        # Controlpoints
+        field.controlpoints.append((cpleft[0], cpleft[1]))
+        field.controlpoints.append((cpmid[0], cpmid[1]))
+        field.controlpoints.append((self.width-1-cpleft[0], cpleft[1]))
+        # Ammo
+        while len(field.ammo) < self.num_ammo//2:
+            x,y = (random.randint(5,self.width//2-1),random.randint(5,self.height-2))
+            # if not self.walls[y][x]:
+            field.ammo.append((x,y))
+        # Add mirrored version
+        field.ammo.extend([(self.width-1-x,y) for (x,y) in field.ammo])
+        
+    def create_wall_map(self, field):     
+        # Find free routes
+        spawn = field.spawns_red[0][:2]
+        routes = []
+        routes.extend( (spawn, cp) for cp in field.controlpoints[:len(field.controlpoints)//2] )
+        routes.extend( (spawn, am) for am in field.ammo[:len(field.ammo)//2] )
+        # Create outer walls
+        halfwidth = int(0.5+ self.width/2.0)
+        t         = [1] * halfwidth
+        m         = [1] + [0] * (halfwidth-1)
+        b         = [1] * halfwidth
+        tilemap   = [t]
+        for i in xrange(self.height-2):
+            tilemap.append(m[:])
+        tilemap.append(b)
+        min_filled = 0.5*self.height*self.width*self.wall_fill
+        if len(self.wall_len) == 2:
+            min_len, max_len = self.wall_len
+        else:
+            min_len, max_len = self.wall_len, self.wall_len
+            
+        failed = 0
+        while sum(sum(row) for row in tilemap) < min_filled and failed < 100:
+            new = copy.deepcopy(tilemap)
+            # Create horizontal section
+            if rand() < self.wall_orientation:
+                sec_width = random.randint(min_len,max_len)
+                sec_height = self.wall_width
+            # Create vertical section
+            else:
+                sec_width = self.wall_width
+                sec_height = random.randint(min_len,max_len)
+            x,y = (random.randint(1,halfwidth-sec_width), random.randint(1,self.height-sec_height-1))
+            x = (x // self.wall_gridsize) * self.wall_gridsize
+            y = (y // self.wall_gridsize) * self.wall_gridsize
+            for i in xrange(y, y + sec_height):
+                for j in xrange(x, x + sec_width):
+                    new[i][j] = 1
+            if all(grid_path_length(p1,p2,new) is not None for (p1,p2) in routes):
+                tilemap = new
+            else:
+                failed += 1
+
+        # Mirror the tilemap
+        field.walls = self.reflect_tilemap(tilemap, self.width)
+
 
 class GameObject(object):
     """ Generic game object """
