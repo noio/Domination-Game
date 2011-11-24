@@ -335,5 +335,5 @@ def draw_tilemap(surface, tiles, graphic, tilesize):
                 surface.blit(pg.transform.scale(graphic.subsurface(idx*s,0,s,s),(tilesize,tilesize)),(j*tilesize,i*tilesize))
 
 if __name__ == "__main__":
-    import domination
-    domination.run_games(games=1)
+    import run
+    run.games(games=1)

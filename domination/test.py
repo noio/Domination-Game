@@ -7,7 +7,8 @@ working properly. This includes saving fields and replays.
 ### IMPORTS
 
 import unittest
-import domination
+import core
+import run
 
 ### CONSTANTS
 
@@ -52,24 +53,24 @@ w w w w w w w w w w w w w w w w w w w
 class TestDominationGame(unittest.TestCase):
     
     def setUp(self):
-        self.settings = domination.Settings()
+        self.settings = core.Settings()
         
     def test_basic(self):
-        domination.run_games(settings=self.settings, rendered=False)
+        run.games(settings=self.settings, rendered=False)
         
     def test_string_agent(self):
-        game = domination.Game(red_brain_string=RANDOM_AGENT, 
+        game = core.Game(red_brain_string=RANDOM_AGENT, 
                                blue_brain_string=RANDOM_AGENT, 
                                settings=self.settings,
                                rendered=False)
         game.run()
     
     def test_replay(self):
-        settings = domination.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=200)
+        settings = core.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=200)
         for i in range(40):
-            game = domination.Game(settings=settings, record=True, rendered=False)
+            game = core.Game(settings=settings, record=True, rendered=False)
             game.run()
-            replaygame = domination.Game(replay=game.replay, rendered=False)
+            replaygame = core.Game(replay=game.replay, rendered=False)
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
 

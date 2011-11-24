@@ -303,6 +303,47 @@ def angle_fix(theta):
 
 ### NAVIGATION ###
 
+def grid_path_length((x,y),(gx,gy),g):
+    #Path list (current coords, cost, expected cost)
+    p = [((x,y),0,abs(gx-x)+abs(gy-y))]
+    #Nodes visited
+    h = []
+    #Max values of coords
+    m = (len(g[0]),len(g))
+    while (len(p) > 0):
+        #Sort based on best estimate of distance, with slight advantage 
+        #to paths already explored
+        p.sort(key=lambda o:0.99999*o[1]+o[2])
+        #Best current loc
+        (x,y) = p[0][0]
+        l = []
+        #Expand in all 4 directions, add if:
+        #   1. Not of of bounds 2. No wall present 3. Not yet visited
+        n = x-1
+        if n >= 0 and g[y][n] == 0 and (n,y) not in h:
+            l.append(((n,y),abs(gx-n)+abs(gy-y)))
+        n = x+1
+        if n < m[0] and g[y][n] == 0 and (n,y) not in h:
+            l.append(((n,y),abs(gx-n)+abs(gy-y)))
+        n = y-1
+        if n >= 0 and g[n][x] == 0 and (x,n) not in h:
+            l.append(((x,n),abs(gx-x)+abs(gy-n)))
+        n = y+1
+        if n < m[1] and g[n][x] == 0 and (x,n) not in h:
+            l.append(((x,n),abs(gx-x)+abs(gy-n)))
+        
+        #Add all new valid paths to path list and history
+        for i in l:
+            if i[1] == 0:
+                #Goal reached
+                return p[0][1]+1
+            h.append(i[0])
+            p.append((i[0],p[0][1]+1,i[1]))
+        #Remove old path
+        del p[0]
+    return None
+
+
 def make_nav_mesh(walls, bounds, offset=7, simplify=0.001, additional_points=[]):
     """ Generate an almost optimal navigation mesh
         between the given walls (rectangles), within

@@ -16,3 +16,7 @@ domination/utilities.pyc
 domination/.DS_Store
 
 domination/test.pickle
+
+domination/run.pyc
+
+domination/core.pyc
