@@ -44,7 +44,7 @@ DRAW_NAV_MESH       = False
 class Renderer(object):
     
     UI_HEIGHT           = 64
-    UI_WIDTH            = 600
+    UI_WIDTH            = 640
     
     """Renderer"""
     def __init__(self, field):
@@ -74,7 +74,8 @@ class Renderer(object):
             "ammo_full":pg.image.load(os.path.join(ASSETS_PATH,"ammo-full.png")),
             "switch_red":pg.image.load(os.path.join(ASSETS_PATH,"switch-red.png")),
             "switch_blue":pg.image.load(os.path.join(ASSETS_PATH,"switch-blue.png")),
-            "ui_overlay":pg.image.load(os.path.join(ASSETS_PATH,"ui-overlay.png"))
+            "ui_overlay":pg.image.load(os.path.join(ASSETS_PATH,"ui-overlay.png")),
+            "ui_background":pg.image.load(os.path.join(ASSETS_PATH,"ui-background.png"))
         }
         
         # Variables
@@ -122,7 +123,7 @@ class Renderer(object):
         vp              = self.vp_surf
         ui              = self.ui_surf
         self.last_frame = time.clock()
-        scr.fill((41,41,41))
+        scr.fill((71,71,71))
         ## MAP
         vp.blit(self.mapsurface,(0,0))
         ## DEBUG: MESH
@@ -186,6 +187,7 @@ class Renderer(object):
         
         ## INTERFACE
         # Scores/Remaining time
+        ui.blit(self.ims['ui_background'],dest=(0,0))
         ms = game.settings.max_score
         rs = game.score_red
         bs = game.score_blue
