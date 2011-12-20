@@ -60,9 +60,9 @@ class TestDominationGame(unittest.TestCase):
         
     def test_string_agent(self):
         game = core.Game(red_brain_string=RANDOM_AGENT, 
-                               blue_brain_string=RANDOM_AGENT, 
-                               settings=self.settings,
-                               rendered=False)
+                         blue_brain_string=RANDOM_AGENT, 
+                         settings=self.settings,
+                         rendered=False)
         game.run()
     
     def test_replay(self):

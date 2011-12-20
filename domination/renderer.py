@@ -203,6 +203,7 @@ class Renderer(object):
         for a in range(int(game.step * (360.0/game.settings.max_steps))):
             a = (a - 90)/rad_to_deg
             pg.draw.line(ui,(255,255,255), (336,16), (int(336+cos(a)*9),int(16+sin(a)*9)),1)
+        # Entire UI overlay
         ui.blit(self.ims['ui_overlay'],dest=(0,0))
         # Agent thinking time
         w = 24
@@ -221,9 +222,9 @@ class Renderer(object):
         txt = self.font_small.render("%dms"%(game.think_time_blue*1000),False,(255,255,255))
         ui.blit(txt, dest=(482,16))
         # LOWER LINE
-        # Switch team interface
+        # Switch team button
         g = self.ims['switch_red'] if self.active_team == 0 else self.ims['switch_blue']
-        ui.blit(g, (6,37))
+        ui.blit(g, (3,37))
         # Indicate mode
         m = "Simulating"
         if game.replay and not game.record:

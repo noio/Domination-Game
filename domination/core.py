@@ -23,6 +23,7 @@ import datetime
 import itertools
 import copy
 import traceback
+import bisect
 from pprint import pprint
 
 # Local
@@ -46,6 +47,10 @@ CAPTURE_MODE_NEUTRAL  = 0
 CAPTURE_MODE_FIRST    = 1
 CAPTURE_MODE_MAJORITY = 2
 
+ENDGAME_NONE   = 0 #0b00
+ENDGAME_SCORE  = 1 #0b01
+ENDGAME_CRUMBS = 2 #0b10
+
 AGENT_GLOBALS = globals().copy()
 
 ### CLASSES ###
@@ -57,6 +62,7 @@ class Settings(object):
                        max_speed=40,
                        max_range=60,
                        max_see=100,
+                       field_known=True,
                        ammo_rate=20,
                        ammo_amount=3,
                        spawn_time=10,
@@ -65,22 +71,25 @@ class Settings(object):
                        tilesize=16,
                        think_time=0.010,
                        capture_mode=CAPTURE_MODE_NEUTRAL,
+                       end_condition=ENDGAME_SCORE,
                        num_agents=5):
-        self.max_steps    = max_steps     # How long the game will last at most
-        self.max_score    = max_score     # If either team scores this much, the game is finished
-        self.max_speed    = max_speed     # Number of game units each tank can drive in its turn
-        self.max_turn     = max_turn      # The maximum angle that a tank can rotate in a turn
-        self.max_range    = max_range     # The shooting range of tanks in game units
-        self.max_see      = max_see       # How far tanks can see (Manhattan distance)
-        self.ammo_rate    = ammo_rate     # How long it takes for ammo to reappear
-        self.ammo_amount  = ammo_amount   # How many bullets there are in each ammo pack
-        self.spawn_time   = spawn_time    # Time that it takes for tanks to respawn
-        self.field_width  = field_width   # How wide the field is in tiles, should be odd
-        self.field_height = field_height  # Height of the field in tiles
-        self.tilesize     = tilesize      # How big a single tile is (game units), change at own risk
-        self.think_time   = think_time    # How long the tanks have to do their computations (in seconds)
-        self.capture_mode = capture_mode  # Behavior of controlpoints when multiple agents are on them
-        self.num_agents   = num_agents    # Number of agents per team
+        self.max_steps     = max_steps     # How long the game will last at most
+        self.max_score     = max_score     # If either team scores this much, the game is finished
+        self.max_speed     = max_speed     # Number of game units each tank can drive in its turn
+        self.max_turn      = max_turn      # The maximum angle that a tank can rotate in a turn
+        self.max_range     = max_range     # The shooting range of tanks in game units
+        self.max_see       = max_see       # How far tanks can see (Manhattan distance)
+        self.field_known   = field_known   # Whether the agents have knowledge of the field at game start
+        self.ammo_rate     = ammo_rate     # How long it takes for ammo to reappear
+        self.ammo_amount   = ammo_amount   # How many bullets there are in each ammo pack
+        self.spawn_time    = spawn_time    # Time that it takes for tanks to respawn
+        self.field_width   = field_width   # How wide the field is in tiles, should be odd
+        self.field_height  = field_height  # Height of the field in tiles
+        self.tilesize      = tilesize      # How big a single tile is (game units), change at own risk
+        self.think_time    = think_time    # How long the tanks have to do their computations (in seconds)
+        self.capture_mode  = capture_mode  # Behavior of controlpoints when multiple agents are on them
+        self.end_condition = end_condition # FLAGS for end condition of game. (So you can set multiple using "OR")
+        self.num_agents    = num_agents    # Number of agents per team
         # Validate
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
@@ -92,15 +101,19 @@ class Settings(object):
         args = ('%s=%r'%(v,getattr(self,v)) for v in vars(self) if getattr(self,v) != getattr(default,v))
         args = ','.join(args)
         return 'Settings(%s)'%args
-        
-class FieldSettings(object):
-    def __init__(self, width=47,
-                       height=32,
-                       num_agents=5):
-        self.width = width
-        self.height = height
-        self.num_agents = num_agents
-
+                
+class GameStats(object):
+    def __init__(self):
+        self.score_red = 0
+        self.score_blue = 0
+        self.score = 0.0
+        self.steps = 0
+        self.crumbs_red = 0
+        self.crumbs_blue = 0
+    
+    def __str__(self):
+        return "%d steps. Score: %d-%d."%(self.steps,self.score_red,self.score_blue) 
+    
 class Game(object):
     
     """ The main game class. Contains game data and methods for
@@ -161,8 +174,8 @@ class Game(object):
             # Generate new game field if a generator was passed
             if field is None:
                 self.field = FieldGenerator().generate()
-            elif isinstance(field, FieldGenerator):
-                self.field = field.generate()
+            else:
+                self.field = field
             # Read agent brains (from string or file)
             g = AGENT_GLOBALS.copy()
             if red_brain_string is not None:
@@ -210,10 +223,10 @@ class Game(object):
         else:
             return "noname"
         
-    def add_renderer(self):
+    def add_renderer(self, **kwargs):
         import renderer
         globals()['renderer'] = renderer
-        self.renderer = renderer.Renderer(self.field)
+        self.renderer = renderer.Renderer(self.field, **kwargs)
         
     def setup(self):
         """ Sets up the game. Can be called on a game that has
@@ -225,15 +238,19 @@ class Game(object):
         # Initialize new replay
         if self.record:
             self.replay = ReplayData(self)
+        # Load field objects
+        (allobjects, cps, reds, blues) = self.field.get_objects()
         # Game logic variables
         self.score_red  = self.settings.max_score / 2
         self.score_blue = self.settings.max_score / 2
+        self.num_crumbs = len([o for o in allobjects if isinstance(o, Crumb)])
         self.step       = 0
         # Simulation variables
         self.objects         = []
         self.broadphase_mov  = []
         self.broadphase_stat = []
         # Performance tracking
+        self.stats = GameStats()
         self.think_time_red         = 0.0
         self.think_time_blue        = 0.0
         self.think_time_red_total   = 0.0
@@ -244,7 +261,6 @@ class Game(object):
         # Game objects
         self.tanks         = []
         self.controlpoints = []
-        (allobjects, cps, reds, blues) = self.field.get_objects()
         for o in allobjects:
             self.add_object(o)
         self.controlpoints = cps
@@ -252,14 +268,20 @@ class Game(object):
         if self.record or self.replay is None:
             # Initialize new tanks with brains
             for i,s in enumerate(reds):
-                brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
+                if self.settings.field_known:
+                    brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
                                              field_grid=self.field.walls, nav_mesh=self.field.mesh, **self.red_init)
+                else:
+                    brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                 t = Tank(self, s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
                 self.tanks.append(t)
                 self.add_object(t)
             for i,s in enumerate(blues):
-                brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
+                if self.settings.field_known:
+                    brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
                                              field_grid=self.field.walls, nav_mesh=self.field.mesh, **self.blue_init)
+                else:
+                    brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                 t = Tank(self, s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
                 self.tanks.append(t)
                 self.add_object(t)
@@ -298,7 +320,6 @@ class Game(object):
                     t.send_observation()
                 for t in self.tanks:
                     t.get_action()
-                    
                 # Compute shooting
                 for tank in self.tanks:
                     if tank.shoots:
@@ -324,7 +345,11 @@ class Game(object):
                 if self.tanks_blue:
                     self.think_time_blue = sum_blue / len(self.tanks_blue)
                 # Score ending condition
-                if self.score_red == 0 or self.score_blue == 0:
+                if ((self.settings.end_condition & ENDGAME_SCORE) and 
+                    (self.score_red == 0 or self.score_blue == 0)):
+                    break
+                if ((self.settings.end_condition & ENDGAME_CRUMBS) and
+                    (self.num_crumbs == 0)):
                     break
                 ## RESET SOME STUFF
                 if render:
@@ -384,9 +409,11 @@ class Game(object):
             print "Game was interrupted."
             self.interrupted = True
         self.state = Game.STATE_ENDED
-        self.log("[Game]: %d steps. Score: %d-%d."%(self.step,self.score_red,self.score_blue))
-        self.log("        Sim: %.3fs Update: %.3fs Red: %.3fs Blue: %.3fs"%(self.sim_time_total, 
-                    self.update_time_total, self.think_time_red_total, self.think_time_blue_total))
+        self.stats.score_red = self.score_red
+        self.stats.score_blue = self.score_blue
+        self.stats.score = self.score_red / float(self.score_red + self.score_blue)
+        self.stats.steps = self.step
+        self.log(str(self.stats))
         if self.record:
             self.replay.settings = copy.copy(self.settings)
             self.replay.settings.max_steps = self.step
@@ -416,8 +443,8 @@ class Game(object):
             collisions = []
             k = 0
             for i, o1 in enumerate(self.broadphase_mov):
-                # If the object didn't move, no need to check.
                 for o2 in self.broadphase_mov[i+1:]:
+                    # If the object didn't move, no need to check.
                     if o2._moved or o1._moved: 
                         # Break if the next object's _x is already outside
                         # this object's bounds. (The essential bit)
@@ -682,7 +709,7 @@ class Game(object):
         if self.verbose:
             print message
             
-    def __repr__(self):
+    def __str__(self):
         args = ','.join(['%r'%self.red_name,
                          '%r'%self.blue_name,
                          'settings=%r'%self.settings])
@@ -697,7 +724,9 @@ class Game(object):
 class Field(object):
     """ Class representing a playing field.
         
-        Any way to create these is fine, the included FieldGenerator
+        You can use to_file, which dumps an ASCII representation of the
+        field to a file, or you can pickle the entire Field object.
+        Any way to create a Field is fine, the included FieldGenerator
         does a pretty good job!
     """
     def __init__(self, width, height, tilesize):
@@ -712,6 +741,7 @@ class Field(object):
         self.spawns_blue   = []
         self.controlpoints = []
         self.ammo          = []
+        self.crumbs        = []
         
     @classmethod
     def from_string(cls, s):
@@ -752,6 +782,9 @@ class Field(object):
         return '\n'.join([' '.join(row) for row in s])
     
     def to_file(self, filename):
+        if self.crumbs:
+            raise Exception("""A field with crumbs cannot be written to an
+                               ASCII representation. Use pickle in stead.""")
         o = str(self)
         f = open(filename,'w')
         f.write(o)
@@ -767,20 +800,23 @@ class Field(object):
         ## Ammo
         ofs = (ts-Ammo.SIZE)/2
         ammo = [Ammo(x=x*ts+ofs,y=y*ts+ofs) for (x,y) in self.ammo]
+        ## Crumbs
+        ofs = (ts-Crumb.SIZE)/2.0
+        crumbs = [Crumb(x=x*ts+ofs, y=y*ts+ofs) for (x,y) in self.crumbs]
         ## Spawns
         ofs = (ts-TankSpawn.SIZE)/2
         redspawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_RED) for (x,y,r) in self.spawns_red]
         bluespawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_BLUE) for (x,y,r) in self.spawns_blue]
-        allobjects = walls+cps+ammo+redspawns+bluespawns
+        allobjects = walls+cps+ammo+crumbs+redspawns+bluespawns
         return (allobjects, cps, redspawns, bluespawns)
         
 class FieldGenerator(object):
     """ Generates field objects from random distribution """
     
-    def __init__(self, width=31, height=21, tilesize=16,
+    def __init__(self, width=39, height=24, tilesize=16,
                        num_spawns=5, num_points=3, num_ammo=6, 
-                       wall_fill=0.3, wall_len=(6,7), wall_width=1, 
-                       wall_orientation=0.5, wall_gridsize=3):
+                       wall_fill=0.4, wall_len=(4,4), wall_width=4, 
+                       wall_orientation=0.5, wall_gridsize=4):
         self.width            = width
         self.height           = height
         self.tilesize         = tilesize
@@ -1167,12 +1203,12 @@ class ControlPoint(GameObject):
                 
 
 class Ammo(GameObject):
-    SIZE = 16
     """ Represents an ammo spawn location. 
         If ammo is picked up, it 'disappears'
         until the timer counts down to 0, 
         at which point ammo can be picked up again.
     """
+    SIZE = 16
     def __init__(self,x,y):
         super(Ammo, self).__init__(x=x, y=y, width=Ammo.SIZE, height=Ammo.SIZE, 
                                    shape=GameObject.SHAPE_CIRC, solid=False, 
@@ -1196,6 +1232,29 @@ class Ammo(GameObject):
             self.respawn_in = self.game.settings.ammo_rate
             self.graphic    = 'ammo_empty'
             self.has_ammo   = False
+
+class Crumb(GameObject):
+    """ Represents a crumb, something that can be picked
+        up, with no other purpose than being registered
+        as picked up.
+    """
+    SIZE = 2
+    def __init__(self, x, y):
+        self.pickedup = False
+        super(Crumb, self).__init__(x=x, y=y, width=Crumb.SIZE, height=Crumb.SIZE, 
+                                        shape=GameObject.SHAPE_RECT, solid=False, 
+                                        movable=False, graphic='default')
+    
+    def collide(self, other):
+        if not self.pickedup and isinstance(other, Tank):
+            if other.team == TEAM_RED:
+                self.game.stats.crumbs_red += 1
+            elif other.team == TEAM_BLUE:
+                self.game.stats.crumbs_blue += 1
+            self.game.num_crumbs -= 1
+            self.game.rem_object(self)
+            self.pickedup = True
+
 
 class TankSpawn(GameObject):
     SIZE = 16
@@ -1242,3 +1301,6 @@ class ReplayData(object):
         return g
 
 
+if __name__ == "__main__":
+    field = FieldGenerator().generate()
+    Game('domination/agent.py','domination/agent.py', field=field, rendered=True).run()

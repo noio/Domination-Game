@@ -20,3 +20,9 @@ domination/test.pickle
 domination/run.pyc
 
 domination/core.pyc
+
+.tm_properties
+
+.DS_Store
+
+test.py
