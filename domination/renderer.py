@@ -47,7 +47,7 @@ class Renderer(object):
     UI_WIDTH            = 640
     
     """Renderer"""
-    def __init__(self, field):
+    def __init__(self, field, skin='vacubot'):
         # Global pygame init
         pg.init()
         
@@ -56,26 +56,27 @@ class Renderer(object):
         self.font = pg.font.Font(os.path.join(ASSETS_PATH,'nokiafc22.ttf'), 16)
         self.font_small = pg.font.Font(os.path.join(ASSETS_PATH,'nokiafc22.ttf'), 8)
         self.ims = {
-            "icon":pg.image.load(os.path.join(ASSETS_PATH,"icon.png")),
-            "default":pg.image.load(os.path.join(ASSETS_PATH,"default.png")),
-            "wall":pg.image.load(os.path.join(ASSETS_PATH,"wall.png")),
-            "autowall":pg.image.load(os.path.join(ASSETS_PATH,"autowalls.png")),
-            "concrete":pg.image.load(os.path.join(ASSETS_PATH,"concrete.png")),
-            "tank_red":pg.image.load(os.path.join(ASSETS_PATH,"tank-red.png")),
-            "tank_blue":pg.image.load(os.path.join(ASSETS_PATH,"tank-blue.png")),
-            "cp_red":pg.image.load(os.path.join(ASSETS_PATH,"cp-red.png")),
-            "cp_blue":pg.image.load(os.path.join(ASSETS_PATH,"cp-blue.png")),
-            "cp_neutral":pg.image.load(os.path.join(ASSETS_PATH,"cp-neutral.png")),
-            "spawn_red":pg.image.load(os.path.join(ASSETS_PATH,"spawn-red.png")),
-            "spawn_blue":pg.image.load(os.path.join(ASSETS_PATH,"spawn-blue.png")),
-            "muzzle":[pg.image.load(os.path.join(ASSETS_PATH,"muzzle.png")).subsurface(i*32,0,32,32) for i in xrange(10)],
-            "explode":[pg.image.load(os.path.join(ASSETS_PATH,"explode.png")).subsurface(i*12,0,12,12) for i in xrange(10)],
-            "ammo_empty":pg.image.load(os.path.join(ASSETS_PATH,"ammo-empty.png")),
-            "ammo_full":pg.image.load(os.path.join(ASSETS_PATH,"ammo-full.png")),
-            "switch_red":pg.image.load(os.path.join(ASSETS_PATH,"switch-red.png")),
-            "switch_blue":pg.image.load(os.path.join(ASSETS_PATH,"switch-blue.png")),
-            "ui_overlay":pg.image.load(os.path.join(ASSETS_PATH,"ui-overlay.png")),
-            "ui_background":pg.image.load(os.path.join(ASSETS_PATH,"ui-background.png"))
+            "icon":self.load_texture("icon.png",skin),
+            "default":self.load_texture("default.png",skin),
+            "wall":self.load_texture("wall.png",skin),
+            "autowall":self.load_texture("autowalls.png",skin),
+            "floor":self.load_texture("floor.png",skin),
+            "tank_red":self.load_texture("tank-red.png",skin),
+            "tank_blue":self.load_texture("tank-blue.png",skin),
+            "cp_red":self.load_texture("cp-red.png",skin),
+            "cp_blue":self.load_texture("cp-blue.png",skin),
+            "cp_neutral":self.load_texture("cp-neutral.png",skin),
+            "spawn_red":self.load_texture("spawn-red.png",skin),
+            "spawn_blue":self.load_texture("spawn-blue.png",skin),
+            "muzzle":[self.load_texture("muzzle.png",skin).subsurface(i*32,0,32,32) for i in xrange(10)],
+            "explode":[self.load_texture("explode.png",skin).subsurface(i*12,0,12,12) for i in xrange(10)],
+            "ammo_empty":self.load_texture("ammo-empty.png",skin),
+            "ammo_full":self.load_texture("ammo-full.png",skin),
+            "crumb":self.load_texture("crumb.png",skin),
+            "switch_red":self.load_texture("switch-red.png",skin),
+            "switch_blue":self.load_texture("switch-blue.png",skin),
+            "ui_overlay":self.load_texture("ui-overlay.png",skin),
+            "ui_background":self.load_texture("ui-background.png",skin)
         }
         
         # Variables
@@ -106,7 +107,7 @@ class Renderer(object):
         
         # Create a map surface
         self.mapsurface = pg.Surface((field.width*field.tilesize,field.height*field.tilesize))
-        tile_fill(self.mapsurface, self.ims['concrete'])
+        tile_fill(self.mapsurface, self.ims['floor'])
         draw_tilemap(self.mapsurface, field.walls, self.ims['autowall'], field.tilesize)
         
         # Interface Elements
@@ -114,6 +115,16 @@ class Renderer(object):
         self.substep_stats  = pg.Surface((60,16))
         self.selection_rect = None
         self.mouse_down     = False
+        
+    def load_texture(self, name, skin=''):
+        """ Looks up the tree for a sprite with the correct name,
+            this allows skin packs to override only certain sprites.
+        """
+        path = os.path.join(ASSETS_PATH,skin)
+        if os.path.samefile(path, ASSETS_PATH) or os.path.exists(os.path.join(path,name)):
+            return pg.image.load(os.path.join(path,name))
+        else:
+            return self.load_texture(name, os.path.split(skin)[0])
         
     def render(self, game, wait = True, shooting_frame=-1):
         self.handle_events(game)
@@ -338,5 +349,5 @@ def draw_tilemap(surface, tiles, graphic, tilesize):
                 surface.blit(pg.transform.scale(graphic.subsurface(idx*s,0,s,s),(tilesize,tilesize)),(j*tilesize,i*tilesize))
 
 if __name__ == "__main__":
-    import run
-    run.games(games=1)
+    import core
+    core.Game('domination/agent.py','domination/agent.py', rendered=True).run()

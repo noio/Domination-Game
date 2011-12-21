@@ -908,7 +908,7 @@ class FieldGenerator(object):
         field.controlpoints.append((self.width-1-cpleft[0], cpleft[1]))
         # Ammo
         for _ in xrange(self.num_ammo//2):
-            x,y = (random.randint(5,self.width//2-1),random.randint(5,self.height-2))
+            x,y = (random.randint(3,self.width//2-1),random.randint(5,self.height-2))
             field.other_objects.append((x, y, "AmmoFountain"))
             field.other_objects.append((self.width-1-x, y, "AmmoFountain"))
         
@@ -1014,10 +1014,12 @@ class GameObject(object):
 ## Gameobject Subclasses
 
 class Tank(GameObject):
-    def __init__(self, 
+    SIZE = 16
+    
+    def __init__(self,
                  x=0, y=0, angle=0, id=0, team=TEAM_RED,
                  brain=None, spawn=None, actions=None, record=False):
-        super(Tank, self).__init__(x=x, y=y, angle=angle,
+        super(Tank, self).__init__(x=x, y=y, angle=angle, width=self.SIZE, height=self.SIZE,
                     shape=GameObject.SHAPE_CIRC, solid=True, movable=True)
         if team == TEAM_RED:
             self.graphic = 'tank_red'
@@ -1239,11 +1241,11 @@ class Crumb(GameObject):
         up, with no other purpose than being registered
         as picked up.
     """
-    SIZE = 2
+    SIZE = 4
     def __init__(self, x, y):
         super(Crumb, self).__init__(x=x, y=y, width=Crumb.SIZE, height=Crumb.SIZE, 
                                         shape=GameObject.SHAPE_RECT, solid=False, 
-                                        movable=False, graphic='default')
+                                        movable=False, graphic='crumb')
         self.pickedup = False                                
     
     def collide(self, other):
@@ -1299,7 +1301,7 @@ class Fountain(GameObject):
             f = self.game.field
             # Check if we're not spawning our object into a wall.
             (j,i) = int(x//f.tilesize), int(y//f.tilesize)
-            if 0 <= i < f.height and 0 < j <= f.width and not f.walls[i][j]:
+            if 0 <= i < f.height and 0 <= j < f.width and not f.walls[i][j]:
                 c = self.CHILD_CLASS(x - self.CHILD_CLASS.SIZE/2.0, y - self.CHILD_CLASS.SIZE/2.0)
                 c.parent = self
                 self.children.append(c)
@@ -1369,9 +1371,3 @@ class ReplayData(object):
         g = Game(replay=self,rendered=True)
         g.run()
         return g
-
-
-if __name__ == "__main__":
-    field = FieldGenerator().generate()
-    field.other_objects.append((20, 20, "CrumbFountain"))
-    Game('domination/agent.py','domination/agent.py', field=field, rendered=True).run()
