@@ -22,7 +22,7 @@ import core
 
 class Scenario(object):
     
-    settings = core.Settings(end_condition=core.ENDGAME_CRUMBS)
+    settings = core.Settings(max_steps=300)
     field    = core.FieldGenerator().generate()
     episodes = 100
     
@@ -41,7 +41,7 @@ class Scenario(object):
     
     def finalize(self):
         now = datetime.datetime.now()
-        filename = 'dg%s_%s_vs_%s'%(now.strftime("%Y%m%d_%H%M"), self.last_game.red_name, self.last_game.blue_name)
+        filename = 'dg%s_%s_vs_%s'%(now.strftime("%Y%m%d-%H%M"), self.last_game.red_name, self.last_game.blue_name)
         statsfile = open(filename+'.stats.csv', 'w')
         statsfile.write("# Score, steps\n")
         statsfile.write('\n'.join( "%.2f, %d" % (s.score, s.steps) for s in self.stats ))
@@ -80,6 +80,7 @@ class Scenario(object):
         self.setup()
         for i in range(self.episodes):
             self.single()
+            print "Ran %d games."%(i+1)
         self.finalize()
         
     def test(self):
@@ -93,4 +94,4 @@ class Scenario(object):
 ### MAIN ###
 
 if __name__ == '__main__':
-    Scenario('domination/agent.py','domination/agent.py').test()
+    Scenario('domination/agent.py','domination/agent.py').run()

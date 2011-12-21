@@ -913,9 +913,8 @@ class FieldGenerator(object):
     def create_wall_map(self, field):     
         # Find free routes
         spawn = field.spawns_red[0][:2]
-        routes = []
-        routes.extend( (spawn, cp) for cp in field.controlpoints[:len(field.controlpoints)//2] )
-        routes.extend( (spawn, am) for am in field.ammo[:len(field.ammo)//2] )
+        reachable_points = field.controlpoints + field.ammo + field.spawns_red + field.spawns_blue
+        reachable_points = [r[:2] for r in reachable_points]
         # Create outer walls
         halfwidth = int(0.5+ self.width/2.0)
         t         = [1] * halfwidth
@@ -930,7 +929,6 @@ class FieldGenerator(object):
             min_len, max_len = self.wall_len
         else:
             min_len, max_len = self.wall_len, self.wall_len
-            
         failed = 0
         while sum(sum(row) for row in tilemap) < min_filled and failed < 100:
             new = copy.deepcopy(tilemap)
@@ -948,12 +946,11 @@ class FieldGenerator(object):
             for i in xrange(y, y + sec_height):
                 for j in xrange(x, x + sec_width):
                     new[i][j] = 1
-            if all(grid_path_length(p1,p2,new) is not None for (p1,p2) in routes):
+            reachability = reachable(self.reflect_tilemap(new, self.width), field.spawns_red[0][:2])
+            if all(reachability[y][x] for (x,y) in reachable_points):
                 tilemap = new
             else:
                 failed += 1
-
-        # Mirror the tilemap
         field.walls = self.reflect_tilemap(tilemap, self.width)
 
 

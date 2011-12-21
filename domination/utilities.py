@@ -9,6 +9,7 @@
 import math
 import time
 import copy
+from pprint import pprint
 from heapq import heappush, heappop
 from sys import maxint
 
@@ -79,8 +80,8 @@ def line_intersects_rect(p0, p1, r):
         Returns False if no intersection found.
         Uses the Liang-Barsky line clipping algorithm.
         
-        >>> line_intersects_rect((1.0,0.0),(1.0,3.0),(0.0,1.0,3.0,1.0))
-        ((0.33333333333333331, (1.0, 1.0)), (0.66666666666666663, (1.0, 2.0)))
+        >>> line_intersects_rect((1.0,0.0),(1.0,4.0),(0.0,1.0,4.0,1.0))
+        ((0.25, (1.0, 1.0)), (0.5, (1.0, 2.0)))
         
         >>> line_intersects_rect((1.0,0.0),(3.0,0.0),(0.0,1.0,3.0,1.0))
         False
@@ -303,6 +304,26 @@ def angle_fix(theta):
 
 ### NAVIGATION ###
 
+def reachable(grid, (x, y), empty=0):
+    """ Performs a 'flood fill' operation to find
+        reachable areas on given tile map from (x,y). 
+        Returns as binary grid with 1 for reachable.
+        
+        >>> reachable([[0,1,0],[0,1,0]], (0,0))
+        [[1, 0, 0], [1, 0, 0]]
+    """
+    w,h = len(grid[0]), len(grid)
+    reachability = [[0 for _ in range(w)] for _ in range(h)]
+    edge = [(x, y)]
+    while edge:
+        newedge = []
+        for (x, y) in edge:
+            if 0 <= x < w and 0 <= y < h and grid[y][x] == empty and reachability[y][x] != 1:
+                reachability[y][x] = 1
+                newedge.extend(((x+1, y), (x-1, y), (x, y+1), (x, y-1)))                
+        edge = newedge
+    return reachability
+    
 def grid_path_length((x,y),(gx,gy),g):
     #Path list (current coords, cost, expected cost)
     p = [((x,y),0,abs(gx-x)+abs(gy-y))]
