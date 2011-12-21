@@ -788,9 +788,6 @@ class Field(object):
         return '\n'.join([' '.join(row) for row in s])
     
     def to_file(self, filename):
-        if self.crumbs:
-            raise Exception("""A field with crumbs cannot be written to an
-                               ASCII representation. Use pickle in stead.""")
         o = str(self)
         f = open(filename,'w')
         f.write(o)
