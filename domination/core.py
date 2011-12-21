@@ -814,16 +814,20 @@ class Field(object):
         allobjects = walls + cps + redspawns + bluespawns + other
         return (allobjects, cps, redspawns, bluespawns)
         
+    def is_valid(self):
+        return True
+        
 class FieldGenerator(object):
     """ Generates field objects from random distribution """
     
-    def __init__(self, width=39, height=24, tilesize=16,
+    def __init__(self, width=39, height=24, tilesize=16, mirror=True,
                        num_spawns=5, num_points=3, num_ammo=6, 
                        wall_fill=0.4, wall_len=(4,4), wall_width=4, 
                        wall_orientation=0.5, wall_gridsize=4):
         self.width            = width
         self.height           = height
         self.tilesize         = tilesize
+        self.mirror           = mirror
         self.num_spawns       = num_spawns
         self.num_points       = num_points
         self.num_ammo         = num_ammo
@@ -870,7 +874,8 @@ class FieldGenerator(object):
         ## 1) Place objects on map
         self.place_objects(field)
         ## 2) Generate tilemap
-        self.create_wall_map(field)
+        self.create_outer_walls(field)
+        self.add_obstacles(field)
         ## 3) Clear walls under objects
         self.clear_walls_under_objects(field)
         ## 4) Make rects from walls and generate mesh
@@ -897,7 +902,8 @@ class FieldGenerator(object):
         i,j = spawn[0], spawn[1]
         while len(field.spawns_red) < self.num_spawns:
             field.spawns_red.append((i, j, 0))
-            field.spawns_blue.append((self.width-1-i, j, -pi))
+            if self.mirror:
+                field.spawns_blue.append((self.width-1-i, j, -pi))
             i += 1
             if i >= spawn[0] + 2:
                 j += 1
@@ -911,22 +917,26 @@ class FieldGenerator(object):
             x,y = (random.randint(3,self.width//2-1),random.randint(5,self.height-2))
             field.other_objects.append((x, y, "AmmoFountain"))
             field.other_objects.append((self.width-1-x, y, "AmmoFountain"))
-        
-    def create_wall_map(self, field):     
-        # Find free routes
-        spawn = field.spawns_red[0][:2]
-        reachable_points = field.controlpoints + field.other_objects + field.spawns_red + field.spawns_blue
-        reachable_points = [r[:2] for r in reachable_points] # Grab only (x,y)
-        # Create outer walls
+            
+    def create_outer_walls(self, field):
+        # Create rows
         halfwidth = int(0.5+ self.width/2.0)
         t         = [1] * halfwidth
         m         = [1] + [0] * (halfwidth-1)
         b         = [1] * halfwidth
-        tilemap   = [t]
-        for i in xrange(self.height-2):
-            tilemap.append(m[:])
-        tilemap.append(b)
-        min_filled = 0.5*self.height*self.width*self.wall_fill
+        # Stack top + middle + bottom
+        tilemap   = [t] + [m[:] for _ in xrange(self.height-2)] + [b]
+        field.walls = self.reflect_tilemap(tilemap, self.width)
+        
+    def add_obstacles(self, field):     
+        halfwidth = int(0.5+ self.width/2.0)
+        # Make a list of points that should be reachable.
+        spawn = field.spawns_red[0][:2]
+        reachable_points = field.controlpoints + field.other_objects + field.spawns_red + field.spawns_blue
+        reachable_points = [r[:2] for r in reachable_points] # Grab only (x,y)
+        # Add objects untill enough % is filled
+        tilemap = field.walls
+        min_filled = self.height*self.width*self.wall_fill
         if len(self.wall_len) == 2:
             min_len, max_len = self.wall_len
         else:
@@ -942,19 +952,26 @@ class FieldGenerator(object):
             else:
                 sec_width = self.wall_width
                 sec_height = random.randint(min_len,max_len)
-            x,y = (random.randint(1,halfwidth-sec_width), random.randint(1,self.height-sec_height-1))
+            # If map is mirrored, put stuff on left half only
+            if self.mirror:
+                x,y = (random.randint(1,halfwidth-sec_width), random.randint(1,self.height-sec_height-1))
+            else:
+                x,y = (random.randint(1,self.width-sec_width), random.randint(1,self.height-sec_height-1))
             x = (x // self.wall_gridsize) * self.wall_gridsize
             y = (y // self.wall_gridsize) * self.wall_gridsize
             for i in xrange(y, y + sec_height):
                 for j in xrange(x, x + sec_width):
                     new[i][j] = 1
-            reachability = reachable(self.reflect_tilemap(new, self.width), field.spawns_red[0][:2])
+            if self.mirror:
+                new = self.reflect_tilemap(new, self.width)
+            # Validate
+            reachability = reachable(new, field.spawns_red[0][:2])
             if all(reachability[y][x] for (x,y) in reachable_points):
                 tilemap = new
             else:
                 failed += 1
-        field.walls = self.reflect_tilemap(tilemap, self.width)
-
+        field.walls = tilemap
+        
 
 class GameObject(object):
     """ Generic game object """
@@ -1014,7 +1031,7 @@ class GameObject(object):
 ## Gameobject Subclasses
 
 class Tank(GameObject):
-    SIZE = 16
+    SIZE = 12
     
     def __init__(self,
                  x=0, y=0, angle=0, id=0, team=TEAM_RED,
@@ -1320,10 +1337,10 @@ class AmmoFountain(Fountain):
         super(AmmoFountain, self).added_to_game(game)
                 
 class CrumbFountain(Fountain):
-    MIN_CHILDREN = 100
+    MIN_CHILDREN = 200
     DELAY        = -1
     CHILD_CLASS  = Crumb
-    SIZE         = 50
+    SIZE         = 100
     
     def SPREAD(self, x, y):
         return x + random.gauss(0, self.SIZE), y + random.gauss(0, self.SIZE)
@@ -1371,3 +1388,8 @@ class ReplayData(object):
         g = Game(replay=self,rendered=True)
         g.run()
         return g
+
+if __name__ == "__main__":
+    field = FieldGenerator(mirror=False).generate()
+    field.other_objects.append((4,4,"CrumbFountain"))
+    Game('domination/agent.py','domination/agent.py', field=field, rendered=True).run()

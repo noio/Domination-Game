@@ -47,7 +47,7 @@ class Renderer(object):
     UI_WIDTH            = 640
     
     """Renderer"""
-    def __init__(self, field, skin='vacubot'):
+    def __init__(self, field, skin=''):
         # Global pygame init
         pg.init()
         

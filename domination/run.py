@@ -22,10 +22,10 @@ import core
 
 class Scenario(object):
     
-    SETTINGS       = core.Settings(max_steps=300)
-    FIELDGENERATOR = core.FieldGenerator()
-    EPISODES       = 100
-    SKIN           = ''
+    SETTINGS = core.Settings()
+    FIELD    = core.FieldGenerator().generate()
+    EPISODES = 100
+    SKIN     = ''
     
     @classmethod
     def observation_function(cls,observation):
@@ -35,7 +35,7 @@ class Scenario(object):
         pass
         
     def before_each(self):
-        self.field = self.FIELDGENERATOR.generate()
+        pass
         
     def after_each(self):
         pass
@@ -69,7 +69,7 @@ class Scenario(object):
         self.before_each()
         game = core.Game(self.red_brain, self.blue_brain,
                     red_init=self.red_init, blue_init=self.blue_init,
-                    field=self.field, settings=self.SETTINGS,
+                    field=self.FIELD, settings=self.SETTINGS,
                     record=True, verbose=False)
         if rendered:
             game.add_renderer(skin=self.SKIN)
@@ -93,9 +93,9 @@ class Scenario(object):
         
 
 class VacubotScenario(Scenario):
-    SKIN           = 'vacubot'
-    FIELDGENERATOR = core.FieldGenerator(width=21, height=15)
-    
+    SETTINGS = core.Settings()
+    SKIN     = 'vacubot'
+    FIELD    = core.FieldGenerator(width=21, height=15, mirror=False, num_spawns=2).generate()
     
     
 
