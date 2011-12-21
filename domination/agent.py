@@ -42,7 +42,7 @@ class Agent(object):
             self.goal = None
             
         # Walk to ammo
-        ammopacks = filter(lambda x: x[2], obs.aps)
+        ammopacks = filter(lambda x: x[2] == "Ammo", obs.objects)
         if ammopacks:
             self.goal = ammopacks[0][0:2]
             

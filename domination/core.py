@@ -110,6 +110,8 @@ class GameStats(object):
         self.steps = 0
         self.crumbs_red = 0
         self.crumbs_blue = 0
+        self.ammo_red = 0
+        self.ammo_blue = 0
     
     def __str__(self):
         return "%d steps. Score: %d-%d."%(self.steps,self.score_red,self.score_blue) 
@@ -243,7 +245,6 @@ class Game(object):
         # Game logic variables
         self.score_red  = self.settings.max_score / 2
         self.score_blue = self.settings.max_score / 2
-        self.num_crumbs = len([o for o in allobjects if isinstance(o, Crumb)])
         self.step       = 0
         # Simulation variables
         self.objects         = []
@@ -273,7 +274,7 @@ class Game(object):
                                              field_grid=self.field.walls, nav_mesh=self.field.mesh, **self.red_init)
                 else:
                     brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
-                t = Tank(self, s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
+                t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
                 self.tanks.append(t)
                 self.add_object(t)
             for i,s in enumerate(blues):
@@ -282,7 +283,7 @@ class Game(object):
                                              field_grid=self.field.walls, nav_mesh=self.field.mesh, **self.blue_init)
                 else:
                     brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
-                t = Tank(self, s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
+                t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
                 self.tanks.append(t)
                 self.add_object(t)
         else:
@@ -348,8 +349,9 @@ class Game(object):
                 if ((self.settings.end_condition & ENDGAME_SCORE) and 
                     (self.score_red == 0 or self.score_blue == 0)):
                     break
+                # No crumbs left ending condition
                 if ((self.settings.end_condition & ENDGAME_CRUMBS) and
-                    (self.num_crumbs == 0)):
+                    not any(True for o in allobjects if isinstance(o, Crumb))):
                     break
                 ## RESET SOME STUFF
                 if render:
@@ -513,21 +515,27 @@ class Game(object):
         """ Add an object to the game and collision list. """
         o.game = self
         self.objects.append(o)
-        if o.movable:
-            self.broadphase_mov.append(o)
-            self.broadphase_mov.sort(key=lambda o:o._x)
-        else:
-            self.broadphase_stat.append(o)
-            self.broadphase_stat.sort(key=lambda o:o._x)
+        if o.physical:
+            if o.movable:
+                self.broadphase_mov.append(o)
+                self.broadphase_mov.sort(key=lambda o:o._x)
+            else:
+                self.broadphase_stat.append(o)
+                self.broadphase_stat.sort(key=lambda o:o._x)
+        o.added_to_game(self)
         
     def rem_object(self,o):
         """ Removes an object from the game and collision lists. """
         self.objects.remove(o)
-        if o.movable:
-            self.broadphase_mov.remove(o)
-        else:
-            self.broadphase_stat.remove(o)
-            
+        if o.physical:
+            if o.movable:
+                self.broadphase_mov.remove(o)
+            else:
+                self.broadphase_stat.remove(o)
+        # Check if we need to remove this object from a parent
+        if hasattr(o, 'parent'):
+            o.parent.remove_child(o)
+                
     def get_objects_in_bounds(self, xmin, xmax, ymin, ymax, solid_only=True):
         """ Return a list of all objects whose bounding boxes
             intersect the given bounds.
@@ -720,7 +728,6 @@ class Game(object):
         return 'Game(%s)'%args
 
 
-
 class Field(object):
     """ Class representing a playing field.
         
@@ -740,8 +747,7 @@ class Field(object):
         self.spawns_red    = [] # Separate lists of red/blue spawns
         self.spawns_blue   = []
         self.controlpoints = []
-        self.ammo          = []
-        self.crumbs        = []
+        self.other_objects = []
         
     @classmethod
     def from_string(cls, s):
@@ -797,17 +803,18 @@ class Field(object):
         ## Controlpoints
         ofs = (ts-ControlPoint.SIZE)/2
         cps = [ControlPoint(x=x*ts+ofs, y=y*ts+ofs) for (x,y) in self.controlpoints]
-        ## Ammo
-        ofs = (ts-Ammo.SIZE)/2
-        ammo = [Ammo(x=x*ts+ofs,y=y*ts+ofs) for (x,y) in self.ammo]
-        ## Crumbs
-        ofs = (ts-Crumb.SIZE)/2.0
-        crumbs = [Crumb(x=x*ts+ofs, y=y*ts+ofs) for (x,y) in self.crumbs]
         ## Spawns
         ofs = (ts-TankSpawn.SIZE)/2
         redspawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_RED) for (x,y,r) in self.spawns_red]
         bluespawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_BLUE) for (x,y,r) in self.spawns_blue]
-        allobjects = walls+cps+ammo+crumbs+redspawns+bluespawns
+        ## Other Objects
+        other = []
+        for (x, y, class_string) in self.other_objects:
+            cls = globals()[class_string]
+            ofs = (ts-cls.SIZE)/2.0
+            other.append(cls(x=x*ts+ofs, y=y*ts+ofs))
+        # Return assorted tuples
+        allobjects = walls + cps + redspawns + bluespawns + other
         return (allobjects, cps, redspawns, bluespawns)
         
 class FieldGenerator(object):
@@ -847,14 +854,14 @@ class FieldGenerator(object):
     
     @classmethod
     def clear_walls_under_objects(cls, field):
-        for (x,y,r) in field.spawns_red + field.spawns_blue:
+        for (x, y, r) in field.spawns_red + field.spawns_blue:
             field.walls[y][x] = 0
             field.walls[int(y+sin(r)+0.5)][int(x+cos(r)+0.5)] = 0
-        for (x,y) in field.controlpoints:
+        for (x, y) in field.controlpoints:
             for i in xrange(y-1,y+2):
                 for j in xrange(x-1,x+2):
                     field.walls[i][j] = 0
-        for (x,y) in field.ammo:
+        for (x, y, _) in field.other_objects:
             field.walls[y][x] = 0
             
     def generate(self):
@@ -903,18 +910,16 @@ class FieldGenerator(object):
         field.controlpoints.append((cpmid[0], cpmid[1]))
         field.controlpoints.append((self.width-1-cpleft[0], cpleft[1]))
         # Ammo
-        while len(field.ammo) < self.num_ammo//2:
+        for _ in xrange(self.num_ammo//2):
             x,y = (random.randint(5,self.width//2-1),random.randint(5,self.height-2))
-            # if not self.walls[y][x]:
-            field.ammo.append((x,y))
-        # Add mirrored version
-        field.ammo.extend([(self.width-1-x,y) for (x,y) in field.ammo])
+            field.other_objects.append((x, y, "AmmoFountain"))
+            field.other_objects.append((self.width-1-x, y, "AmmoFountain"))
         
     def create_wall_map(self, field):     
         # Find free routes
         spawn = field.spawns_red[0][:2]
-        reachable_points = field.controlpoints + field.ammo + field.spawns_red + field.spawns_blue
-        reachable_points = [r[:2] for r in reachable_points]
+        reachable_points = field.controlpoints + field.other_objects + field.spawns_red + field.spawns_blue
+        reachable_points = [r[:2] for r in reachable_points] # Grab only (x,y)
         # Create outer walls
         halfwidth = int(0.5+ self.width/2.0)
         t         = [1] * halfwidth
@@ -960,18 +965,24 @@ class GameObject(object):
     SHAPE_RECT = 0
     SHAPE_CIRC = 1
     
-    def __init__(self, game = None, x=0.0, y=0.0, width=12, height=12, angle=0, shape=0, solid=True, movable=True,graphic='default'):
+    SIZE       = 12
+    
+    def __init__(self, x=0.0, y=0.0, width=12, height=12, angle=0, shape=0, 
+                       solid=True, movable=True, physical=True, graphic='default'):
         # Game variables
-        self.game    = game
-        self.x       = float(x)
-        self.y       = float(y)
-        self.width   = float(width)
-        self.height  = float(height)
-        self.angle   = float(angle)
-        self.shape   = shape
-        self.solid   = solid
-        self.movable = movable
-        self.graphic = graphic   # Graphic used by the renderer.
+        self.x        = float(x)
+        self.y        = float(y)
+        self.width    = float(width)
+        self.height   = float(height)
+        self.angle    = float(angle)
+        self.shape    = shape
+        self.solid    = solid
+        self.movable  = movable
+        self.physical = physical
+        self.graphic  = graphic   # Graphic used by the renderer.
+        if not movable:
+            self.cx = int(x + self.SIZE/2)
+            self.cy = int(y + self.SIZE/2)
         # Internal vars, used by the collision detection
         self._x     = self.x
         self._y     = self.y
@@ -980,6 +991,12 @@ class GameObject(object):
         self._dy    = 0.0
         self._da    = 0.0
         self._moved = False
+        
+    def added_to_game(self, game):
+        """ Tells the object that it has been added to the game,
+            that includes having its ".game" attribute set.
+        """
+        pass
         
     def update(self):
         """ Tells this object to update its game state.
@@ -1000,39 +1017,38 @@ class GameObject(object):
 ## Gameobject Subclasses
 
 class Tank(GameObject):
-    def __init__(self, game=None, 
+    def __init__(self, 
                  x=0, y=0, angle=0, id=0, team=TEAM_RED,
-                 brain=None, spawn=None, actions=None,record=False):
-        super(Tank, self).__init__(game=game,x=x,y=y,angle=angle,
-                    shape=GameObject.SHAPE_CIRC,solid=True,movable=True)
+                 brain=None, spawn=None, actions=None, record=False):
+        super(Tank, self).__init__(x=x, y=y, angle=angle,
+                    shape=GameObject.SHAPE_CIRC, solid=True, movable=True)
         if team == TEAM_RED:
             self.graphic = 'tank_red'
         else:
             self.graphic = 'tank_blue'
         self.brain       = brain
         self.id          = id
-        self.observation = Observation()
         self.team        = team
         self.ammo        = 0
         self.selected    = False
         self.shoots      = False
         self.respawn_in  = -1
         self.spawn       = spawn
-        
-        # Initialize observation
-        gridrng = (self.game.settings.max_see/2+1)//game.field.tilesize
-        self.observation.walls = [[0 for _ in xrange(gridrng*2+1)] for _ in xrange(gridrng*2+1)]
-        
         # A list of actions, either for recording or playing back.
         self.actions = actions if actions is not None else []
         self.record = record
         self.time_thought = 0.0
-        
         # Additional hidden vars
         self._hitx = 0.0
         self._hity = 0.0
         self.grid_x = 0
         self.grid_y = 0
+        
+    def added_to_game(self, game):
+        # Initialize observation
+        self.observation = Observation()
+        gridrng = (self.game.settings.max_see/2+1)//game.field.tilesize
+        self.observation.walls = [[0 for _ in xrange(gridrng*2+1)] for _ in xrange(gridrng*2+1)]
         
     def update(self):
         # Check alive status
@@ -1051,7 +1067,7 @@ class Tank(GameObject):
         obs.ammo       = self.ammo
         obs.friends    = []
         obs.foes       = []
-        obs.aps        = []
+        obs.objects    = []
         obs.respawn_in = self.respawn_in
         obs.score      = (self.game.score_red, self.game.score_blue)
         obs.selected   = self.selected
@@ -1068,11 +1084,14 @@ class Tank(GameObject):
                 else:
                     obs.foes.append((int(o._x+siz), int(o._y+siz), o._a))
             elif isinstance(o, Ammo):
-                obs.aps.append((o.cx, o.cy, o.respawn_in == -1))
+                obs.objects.append((o.cx, o.cy, "Ammo"))
+            elif isinstance(o, Crumb):
+                obs.objects.append((o.cx, o.cy, "Crumb"))
         obs.cps = [(cp.cx,cp.cy,cp.team) for cp in self.game.controlpoints]
         # Observe walls
         f = self.game.field
         xj, yi = mx//f.tilesize, my//f.tilesize
+        # Only regenerate grid if we moved to another cell.
         if xj != self.grid_x or yi != self.grid_y:
             gridrng = (rng/2+1)//f.tilesize
             w,h = f.width, f.height
@@ -1143,7 +1162,7 @@ class Tank(GameObject):
 
 class Wall(GameObject):
     def __init__(self, **kwargs):
-        kwargs['graphic'] = 'wall'
+        kwargs['graphic'] = None
         kwargs['movable'] = False
         kwargs['solid'] = True
         super(Wall, self).__init__(**kwargs)
@@ -1155,8 +1174,6 @@ class ControlPoint(GameObject):
                                            solid=False, movable=False, graphic='cp_neutral')
         self.team = TEAM_NEUTRAL
         self.collided = [0, 0, 0]
-        self.cx = int(x + ControlPoint.SIZE/2)
-        self.cy = int(y + ControlPoint.SIZE/2)
     
     def update(self):
         self.collided = [0, 0, 0]
@@ -1199,36 +1216,26 @@ class ControlPoint(GameObject):
                 self.graphic = 'cp_neutral'
                 
 
+        
 class Ammo(GameObject):
-    """ Represents an ammo spawn location. 
-        If ammo is picked up, it 'disappears'
-        until the timer counts down to 0, 
-        at which point ammo can be picked up again.
+    """ Represents an ammo pack.
     """
     SIZE = 16
     def __init__(self,x,y):
         super(Ammo, self).__init__(x=x, y=y, width=Ammo.SIZE, height=Ammo.SIZE, 
                                    shape=GameObject.SHAPE_CIRC, solid=False, 
-                                   movable=False, graphic='default')
-        self.respawn_in  = 0
-        self.cx = int(x + Ammo.SIZE/2)
-        self.cy = int(y + Ammo.SIZE/2)
-    
-    def update(self):
-        if self.respawn_in == 0:
-            self.graphic = 'ammo_full'
-            self.has_ammo = True
-            self.respawn_in = -1
-        elif self.respawn_in > 0:
-            self.respawn_in -= 1
-            self.graphic = 'ammo_empty'
+                                   movable=False, graphic='ammo_full')
+        self.pickedup = False
     
     def collide(self, other):
-        if self.respawn_in == -1 and isinstance(other, Tank):
+        if not self.pickedup and isinstance(other, Tank):
+            if other.team == TEAM_RED:
+                self.game.stats.ammo_red += 1
+            elif other.team == TEAM_BLUE:
+                self.game.stats.ammo_blue += 1
             other.ammo += self.game.settings.ammo_amount
-            self.respawn_in = self.game.settings.ammo_rate
-            self.graphic    = 'ammo_empty'
-            self.has_ammo   = False
+            self.game.rem_object(self)
+            self.pickedup = True
 
 class Crumb(GameObject):
     """ Represents a crumb, something that can be picked
@@ -1237,10 +1244,10 @@ class Crumb(GameObject):
     """
     SIZE = 2
     def __init__(self, x, y):
-        self.pickedup = False
         super(Crumb, self).__init__(x=x, y=y, width=Crumb.SIZE, height=Crumb.SIZE, 
                                         shape=GameObject.SHAPE_RECT, solid=False, 
                                         movable=False, graphic='default')
+        self.pickedup = False                                
     
     def collide(self, other):
         if not self.pickedup and isinstance(other, Tank):
@@ -1248,16 +1255,85 @@ class Crumb(GameObject):
                 self.game.stats.crumbs_red += 1
             elif other.team == TEAM_BLUE:
                 self.game.stats.crumbs_blue += 1
-            self.game.num_crumbs -= 1
             self.game.rem_object(self)
             self.pickedup = True
 
+class Fountain(GameObject):
+    """ A non-physical object that spawns other objects at 
+        regular intervals, or when there are too few
+        of its 'child' objects on the map.
+    """
+    MIN_CHILDREN = 1
+    DELAY        = 10
+    CHILD_CLASS  = Ammo
+    SIZE         = 16
+    GRAPHIC      = None
+    
+    def SPREAD(self, x, y):
+        return (x,y)
+    
+    def __init__(self, x, y):
+        super(Fountain, self).__init__(x=x, y=y, width=self.SIZE, height=self.SIZE, 
+                                   shape=GameObject.SHAPE_RECT, solid=False, 
+                                   movable=False, physical=False, graphic=self.GRAPHIC)
+        self.countdown = -1
+        self.children = []
+        self.initialized = False
+        
+    def added_to_game(self, game):
+        while len(self.children) < self.MIN_CHILDREN:
+            self.spawn_one()
+        
+    def update(self):
+        # Charge slowly
+        if self.countdown > -1:
+            self.countdown -= 1         
+        if self.countdown == -1 and len(self.children) < self.MIN_CHILDREN:
+            self.countdown = self.DELAY
+        if self.countdown == 0:
+            self.spawn_one()
+            
+    def remove_child(self, child):
+        self.children.remove(child)
+            
+    def spawn_one(self, attempts = 10):
+        while attempts:
+            (x,y) = self.SPREAD(self.x + self.width/2.0, self.y + self.height/2.0)
+            f = self.game.field
+            # Check if we're not spawning our object into a wall.
+            (j,i) = int(x//f.tilesize), int(y//f.tilesize)
+            if 0 <= i < f.height and 0 < j <= f.width and not f.walls[i][j]:
+                c = self.CHILD_CLASS(x - self.CHILD_CLASS.SIZE/2.0, y - self.CHILD_CLASS.SIZE/2.0)
+                c.parent = self
+                self.children.append(c)
+                self.game.add_object(c)
+                return
+            attempts -= 1
+            
+class AmmoFountain(Fountain):
+    MIN_CHILDREN = 1
+    CHILD_CLASS  = Ammo
+    SIZE         = 16
+    GRAPHIC      = 'ammo_empty'
+            
+    def added_to_game(self, game):
+        self.DELAY = self.game.settings.ammo_rate
+        super(AmmoFountain, self).added_to_game(game)
+                
+class CrumbFountain(Fountain):
+    MIN_CHILDREN = 100
+    DELAY        = -1
+    CHILD_CLASS  = Crumb
+    SIZE         = 50
+    
+    def SPREAD(self, x, y):
+        return x + random.gauss(0, self.SIZE), y + random.gauss(0, self.SIZE)
 
 class TankSpawn(GameObject):
     SIZE = 16
     def __init__(self,x=0, y=0, angle=0, team=TEAM_RED, brain=None):
         super(TankSpawn, self).__init__(x=x, y=y, angle=angle, width=TankSpawn.SIZE, height=TankSpawn.SIZE, 
-                                        shape=GameObject.SHAPE_RECT, solid=False, movable=False)
+                                        shape=GameObject.SHAPE_RECT, solid=False, movable=False, physical=False)
         self.team = team
         self.graphic = 'spawn_red' if self.team == TEAM_RED else 'spawn_blue'
 
@@ -1270,7 +1346,7 @@ class Observation(object):
         self.friends    = []    # All/Visible friends: a list of (x,y,angle)-tuples
         self.foes       = []    # Visible foes: a list of (x,y,angle)-tuples
         self.cps        = []    # Controlpoints: a list of (x,y,TEAM_RED/TEAM_BLUE)-tuples
-        self.aps        = []    # Visible ammopacks: a list of (x,y)-tuples
+        self.objects    = []    # Visible objects: a list of (x,y,type)-tuples
         self.ammo       = 0     # Ammo count
         self.score      = (0,0) # Current game score
         self.collided   = False # Whether the agent has collided in the previous turn
@@ -1300,4 +1376,5 @@ class ReplayData(object):
 
 if __name__ == "__main__":
     field = FieldGenerator().generate()
+    field.other_objects.append((20, 20, "CrumbFountain"))
     Game('domination/agent.py','domination/agent.py', field=field, rendered=True).run()

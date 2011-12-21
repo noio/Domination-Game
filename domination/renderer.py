@@ -134,7 +134,7 @@ class Renderer(object):
                 pg.draw.circle(vp,(120,120,120),n1,3)
         ## OBJECTS
         for o in game.objects:
-            if o.graphic == 'wall':
+            if o.graphic is None:
                 continue
             bmp        = self.ims[o.graphic]
             dstx, dsty = int(o._x), int(o._y)
