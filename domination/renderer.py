@@ -51,6 +51,28 @@ class Renderer(object):
         # Global pygame init
         pg.init()
         
+        # Variables
+        self.last_frame = 0.0
+        self.render_time = 0.0
+        self.paused = False
+        self.active_team = 0
+                
+        # Setup screen/surfaces
+        fw = field.width*field.tilesize # Field width and height
+        fh = field.height*field.tilesize
+        self.upscale = 1
+        if fw < 400 and fh < 300:
+            self.upscale = 2
+        sw = max(fw*self.upscale, Renderer.UI_WIDTH)
+        vp_x = (sw - fw*self.upscale) // 2
+        ui_x = (sw - Renderer.UI_WIDTH) // 2
+        self.vp_rect = [vp_x,0,fw*self.upscale, fh*self.upscale]
+        self.vp_surf = pg.Surface((fw, fh))
+        self.screen  = pg.display.set_mode((max(self.vp_rect[2],Renderer.UI_WIDTH), self.vp_rect[3] + Renderer.UI_HEIGHT))
+        self.ui_surf = self.screen.subsurface((ui_x,self.vp_rect[3],Renderer.UI_WIDTH, Renderer.UI_HEIGHT))
+        self.agent_debug = pg.Surface((fw,fh),flags=pg.SRCALPHA)
+        self.agent_debug.fill((0,0,0,0))
+        
         # Load assets
         self.font_mono = pg.font.Font(os.path.join(ASSETS_PATH,'proggy.ttf'), 16)
         self.font = pg.font.Font(os.path.join(ASSETS_PATH,'nokiafc22.ttf'), 16)
@@ -79,31 +101,9 @@ class Renderer(object):
             "ui_background":self.load_texture("ui-background.png",skin)
         }
         
-        # Variables
-        self.last_frame = 0.0
-        self.render_time = 0.0
-        self.paused = False
-        self.active_team = 0
-        
         # Set up window
         pg.display.set_icon(self.ims['icon'])
         pg.display.set_caption("Domination Game")
-        
-        # Setup screen/surfaces
-        fw = field.width*field.tilesize # Field width and height
-        fh = field.height*field.tilesize
-        self.upscale = 1
-        if fw < 400 and fh < 300:
-            self.upscale = 2
-        sw = max(fw*self.upscale, Renderer.UI_WIDTH)
-        vp_x = (sw - fw*self.upscale) // 2
-        ui_x = (sw - Renderer.UI_WIDTH) // 2
-        self.vp_rect = [vp_x,0,fw*self.upscale, fh*self.upscale]
-        self.vp_surf = pg.Surface((fw, fh))
-        self.screen  = pg.display.set_mode((max(self.vp_rect[2],Renderer.UI_WIDTH), self.vp_rect[3] + Renderer.UI_HEIGHT))
-        self.ui_surf = self.screen.subsurface((ui_x,self.vp_rect[3],Renderer.UI_WIDTH, Renderer.UI_HEIGHT))
-        self.agent_debug = pg.Surface((fw,fh),flags=pg.SRCALPHA)
-        self.agent_debug.fill((0,0,0,0))
         
         # Create a map surface
         self.mapsurface = pg.Surface((field.width*field.tilesize,field.height*field.tilesize))
@@ -122,7 +122,7 @@ class Renderer(object):
         """
         path = os.path.join(ASSETS_PATH,skin)
         if os.path.samefile(path, ASSETS_PATH) or os.path.exists(os.path.join(path,name)):
-            return pg.image.load(os.path.join(path,name))
+            return pg.image.load(os.path.join(path,name)).convert_alpha()
         else:
             return self.load_texture(name, os.path.split(skin)[0])
         
@@ -154,7 +154,12 @@ class Renderer(object):
             # Render a rotated sprite
             if o._a != 0:
                 (ocx,ocy) = bmp.get_rect().center
-                bmp       = pg.transform.rotate(bmp,-o._a*rad_to_deg)
+                degs      = -o._a*rad_to_deg
+                # Use quick rotate for (almost) aligned sprites.
+                if degs % 90 < 0.1:
+                    bmp       = pg.transform.rotate(bmp,-o._a*rad_to_deg)
+                else:
+                    bmp       = pg.transform.rotozoom(bmp,-o._a*rad_to_deg,1)
                 (ncx,ncy) = bmp.get_rect().center
                 dstx -= ncx - ocx
                 dsty -= ncy - ocy
