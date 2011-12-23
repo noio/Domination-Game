@@ -13,10 +13,14 @@ import datetime
 import sys
 import cPickle as pickle
 import zipfile
+import math
 from optparse import OptionParser
 
 # Local
 import core
+
+# Shortcuts
+pi = math.pi
 
 ### CLASSES ###
 
@@ -93,7 +97,9 @@ class Scenario(object):
         
 
 class VacubotScenario(Scenario):
-    SETTINGS = core.Settings()
+    SETTINGS = core.Settings(max_speed=20, 
+                             max_turn=pi,
+                             agent_size=16)
     SKIN     = 'vacubot'
     FIELD    = core.FieldGenerator(width=21, height=15, mirror=False, num_spawns=2).generate()
     
