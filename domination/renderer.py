@@ -2,7 +2,7 @@
 """ Renderer for domination game engine.
 
 This is the rendering module for the Domination Game engine. To use it you 
-will pygame, but you can run games without it. You'll never need to call
+need pygame, but you can run games without it. You'll never need to call
 anything from this module explicitly. 
 
 """
