@@ -67,9 +67,10 @@ class Renderer(object):
         vp_x = (sw - fw*self.upscale) // 2
         ui_x = (sw - Renderer.UI_WIDTH) // 2
         self.vp_rect = [vp_x,0,fw*self.upscale, fh*self.upscale]
-        self.vp_surf = pg.Surface((fw, fh))
+        # Set display mode
         self.screen  = pg.display.set_mode((max(self.vp_rect[2],Renderer.UI_WIDTH), self.vp_rect[3] + Renderer.UI_HEIGHT))
         self.ui_surf = self.screen.subsurface((ui_x,self.vp_rect[3],Renderer.UI_WIDTH, Renderer.UI_HEIGHT))
+        self.vp_surf = pg.Surface((fw, fh))
         self.agent_debug = pg.Surface((fw,fh),flags=pg.SRCALPHA)
         self.agent_debug.fill((0,0,0,0))
         
