@@ -125,7 +125,7 @@ class Game(object):
     """
     
     SIMULATION_SUBSTEPS = 10
-    SIMULATION_MAXITER  = 10
+    SIMULATION_MAXITER  = 20
     
     STATE_NEW       = 0
     STATE_READY     = 1
@@ -133,8 +133,8 @@ class Game(object):
     STATE_INTERRUPT = 3
     STATE_ENDED     = 4
         
-    def __init__(self, red_brain='agent.py',
-                       blue_brain='agent.py',
+    def __init__(self, red_brain='domination/agent.py',
+                       blue_brain='domination/agent.py',
                        red_brain_string=None,
                        blue_brain_string=None,
                        settings=Settings(),
@@ -144,7 +144,8 @@ class Game(object):
                        record=False,
                        replay=None,
                        rendered=True, 
-                       verbose=True):
+                       verbose=True,
+                       step_callback=None):
         """ Constructor for Game class 
             
             :param red_brain:         File that the red brain class resides in.
@@ -161,11 +162,12 @@ class Game(object):
             :param replay:            Pass a game replay to play it.
             :param rendered:          Enable/disable the renderer.
             :param verbose:           Print game log to output.
+            :param step_callback:     Function that is called on every step. Useful for debugging.
         """
-
         self.record = record
         self.replay = replay
         self.verbose = verbose
+        self.step_callback = step_callback
         if self.record and self.replay is not None:
             raise Exception("Cannot record and play replay at the same time.")
         # Set up a new game
@@ -175,7 +177,6 @@ class Game(object):
             self.blue_brain = blue_brain
             self.red_init = red_init
             self.blue_init = blue_init
-            # Generate new game field if a generator was passed
             if field is None:
                 self.field = FieldGenerator().generate()
             else:
@@ -249,6 +250,7 @@ class Game(object):
         self.score_blue = self.settings.max_score / 2
         self.step       = 0
         # Simulation variables
+        self.object_uid    = 0
         self.objects         = []
         self.broadphase_mov  = []
         self.broadphase_stat = []
@@ -291,11 +293,11 @@ class Game(object):
         else:
             # Initialize tanks to play replays
             for i,(s,a) in enumerate(zip(reds,self.replay.actions_red)):
-                t = Tank(self, s.x+2, s.y+2, s.angle, i, team=TEAM_RED, spawn=s, actions=a)
+                t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, spawn=s, actions=a[:])
                 self.tanks.append(t)
                 self.add_object(t)
             for i,(s,a) in enumerate(zip(blues,self.replay.actions_blue)):
-                t = Tank(self, s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, spawn=s, actions=a)
+                t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, spawn=s, actions=a[:])
                 self.tanks.append(t)
                 self.add_object(t)
         self.tanks_red = [tank for tank in self.tanks if tank.team == TEAM_RED]
@@ -315,6 +317,8 @@ class Game(object):
         try:
             for s in xrange(settings.max_steps):
                 self.step = s+1
+                if self.step_callback is not None:
+                    self.step_callback(self)
                 ## UPDATE & CHECK VICTORY
                 p = time.clock()
                 for o in self.objects:
@@ -443,7 +447,7 @@ class Game(object):
         iteration = Game.SIMULATION_MAXITER
         pairs = set([])
         while something_collided and iteration > 0:
-            self.broadphase_mov.sort(key=lambda o:o._x)
+            self.broadphase_mov.sort(key=lambda o:(o._x, o.uid))
             collisions = []
             k = 0
             for i, o1 in enumerate(self.broadphase_mov):
@@ -487,7 +491,7 @@ class Game(object):
             # Sort the collisions on their first property, the penetration distance.
             collisions.sort(reverse=True)
             for (p, o1, o2, px, py) in collisions:
-                if p < 1: 
+                if p < 0.75: 
                     break
                 if not o1._moved and not o2._moved:
                     if o1.movable:
@@ -509,6 +513,7 @@ class Game(object):
                         o2._y -= py
                         o2._moved = True
             iteration -= 1
+        pairs = sorted(pairs)
         for (o1,o2) in pairs:
             o1.collide(o2)
             o2.collide(o1)
@@ -516,14 +521,16 @@ class Game(object):
     def add_object(self,o):
         """ Add an object to the game and collision list. """
         o.game = self
+        o.uid = self.object_uid
+        self.object_uid += 1
         self.objects.append(o)
         if o.physical:
             if o.movable:
                 self.broadphase_mov.append(o)
-                self.broadphase_mov.sort(key=lambda o:o._x)
+                self.broadphase_mov.sort(key=lambda o:(o._x, o.uid))
             else:
                 self.broadphase_stat.append(o)
-                self.broadphase_stat.sort(key=lambda o:o._x)
+                self.broadphase_stat.sort(key=lambda o:(o._x, o.uid))
         o.added_to_game(self)
         
     def rem_object(self,o):
@@ -604,7 +611,7 @@ class Game(object):
             dx = (cx + ra) - (object2._x + object2.width/2)
             dy = (cy + ra) - (object2._y + object2.height/2)
             ds = dx*dx + dy*dy          # Actual distance squared
-            if ds == 0:
+            if ds < 0.01:
                 p,px,py = 0.0, 0.0, 0.0
             elif ds < md*md:
                 d  = sqrt(ds)   # Actual Distance
@@ -986,6 +993,7 @@ class GameObject(object):
     def __init__(self, x=0.0, y=0.0, width=12, height=12, angle=0, shape=0, 
                        solid=True, movable=True, physical=True, graphic='default'):
         # Game variables
+        self.uid      = -1
         self.x        = float(x)
         self.y        = float(y)
         self.width    = float(width)
@@ -1025,6 +1033,9 @@ class GameObject(object):
             Is called once per simulation substep.
         """
         pass
+        
+    def __cmp__(self, other):
+        return self.uid - other.uid
     
     def __hash__(self):
         return id(self)
@@ -1140,6 +1151,8 @@ class Tank(GameObject):
     def get_action(self):
         ## Ask brain for action (or replay)
         if not self.record and self.actions:
+            # print "i gots actions %s-%d"%('BLU' if self.team==TEAM_BLUE else 'RED',self.id)
+            # print len(self.actions)
             (turn, speed, shoot) = self.actions.pop(0)
         else:
             last_clock = time.clock()
@@ -1207,23 +1220,16 @@ class ControlPoint(GameObject):
     
     def collide(self, other):
         if isinstance(other, Tank):
-            # Neutral
-            if self.game.settings.capture_mode == 0:
-                if self.collided[self.team] > 0 and self.team != other.team:
+            self.collided[other.team] += 1
+            if self.game.settings.capture_mode == CAPTURE_MODE_NEUTRAL:
+                if not (self.collided[TEAM_RED] and self.collided[TEAM_BLUE]):
+                    self.team = other.team
+                else:
                     self.team = TEAM_NEUTRAL
-                else:
+            if self.game.settings.capture_mode == CAPTURE_MODE_FIRST:
+                if self.collided[self.team] == 0:
                     self.team = other.team
-                    self.collided[self.team] += 1
-            # Closest to center
-            elif self.game.settings.capture_mode == 1:
-                if self.collided[self.team] > 0:
-                    pass
-                else:
-                    self.team = other.team
-                    self.collided[self.team] += 1
-            # Majority 
-            elif self.game.settings.capture_mode == 2:
-                self.collided[other.team] += 1
+            elif self.game.settings.capture_mode == CAPTURE_MODE_MAJORITY:
                 if self.team != other.team and self.collided[other.team] == self.collided[self.team]:
                     self.team = TEAM_NEUTRAL
                 elif self.collided[other.team] > self.collided[self.team]:
@@ -1380,7 +1386,3 @@ class ReplayData(object):
         g.run()
         return g
 
-if __name__ == "__main__":
-    field = FieldGenerator(mirror=False).generate()
-    field.other_objects.append((4,4,"CrumbFountain"))
-    Game('domination/agent.py','domination/agent.py', field=field, rendered=True).run()
