@@ -37,7 +37,7 @@ C_BLUE              = (81,142,221)
 SPF                 = 1/120.0 # Seconds per frame
 ROTATION_FRAMES     = 6 # Number of frames for rotation animation
 SHOOTING_FRAMES     = 10 # Number of frames for shooting animation
-DRAW_BOUNDING_BOXES = False
+DRAW_BOUNDING_BOXES = True
 DRAW_NAV_MESH       = False
 
 ### CLASSES ###
@@ -145,7 +145,7 @@ class Renderer(object):
                     pg.draw.line(vp,(120,120,120),n1,n2,2)
                 pg.draw.circle(vp,(120,120,120),n1,3)
         ## OBJECTS
-        for o in game.objects:
+        for o in game.objects:                
             if o.graphic is None:
                 continue
             bmp        = self.ims[o.graphic]
@@ -190,6 +190,11 @@ class Renderer(object):
                     xbmp = self.ims['explode'][shooting_frame]
                     xbmp = pg.transform.rotate(xbmp, -o._a*rad_to_deg)
                     vp.blit(xbmp, dest=(dstx,dsty))
+            if DRAW_BOUNDING_BOXES:
+                if o.shape == 0: #rect
+                    pg.draw.rect(vp, (255,255,0), (int(o._x),int(o._y),int(o.width), int(o.height)), 1)
+                else:
+                    pg.draw.ellipse(vp, (255,255,0), (int(o._x),int(o._y),int(o.width), int(o.height)), 1)
         
         # Selection/Overlay
         for t in game.tanks:
