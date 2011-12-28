@@ -56,8 +56,15 @@ class TestDominationGame(unittest.TestCase):
         self.settings = core.Settings()
         
     def test_basic(self):
-        run.games(settings=self.settings, rendered=False)
+        core.Game(rendered=False).run()
         
+    def test_render(self):
+        try:
+            import pygame
+            core.Game(rendered=True).run()
+        except ImportError:
+            print "Warning: It looks like you don't have pygame installed, skipping the render test."
+                
     def test_string_agent(self):
         game = core.Game(red_brain_string=RANDOM_AGENT, 
                          blue_brain_string=RANDOM_AGENT, 
