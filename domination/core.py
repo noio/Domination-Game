@@ -65,7 +65,7 @@ class Settings(object):
                        field_known=True,
                        ammo_rate=20,
                        ammo_amount=3,
-                       agent_size=12,
+                       agent_type='tank',
                        spawn_time=10,
                        field_width=47,
                        field_height=32,
@@ -83,7 +83,7 @@ class Settings(object):
         self.field_known   = field_known   # Whether the agents have knowledge of the field at game start
         self.ammo_rate     = ammo_rate     # How long it takes for ammo to reappear
         self.ammo_amount   = ammo_amount   # How many bullets there are in each ammo pack
-        self.agent_size    = agent_size    # Diameter of agents
+        self.agent_type    = agent_type    # Type of the agents ('tank' or 'vacubot')
         self.spawn_time    = spawn_time    # Time that it takes for tanks to respawn
         self.field_width   = field_width   # How wide the field is in tiles, should be odd
         self.field_height  = field_height  # Height of the field in tiles
@@ -93,8 +93,6 @@ class Settings(object):
         self.end_condition = end_condition # FLAGS for end condition of game. (So you can set multiple using "OR")
         self.num_agents    = num_agents    # Number of agents per team
         # Validate
-        if agent_size > tilesize:
-            raise Exception("Agents (%d) can be no larger than tiles (%d)."%(agent_size, tilesize))
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
         if field_width % 2 == 0:
@@ -1045,6 +1043,7 @@ class GameObject(object):
 
 class Tank(GameObject):
     SIZE = 12
+    SIZE_VACUBOT = 16
     
     def __init__(self,
                  x=0, y=0, angle=0, id=0, team=TEAM_RED,
@@ -1078,9 +1077,13 @@ class Tank(GameObject):
         self.observation = Observation()
         gridrng = (self.game.settings.max_see/2+1)//game.field.tilesize
         self.observation.walls = [[0 for _ in xrange(gridrng*2+1)] for _ in xrange(gridrng*2+1)]
-        # Adjust height/width
-        self.width = self.height = self.game.settings.agent_size
-        
+        # Adjust settings for vacubot
+        if game.settings.agent_type == 'vacubot':
+            self.width = self.height = self.SIZE_VACUBOT
+            if self.team == TEAM_RED:
+                self.graphic = 'vacubot_red'
+            else:
+                self.graphic = 'vacubot_blue'
         
     def update(self):
         # Check alive status

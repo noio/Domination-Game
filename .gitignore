@@ -26,3 +26,5 @@ domination/core.pyc
 .DS_Store
 
 test.py
+
+buggy_replay

@@ -64,7 +64,7 @@ class Scenario(object):
                     field=self.FIELD, settings=self.SETTINGS,
                     record=True, verbose=False, rendered=False)
         if rendered:
-            game.add_renderer(skin=self.SKIN)
+            game.add_renderer()
         game.run()
         self.last_game = game
         self.replays.append(game.replay)
@@ -108,7 +108,7 @@ class Scenario(object):
 class VacubotScenario(Scenario):
     SETTINGS = core.Settings(max_speed=20, 
                              max_turn=pi,
-                             agent_size=16)
+                             agent_type='vacubot')
     SKIN     = 'vacubot'
     FIELD    = core.FieldGenerator(width=21, height=15, mirror=False, num_spawns=2).generate()
     
@@ -117,4 +117,4 @@ class VacubotScenario(Scenario):
 ### MAIN ###
 
 if __name__ == '__main__':
-    VacubotScenario('domination/agent.py','domination/agent.py').run()
+    VacubotScenario('domination/agent.py','domination/agent.py').test()

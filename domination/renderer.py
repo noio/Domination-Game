@@ -86,6 +86,8 @@ class Renderer(object):
             "floor":self.load_texture("floor.png",skin),
             "tank_red":self.load_texture("tank-red.png",skin),
             "tank_blue":self.load_texture("tank-blue.png",skin),
+            "vacubot_red":self.load_texture("vacubot-red.png",skin),
+            "vacubot_blue":self.load_texture("vacubot-blue.png",skin),
             "cp_red":self.load_texture("cp-red.png",skin),
             "cp_blue":self.load_texture("cp-blue.png",skin),
             "cp_neutral":self.load_texture("cp-neutral.png",skin),
