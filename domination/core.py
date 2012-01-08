@@ -76,9 +76,6 @@ class Settings(object):
                        ammo_amount=3,
                        agent_type='tank',
                        spawn_time=10,
-                       field_width=47,
-                       field_height=32,
-                       tilesize=16,
                        think_time=0.010,
                        capture_mode=CAPTURE_MODE_NEUTRAL,
                        end_condition=ENDGAME_SCORE,
@@ -94,9 +91,6 @@ class Settings(object):
         self.ammo_amount   = ammo_amount   # How many bullets there are in each ammo pack
         self.agent_type    = agent_type    # Type of the agents ('tank' or 'vacubot')
         self.spawn_time    = spawn_time    # Time that it takes for tanks to respawn
-        self.field_width   = field_width   # How wide the field is in tiles, should be odd
-        self.field_height  = field_height  # Height of the field in tiles
-        self.tilesize      = tilesize      # How big a single tile is (game units), change at own risk
         self.think_time    = think_time    # How long the tanks have to do their computations (in seconds)
         self.capture_mode  = capture_mode  # Behavior of controlpoints when multiple agents are on them
         self.end_condition = end_condition # FLAGS for end condition of game. (So you can set multiple using "OR")
@@ -104,8 +98,6 @@ class Settings(object):
         # Validate
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
-        if field_width % 2 == 0:
-            raise Exception("Field width (%d) must be odd."%field_width)
         
     def __repr__(self):
         default = Settings()
@@ -403,6 +395,7 @@ class Game(object):
                 self.sim_time = 0.0
                 for step in xrange(res):
                     p = time.clock()
+                    # Perform one physics substep
                     self.substep()
                     self.sim_time += time.clock() - p
                     if render:
@@ -864,9 +857,6 @@ class Field(object):
             bounds = (pad, pad, midline-pad, self.height - pad)
             clear = self.find(Field.CLEAR, bounds=bounds)
             # Begin by scattering half of the points.
-            print clear
-            print self
-            print num
             points = random.sample(clear, num // 2)
             self.set(points, marker, mirror=True)
             # If odd number, add one more on midline:
@@ -927,6 +917,8 @@ class Field(object):
             kwargs = {}
             if marker == Field.AMMO:
                 cls = AmmoFountain
+            elif marker == Field.SOURCE:
+                cls = CrumbFountain
             elif marker == Field.CONTROL:
                 cls = ControlPoint  
             elif marker == Field.RED:
@@ -990,7 +982,7 @@ class FieldGenerator(object):
     """ Generates field objects from random distribution """
     
     def __init__(self, width=39, height=24, tilesize=16, mirror=True,
-                       num_red=5, num_blue=5, num_points=3, num_ammo=6, num_crumbs=0,
+                       num_red=5, num_blue=5, num_points=3, num_ammo=6, num_crumbsource=0,
                        wall_fill=0.4, wall_len=(4,4), wall_width=4, 
                        wall_orientation=0.5, wall_gridsize=4):
         self.width            = width
@@ -1001,6 +993,7 @@ class FieldGenerator(object):
         self.num_blue         = num_blue
         self.num_points       = num_points
         self.num_ammo         = num_ammo
+        self.num_crumbsource  = num_crumbsource
         self.wall_fill        = wall_fill
         self.wall_len         = wall_len
         self.wall_width       = wall_width
@@ -1018,6 +1011,8 @@ class FieldGenerator(object):
         ## IMPORTANT OBJECTS
         # Add controlpoints
         field.scatter(Field.CONTROL, self.num_points, pad = 3)        
+        # Add sources of crumbs
+        field.scatter(Field.SOURCE, self.num_crumbsource, pad = 2)
         # Spawn regions
         spawn_h = int(sqrt(max(self.num_red, self.num_blue)) + 0.5) # height of the spawn block
         spawn_y = random.randint(1, self.height - 2 - spawn_h)      # y-pos of the spawn block
@@ -1110,13 +1105,13 @@ class GameObject(object):
             self.cx = int(x + self.SIZE/2)
             self.cy = int(y + self.SIZE/2)
         # Internal vars, used by the collision detection
-        self._x     = self.x
-        self._y     = self.y
-        self._a     = self.angle
-        self._dx    = 0.0
-        self._dy    = 0.0
-        self._da    = 0.0
-        self._moved = False
+        self._x        = self.x
+        self._y        = self.y
+        self._a        = self.angle
+        self._dx       = 0.0
+        self._dy       = 0.0
+        self._da       = 0.0
+        self._moved    = False
         
     def added_to_game(self, game):
         """ Tells the object that it has been added to the game,
@@ -1293,6 +1288,7 @@ class Tank(GameObject):
             if shoot and self.ammo > 0:
                 self.shoots = True
                 self.ammo -= 1
+        self.observation.collided = False
         
     def collide(self, other):
         if isinstance(other, Tank):
@@ -1354,11 +1350,12 @@ class ControlPoint(GameObject):
 class Ammo(GameObject):
     """ Represents an ammo pack.
     """
-    SIZE = 16
+    SIZE    = 16
+    GRAPHIC = 'ammo_full'
     def __init__(self,x,y):
-        super(Ammo, self).__init__(x=x, y=y, width=Ammo.SIZE, height=Ammo.SIZE, 
+        super(Ammo, self).__init__(x=x, y=y, width=self.SIZE, height=self.SIZE, 
                                    shape=GameObject.SHAPE_CIRC, solid=False, 
-                                   movable=False, graphic='ammo_full')
+                                   movable=False, graphic=self.GRAPHIC)
         self.pickedup = False
     
     def collide(self, other):
@@ -1377,6 +1374,7 @@ class Crumb(Ammo):
         as picked up. Essentially a small ammo packet.
     """
     SIZE = 4
+    GRAPHIC = 'crumb'
 
 class Fountain(GameObject):
     """ A non-physical object that spawns other objects at 
@@ -1433,7 +1431,6 @@ class Fountain(GameObject):
 class AmmoFountain(Fountain):
     MIN_CHILDREN = 1
     CHILD_CLASS  = Ammo
-    SIZE         = 16
     GRAPHIC      = 'ammo_empty'
             
     def added_to_game(self, game):
@@ -1444,10 +1441,9 @@ class CrumbFountain(Fountain):
     MIN_CHILDREN = 200
     DELAY        = -1
     CHILD_CLASS  = Crumb
-    SIZE         = 100
     
     def SPREAD(self, x, y):
-        return x + random.gauss(0, self.SIZE), y + random.gauss(0, self.SIZE)
+        return x + random.gauss(0, 32), y + random.gauss(0, 32)
 
 class TankSpawn(GameObject):
     SIZE = 16

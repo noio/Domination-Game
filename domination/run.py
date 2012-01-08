@@ -26,10 +26,11 @@ pi = math.pi
 
 class Scenario(object):
     
-    SETTINGS = core.Settings()
-    FIELD    = core.FieldGenerator().generate()
-    EPISODES = 10
-    SKIN     = ''
+    SETTINGS     = core.Settings()
+    FIELD        = core.FieldGenerator().generate()
+    EPISODES     = 10
+    SKIN         = ''
+    SAVE_TO_FILE = False
     
     @classmethod
     def observation_function(cls,observation):
@@ -57,6 +58,9 @@ class Scenario(object):
         self.red_init = red_init
         self.blue_init = blue_init
         
+        self.replays = []
+        self.stats = []
+        
     def single(self, rendered=False):
         self.before_each()
         game = core.Game(self.red_brain, self.blue_brain,
@@ -81,8 +85,9 @@ class Scenario(object):
         now = datetime.datetime.now()
         self.filename = 'dg%s_%s_vs_%s'%(now.strftime("%Y%m%d-%H%M"), self.last_game.red_name, self.last_game.blue_name)
         self.finalize()
-        self.write_scores()
-        self.save_replays()
+        if self.SAVE_TO_FILE:
+            self.write_scores()
+            self.save_replays()
         return self # For chaining, if you're into that.
         
     def test(self):
