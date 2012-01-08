@@ -61,10 +61,12 @@ class TestDominationGame(unittest.TestCase):
         
     def test_render(self):
         try:
-            import pygame
-            core.Game(rendered=True).run()
+            import pygamze
+            self.settings.max_steps = 20
+            settings = core.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=20)
+            core.Game(settings=settings, rendered=True).run()
         except ImportError:
-            print "Warning: It looks like you don't have pygame installed, skipping the render test."
+            logging.warning("It looks like you don't have pygame installed, skipping the render test.")
             
     def test_field(self):
         f = core.FieldGenerator().generate()
@@ -80,7 +82,7 @@ class TestDominationGame(unittest.TestCase):
         game.run()
     
     def test_replay(self):
-        settings = core.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=200)
+        settings = core.Settings(max_steps=200)
         for i in range(40):
             game = core.Game(settings=settings, record=True, rendered=False)
             game.run()

@@ -79,8 +79,7 @@ class Settings(object):
                        tilesize=16,
                        think_time=0.010,
                        capture_mode=CAPTURE_MODE_NEUTRAL,
-                       end_condition=ENDGAME_SCORE,
-                       num_agents=5):
+                       end_condition=ENDGAME_SCORE):
         self.max_steps     = max_steps     # How long the game will last at most
         self.max_score     = max_score     # If either team scores this much, the game is finished
         self.max_speed     = max_speed     # Number of game units each tank can drive in its turn
@@ -92,11 +91,10 @@ class Settings(object):
         self.ammo_amount   = ammo_amount   # How many bullets there are in each ammo pack
         self.agent_type    = agent_type    # Type of the agents ('tank' or 'vacubot')
         self.spawn_time    = spawn_time    # Time that it takes for tanks to respawn
-        self.tilesize      = tilesize      # How big a single tile is (game units), change at own risk
         self.think_time    = think_time    # How long the tanks have to do their computations (in seconds)
         self.capture_mode  = capture_mode  # Behavior of controlpoints when multiple agents are on them
         self.end_condition = end_condition # FLAGS for end condition of game. (So you can set multiple using "OR")
-        self.num_agents    = num_agents    # Number of agents per team
+        self.tilesize      = tilesize      # How big a single tile is (game units), change at risk of massive bugginess
         # Validate
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
@@ -182,7 +180,7 @@ class Game(object):
                 self.field = FieldGenerator().generate()
             else:
                 self.field = field
-            self.settings.tilesize = self.field.tilesize
+                self.settings.tilesize = self.field.tilesize
             # Read agent brains (from string or file)
             g = AGENT_GLOBALS.copy()
             if red_brain_string is not None:
