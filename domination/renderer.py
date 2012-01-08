@@ -38,7 +38,7 @@ SPF                 = 1/120.0 # Seconds per frame
 ROTATION_FRAMES     = 6 # Number of frames for rotation animation
 SHOOTING_FRAMES     = 10 # Number of frames for shooting animation
 DRAW_BOUNDING_BOXES = False
-DRAW_NAV_MESH       = True
+DRAW_NAV_MESH       = False
 
 ### CLASSES ###
 class Renderer(object):
