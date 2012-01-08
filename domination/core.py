@@ -1011,9 +1011,9 @@ class FieldGenerator(object):
 
         ## IMPORTANT OBJECTS
         # Add controlpoints
-        field.scatter(Field.CONTROL, self.num_points, pad = 3)        
+        field.scatter(Field.CONTROL, self.num_points, pad = 3, mirror=self.mirror)        
         # Add sources of crumbs
-        field.scatter(Field.SOURCE, self.num_crumbsource, pad = 2)
+        field.scatter(Field.SOURCE, self.num_crumbsource, pad = 2, mirror=self.mirror)
         # Spawn regions
         spawn_h = int(sqrt(max(self.num_red, self.num_blue)) + 0.5) # height of the spawn block
         spawn_y = random.randint(1, self.height - 2 - spawn_h)      # y-pos of the spawn block

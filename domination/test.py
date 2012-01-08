@@ -61,7 +61,7 @@ class TestDominationGame(unittest.TestCase):
         
     def test_render(self):
         try:
-            import pygamze
+            import pygame
             self.settings.max_steps = 20
             settings = core.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=20)
             core.Game(settings=settings, rendered=True).run()
