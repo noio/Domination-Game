@@ -9,6 +9,7 @@ working properly. This includes saving fields and replays.
 import unittest
 import core
 import run
+import logging
 
 ### CONSTANTS
 
@@ -64,6 +65,12 @@ class TestDominationGame(unittest.TestCase):
             core.Game(rendered=True).run()
         except ImportError:
             print "Warning: It looks like you don't have pygame installed, skipping the render test."
+            
+    def test_field(self):
+        f = core.FieldGenerator().generate()
+        s = str(f)
+        f2 = core.Field.from_string(s)
+        self.assertEqual(f, f2)
                 
     def test_string_agent(self):
         game = core.Game(red_brain_string=RANDOM_AGENT, 
@@ -82,4 +89,5 @@ class TestDominationGame(unittest.TestCase):
             self.assertEqual(replaygame.score_red, game.score_red)
 
 if __name__ == "__main__":
-    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
+    unittest.TextTestRunner(verbosity=2).run(suite)

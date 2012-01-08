@@ -24,14 +24,16 @@ import itertools
 import copy
 import traceback
 import bisect
+import logging
+logging.basicConfig(format="[%(module)s] %(funcName)s %(lineno)d %(message)s", level=logging.WARNING)
 from pprint import pprint
 
 # Libraries
 try: 
     import numpy
 except ImportError: 
-    print "WARNING: You do not have numpy installed, but "\
-          "this is fine if your agent isn't using it."
+    logging.warning("You do not have numpy installed, but "\
+          "this is fine if your agent isn't using it.")
 
 # Local
 from utilities import *
@@ -203,7 +205,7 @@ class Game(object):
             self.blue_name = self.agent_name(self.blue_brain_class)
         # Load up a replay
         else:
-            self.log('[Game]: Playing replay.')
+            logging.info('[Game]: Playing replay.')
             if replay.version != __version__:
                 raise Exception("Replay is for older game version.")
             self.settings = replay.settings
@@ -249,7 +251,10 @@ class Game(object):
         if self.record:
             self.replay = ReplayData(self)
         # Load field objects
-        (allobjects, cps, reds, blues) = self.field.get_objects()
+        allobjects = self.field.get_objects()
+        cps = [o for o in allobjects if isinstance(o, ControlPoint)]
+        reds = [o for o in allobjects if isinstance(o, TankSpawn) and o.team == TEAM_RED]
+        blues = [o for o in allobjects if isinstance(o, TankSpawn) and o.team == TEAM_BLUE]
         # Game logic variables
         self.score_red  = self.settings.max_score / 2
         self.score_blue = self.settings.max_score / 2
@@ -275,12 +280,13 @@ class Game(object):
             self.add_object(o)
         self.controlpoints = cps
         # Initialize tanks
+        logging.info("Loading agents.")
         if self.record or self.replay is None:
             # Initialize new tanks with brains
             for i,s in enumerate(reds):
                 if self.settings.field_known:
                     brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
-                                             field_grid=self.field.walls, nav_mesh=self.field.mesh, **self.red_init)
+                                             field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.red_init)
                 else:
                     brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                 t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
@@ -289,7 +295,7 @@ class Game(object):
             for i,s in enumerate(blues):
                 if self.settings.field_known:
                     brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
-                                             field_grid=self.field.walls, nav_mesh=self.field.mesh, **self.blue_init)
+                                             field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.blue_init)
                 else:
                     brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                 t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
@@ -419,7 +425,7 @@ class Game(object):
             that the game is over so that they can write any remaining info.
         """
         if interrupted:
-            print "Game was interrupted."
+            logging.warning("Game was interrupted.")
             self.interrupted = True
         self.state = Game.STATE_ENDED
         self.stats.score_red = self.score_red
@@ -750,99 +756,249 @@ class Field(object):
         Any way to create a Field is fine, the included FieldGenerator
         does a pretty good job!
     """
+    # TILE MARKERS
+    NOT       = '^'
+    WALL      = 'W'
+    AMMO      = 'A'
+    SOURCE    = 'S'
+    RED       = 'R'
+    BLUE      = 'B'
+    CONTROL   = 'C'
+    CLEAR     = '_'
+    REACHABLE = '.'
+    
     def __init__(self, width, height, tilesize):
         # Settings variables
         self.width            = width
         self.height           = height
         self.tilesize         = tilesize
         
-        # Instantiated variables
-        self.walls         = [] # The tilemap of the walls
-        self.spawns_red    = [] # Separate lists of red/blue spawns
-        self.spawns_blue   = []
-        self.controlpoints = []
-        self.other_objects = []
+        # Initial empty tilemap with border
+        # Create rows
+        t         = [Field.WALL] * self.width
+        m         = [Field.WALL] + [Field.CLEAR] * (self.width - 2) + [Field.WALL]
+        b         = [Field.WALL] * self.width
+        # Stack top + middle + bottom
+        self.tiles = [t] + [m[:] for _ in xrange(self.height-2)] + [b]
         
+        self._unpacked = None
+    
+    ## BUILTINS
+    def __getstate__(self):
+        """ Used for pickling, removes the _unpacked property """
+        self._unpacked = None
+        return self.__dict__
+    
+    def __str__(self):
+        """ Returns the ASCII representation of this field """
+        return '\n'.join([' '.join(row) for row in self.tiles])
+
+    def __eq__(self, other):
+        """ Equality, for testing purposes """
+        return (self.width == other.width and
+                self.height == other.height and
+                self.tilesize == other.tilesize and
+                self.tiles == other.tiles)
+    
+    ## SAVING/LOADING
     @classmethod
     def from_string(cls, s):
         """ Returns a new Field from given ASCII representation. """
-        field = cls()
-        lines = [l.split() for l in s.strip().split('\n')]
-        field.height,field.width = len(lines),len(lines[0])
-        for i,line in enumerate(lines):
-            row = []
-            for j, tile in enumerate(line):
-                row.append(1 if tile=='w' else 0)
-                if tile.lower() == 'c':
-                    field.controlpoints.append((j,i))
-                elif tile.lower() == 'r':
-                    field.spawns_red.append((j,i,0))
-                elif tile.lower() == 'b':
-                    field.spawns_blue.append((j,i,-pi))
-                elif tile.lower() == 'a':
-                    field.ammo.append((j,i))
-            field.walls.append(row)
-        field.instantiated = True
+        tiles = [[t.upper() for t in l.split()] for l in s.strip().split('\n')]
+        h, w = len(tiles), len(tiles[0])
+        field = cls(w, h, tilesize=16)
+        field.tiles = tiles
         return field
     
-    def __str__(self):
-        s = []
-        for row in self.walls:
-            s.append([])
-            for tile in row:
-                s[-1].append('w' if tile else '_')
-        for (j,i) in self.controlpoints:
-            s[i][j] = 'C'
-        for (j,i) in self.ammo:
-            s[i][j] = 'A'
-        for (j,i,d) in self.spawns_red:
-            s[i][j] = 'R'
-        for (j,i,d) in self.spawns_blue:
-            s[i][j] = 'B'
-        return '\n'.join([' '.join(row) for row in s])
-    
     def to_file(self, filename):
-        o = str(self)
-        f = open(filename,'w')
-        f.write(o)
+        open(filename,'w').write(str(self))
+    
+    ## MANIPULATION
+    def clone(self):
+        """ Returns an exact copy of this field, that can
+            be modified without changing this one. 
+        """
+        f = Field(self.width, self.height, self.tilesize)
+        f.tiles = [r[:] for r in self.tiles]
+        return f
+        
+    def find(self, match, bounds=None, mask=None):
+        """ Find all (x,y) positions of given tile marker.
+            e.g. field.find(Field.CONTROL) returns 
+            positions of all controlpoints, (in tile coordinates).
+        """
+        if bounds is None:
+            bounds = (0, 0, self.width, self.height)
+        if match.startswith(Field.NOT):
+            matches = lambda x: x not in match[1:]
+        else:
+            matches = lambda x: x in match
+        found = []
+        for i in xrange(bounds[1], bounds[3]):
+            for j in xrange(bounds[0], bounds[2]):
+                if matches(self.tiles[i][j]) and (mask is None or mask[i][j]):
+                    found.append((j,i))
+        return found
+    
+    def set(self, coords, marker, mirror=False, match='^'):
+        """ Set tiles in coords to a marker, but only 
+            if it matches the given match expression.
+        """
+        if match.startswith(Field.NOT):
+            matches = lambda x: x not in match[1:]
+        else:
+            matches = lambda x: x in match
+        # If only a single point was given, wrap it in list.
+        if len(coords) and type(coords[0]) == int:
+            coords = [coords]
+        for i, (x,y) in enumerate(coords):
+            if matches(self.tiles[y][x]):                
+                self.tiles[y][x] = marker
+                if mirror:
+                    self.tiles[y][self.width-1-x] = marker
+            
+    def scatter(self, marker, num, pad=1, mirror=True):
+        """ Scatter markers over the map, symmetrically or not."""
+        midline = int(self.width / 2.0 + 0.5)
+        if mirror:
+            bounds = (pad, pad, midline-pad, self.height - pad)
+            clear = self.find(Field.CLEAR, bounds=bounds)
+            # Begin by scattering half of the points.
+            print clear
+            print self
+            print num
+            points = random.sample(clear, num // 2)
+            self.set(points, marker, mirror=True)
+            # If odd number, add one more on midline:
+            if num%2:
+                bounds = (midline-1, pad, midline, self.height - pad)
+                point = random.choice(self.find(Field.CLEAR, bounds=bounds))
+                self.set(point, marker)
+        else:
+            # If not mirroring, just scatter the whole bunch.
+            bounds = (pad, pad, self.width-1-pad, self.height-1-pad)
+            clear = self.find(Field.CLEAR, bounds=bounds)
+            points = random.sample(clear, num)
+            self.set(points, marker)
+                    
+    def fill_unreachable(self):
+        spawn = self.find(Field.RED)[0] or self.find(Field.BLUE)[0]
+        reach = reachable(self.tiles, spawn, border=Field.WALL)
+        reach = self.find(Field.CLEAR, mask=reach)
+        # Mark reachable areas
+        self.set(reach, Field.REACHABLE)
+        # Set the rest to walls
+        self.set(self.find(Field.CLEAR), Field.WALL)
+        clear = self.find(Field.REACHABLE + Field.CLEAR)
+        self.set(clear, Field.CLEAR)
+                
+    def valid(self):
+        """ Check if map is valid, i.e. all points are
+            reachable
+        """
+        spawn = self.find(Field.RED)[0] or self.find(Field.BLUE)[0]
+        reachability = reachable(self.tiles, spawn, border=Field.WALL)
+        for (x, y) in self.find(Field.AMMO + 
+                                Field.CONTROL + 
+                                Field.BLUE + 
+                                Field.RED):
+            if not reachability[y][x]:
+                return False
+        return True
+        
+    
+    ## ACCESS BY GAME
+    
+    def unpack(self):
+        """ Unpacks the tilemap and generates derivative
+            properties like the navigation mesh, wall rects, 
+            and game objects. Game objects are not
+            actually created yet, but GENERATED ON THE FLY
+            when the game asks for them, so that each
+            game gets a shiny new batch of game objects.
+        """
+        _unpacked = {'wallrects':[],
+                     'objects': [],
+                     'mesh': None,
+                     'grid': None}
+        
+        def create_object(x, y, marker):
+            """ Creates an object from a tile marker """
+            kwargs = {}
+            if marker == Field.AMMO:
+                cls = AmmoFountain
+            elif marker == Field.CONTROL:
+                cls = ControlPoint  
+            elif marker == Field.RED:
+                cls = TankSpawn
+                kwargs.update({'angle': 0, 'team': TEAM_RED})
+            elif marker == Field.BLUE:
+                cls = TankSpawn
+                kwargs.update({'angle': pi, 'team': TEAM_BLUE})
+            else:
+                raise Exception("Unknown map marker '%s'"%marker)
+            offset = cls.SIZE/2.0 - self.tilesize/2.0
+            kwargs['x'] = x * self.tilesize - offset
+            kwargs['y'] = y * self.tilesize - offset
+            return (cls, kwargs)
+            
+        # Unpacking tilemap
+        for i, row in enumerate(self.tiles):
+            for j, tile in enumerate(row):
+                if tile == self.WALL:
+                    _unpacked["wallrects"].append((j*self.tilesize, i*self.tilesize, self.tilesize, self.tilesize))
+                elif tile not in self.CLEAR + self.REACHABLE:
+                    _unpacked["objects"].append(create_object(j, i, tile))
+
+        # Optimize the walls and generate Wall objects
+        _unpacked['wallrects'] = rects_merge(_unpacked['wallrects'])
+        _unpacked['objects'].extend( (Wall, {'x':x, 'y':y, 'width':w, 'height':h}) 
+                                        for (x,y,w,h) in _unpacked['wallrects'] )
+        
+        # Generate nav mesh
+        add_points = [(o.cx, o.cy) for o in _unpacked['objects'] if 
+                        (isinstance(o,Ammo) or isinstance(o,ControlPoint))]
+        _unpacked['mesh'] = make_nav_mesh(_unpacked['wallrects'], simplify=0.3,add_points=add_points)
+        
+        # Generate wall grid
+        _unpacked['grid'] = [[(1 if t == self.WALL else 0) for t in row] for row in self.tiles]
+
+        self._unpacked = _unpacked
+        
+    @property
+    def mesh(self):
+        if not self._unpacked: self.unpack()
+        return self._unpacked['mesh']
+    
+    @property
+    def wallgrid(self):
+        if not self._unpacked: self.unpack()
+        return self._unpacked['grid']
+    
+    @property
+    def wallrects(self):
+        if not self._unpacked: self.unpack()
+        return self._unpacked['wallrects']
     
     def get_objects(self):
-        """ Generates all GameObjects and returns them. """
-        ts = self.tilesize
-        ## Walls
-        walls = [Wall(x=w[0],y=w[1],width=w[2],height=w[3]) for w in self.wallrects]
-        ## Controlpoints
-        ofs = (ts-ControlPoint.SIZE)/2
-        cps = [ControlPoint(x=x*ts+ofs, y=y*ts+ofs) for (x,y) in self.controlpoints]
-        ## Spawns
-        ofs = (ts-TankSpawn.SIZE)/2
-        redspawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_RED) for (x,y,r) in self.spawns_red]
-        bluespawns = [TankSpawn(x=x*ts+ofs,y=y*ts+ofs,angle=r,team=TEAM_BLUE) for (x,y,r) in self.spawns_blue]
-        ## Other Objects
-        other = []
-        for (x, y, class_string) in self.other_objects:
-            cls = globals()[class_string]
-            ofs = (ts-cls.SIZE)/2.0
-            other.append(cls(x=x*ts+ofs, y=y*ts+ofs))
-        # Return assorted tuples
-        allobjects = walls + cps + redspawns + bluespawns + other
-        return (allobjects, cps, redspawns, bluespawns)
-        
-    def is_valid(self):
-        return True
+        """ Creates the gameobjects and returns them """
+        if not self._unpacked: self.unpack()
+        return [cls(**kwargs) for (cls, kwargs) in self._unpacked['objects']]
+    
         
 class FieldGenerator(object):
     """ Generates field objects from random distribution """
     
     def __init__(self, width=39, height=24, tilesize=16, mirror=True,
-                       num_spawns=5, num_points=3, num_ammo=6, 
+                       num_red=5, num_blue=5, num_points=3, num_ammo=6, num_crumbs=0,
                        wall_fill=0.4, wall_len=(4,4), wall_width=4, 
                        wall_orientation=0.5, wall_gridsize=4):
         self.width            = width
         self.height           = height
         self.tilesize         = tilesize
         self.mirror           = mirror
-        self.num_spawns       = num_spawns
+        self.num_red          = num_red
+        self.num_blue         = num_blue
         self.num_points       = num_points
         self.num_ammo         = num_ammo
         self.wall_fill        = wall_fill
@@ -851,113 +1007,41 @@ class FieldGenerator(object):
         self.wall_orientation = wall_orientation
         self.wall_gridsize    = wall_gridsize
     
-    @classmethod
-    def reflect_tilemap(cls, tilemap, newsize, axis_vertical=True):
-        """ Reflects a tilemap (2D-list) along an arbitrary horizontal
-            or vertical axis. Odd-sized arrays will work too.
-        """
-        # Transpose
-        if axis_vertical:
-            tilemap = zip(*tilemap)
-        # Build new tilemap
-        newtiles = []
-        for i in xrange(newsize):
-            newtiles.append(tilemap[i][:] if i < newsize//2 else tilemap[newsize-1-i][:])
-        # Transpose back
-        if axis_vertical:
-            return [list(l) for l in zip(*newtiles)]
-    
-    @classmethod
-    def clear_walls_under_objects(cls, field):
-        for (x, y, r) in field.spawns_red + field.spawns_blue:
-            field.walls[y][x] = 0
-            field.walls[int(y+sin(r)+0.5)][int(x+cos(r)+0.5)] = 0
-        for (x, y) in field.controlpoints:
-            for i in xrange(y-1,y+2):
-                for j in xrange(x-1,x+2):
-                    field.walls[i][j] = 0
-        for (x, y, _) in field.other_objects:
-            field.walls[y][x] = 0
-            
+
     def generate(self):
         """ Generates a new field using the parameters for random 
             distribution set in the constructor. 
         """
         # Create a new field
         field = Field(width=self.width, height=self.height, tilesize=self.tilesize)
-        self.create_outer_walls(field)
-        ## 1) Place objects on map
-        self.place_objects(field)
-        ## 2) Generate tilemap
-        self.add_obstacles(field)
-        ## 3) Clear walls under objects
-        self.clear_walls_under_objects(field)
-        ## 4) Make rects from walls and generate mesh
-        wallrects = []
-        ts = self.tilesize
-        for i,row in enumerate(field.walls):
-            for j,tile in enumerate(row):
-                if tile:
-                    wallrects.append((j*ts,i*ts,ts,ts))
-        field.wallrects = rects_merge(wallrects)
-        all_objects = field.get_objects()[0]
-        add_points = [(o.cx, o.cy) for o in all_objects if (isinstance(o,Ammo) or isinstance(o,ControlPoint))]
-        field.mesh = make_nav_mesh(field.wallrects, (0,0,self.width*self.tilesize,self.height*self.tilesize),
-                                    simplify=0.3,additional_points=add_points)
-        return field
-    
-    def place_objects(self, field):
-        """ (Randomly) places important objects on the map. """
-        spawn  = (2,1)
-        cpleft = ((self.width-1)/4, (self.height-1)-3)
-        cpmid  = (self.width/2, random.randint(3,self.height/2+1))
-        ## Generate mirrored object locations
+
+        ## IMPORTANT OBJECTS
+        # Add controlpoints
+        field.scatter(Field.CONTROL, self.num_points, pad = 3)        
         # Spawn regions
-        i,j = spawn[0], spawn[1]
-        while len(field.spawns_red) < self.num_spawns:
-            field.spawns_red.append((i, j, 0))
-            if self.mirror:
-                field.spawns_blue.append((self.width-1-i, j, -pi))
-            i += 1
-            if i >= spawn[0] + 2:
-                j += 1
-                i = spawn[0]
-        # Controlpoints
-        field.controlpoints.append((cpleft[0], cpleft[1]))
-        field.controlpoints.append((cpmid[0], cpmid[1]))
-        field.controlpoints.append((self.width-1-cpleft[0], cpleft[1]))
-        # Ammo
-        for _ in xrange(self.num_ammo//2):
-            x,y = (random.randint(3,self.width//2-1),random.randint(5,self.height-2))
-            field.other_objects.append((x, y, "AmmoFountain"))
-            field.other_objects.append((self.width-1-x, y, "AmmoFountain"))
-            
-    def create_outer_walls(self, field):
-        # Create rows
-        halfwidth = int(0.5+ self.width/2.0)
-        t         = [1] * halfwidth
-        m         = [1] + [0] * (halfwidth-1)
-        b         = [1] * halfwidth
-        # Stack top + middle + bottom
-        tilemap   = [t] + [m[:] for _ in xrange(self.height-2)] + [b]
-        field.walls = self.reflect_tilemap(tilemap, self.width)
-        
-    def add_obstacles(self, field):     
-        halfwidth = int(0.5+ self.width/2.0)
-        # Make a list of points that should be reachable.
-        spawn = field.spawns_red[0][:2]
-        reachable_points = field.controlpoints + field.other_objects + field.spawns_red + field.spawns_blue
-        reachable_points = [r[:2] for r in reachable_points] # Grab only (x,y)
+        spawn_h = int(sqrt(max(self.num_red, self.num_blue)) + 0.5) # height of the spawn block
+        spawn_y = random.randint(1, self.height - 2 - spawn_h)      # y-pos of the spawn block
+        for i in xrange(max(self.num_red, self.num_blue)):
+            if i < self.num_red:
+                x = 1 + i // spawn_h
+                y = spawn_y + i%spawn_h
+                field.set((x,y), Field.RED)
+            if i < self.num_blue:
+                x = self.width - 2 - i//spawn_h
+                y = spawn_y + i%spawn_h
+                field.set((x,y), Field.BLUE)
+
+        ## WALLS
+        midline = int(0.5 + self.width/2.0)
         # Add objects untill enough % is filled
-        tilemap = field.walls
         min_filled = self.height*self.width*self.wall_fill
         if len(self.wall_len) == 2:
             min_len, max_len = self.wall_len
         else:
             min_len, max_len = self.wall_len, self.wall_len
-        failed = 0
-        while sum(sum(row) for row in tilemap) < min_filled and failed < 100:
-            new = copy.deepcopy(tilemap)
+        attempts = 100
+        while len(field.find('W')) < min_filled and attempts:
+            new = field.clone()
             # Create horizontal section
             if rand() < self.wall_orientation:
                 sec_width = random.randint(min_len,max_len)
@@ -968,24 +1052,37 @@ class FieldGenerator(object):
                 sec_height = random.randint(min_len,max_len)
             # If map is mirrored, put stuff on left half only
             if self.mirror:
-                x,y = (random.randint(1,halfwidth-sec_width), random.randint(1,self.height-sec_height-1))
+                x = random.randint(1, midline - sec_width)
+                y = random.randint(1, self.height - sec_height - 1)
             else:
-                x,y = (random.randint(1,self.width-sec_width), random.randint(1,self.height-sec_height-1))
+                x = random.randint(1, self.width - sec_width)
+                y = random.randint(1, self.height - sec_height - 1)
+            
+            # Round to gridsize
             x = (x // self.wall_gridsize) * self.wall_gridsize
             y = (y // self.wall_gridsize) * self.wall_gridsize
-            for i in xrange(y, y + sec_height):
-                for j in xrange(x, x + sec_width):
-                    new[i][j] = 1
-            if self.mirror:
-                new = self.reflect_tilemap(new, self.width)
-            # Validate
-            reachability = reachable(new, field.spawns_red[0][:2])
-            if all(reachability[y][x] for (x,y) in reachable_points):
-                tilemap = new
-            else:
-                failed += 1
-        field.walls = tilemap
+            
+            pts = new.find('W_.', bounds=(x, y, x + sec_width, y + sec_height))
+            if len(pts) == sec_width*sec_height:
+                new.set(pts, Field.WALL, self.mirror)
+                new.fill_unreachable()
+                # Validate
+                if new.valid():
+                    field = new
+                    continue
+            attempts -= 1
         
+        # Clear walls under controlpoints
+        for (x, y) in field.find(Field.CONTROL):
+            for _y in xrange(y-1,y+2):
+                for _x in xrange(x-1,x+2):
+                    field.set((_x,_y), Field.CLEAR, match=Field.WALL)
+        
+        ## ITEMS
+        field.scatter(Field.AMMO, self.num_ammo)
+        
+        return field
+
 
 class GameObject(object):
     """ Generic game object """
@@ -1140,7 +1237,7 @@ class Tank(GameObject):
             for oi,i in enumerate(xrange(yi-gridrng, yi+gridrng+1)):
                 for oj,j in enumerate(xrange(xj-gridrng, xj+gridrng+1)):
                     if (i >= 0 and j >= 0 and i < h and j < w and
-                        f.walls[i][j] == 0):
+                        f.wallgrid[i][j] == 0):
                         obs.walls[oi][oj] = 0
                     else:
                         obs.walls[oi][oj] = 1
@@ -1304,7 +1401,7 @@ class Fountain(GameObject):
         self.initialized = False
         
     def added_to_game(self, game):
-        while len(self.children) < self.MIN_CHILDREN:
+        for _ in xrange(self.MIN_CHILDREN):
             self.spawn_one()
         
     def update(self):
@@ -1325,7 +1422,7 @@ class Fountain(GameObject):
             f = self.game.field
             # Check if we're not spawning our object into a wall.
             (j,i) = int(x//f.tilesize), int(y//f.tilesize)
-            if 0 <= i < f.height and 0 <= j < f.width and not f.walls[i][j]:
+            if 0 <= i < f.height and 0 <= j < f.width and not f.wallgrid[i][j]:
                 c = self.CHILD_CLASS(x - self.CHILD_CLASS.SIZE/2.0, y - self.CHILD_CLASS.SIZE/2.0)
                 c.parent = self
                 self.children.append(c)

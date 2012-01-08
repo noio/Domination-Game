@@ -255,6 +255,20 @@ def rect_corners(rect):
     br = (rect[0]+rect[2],rect[1]+rect[3])
     bl = (rect[0],rect[1]+rect[3])
     return (tl,tr,br,bl)
+    
+def rects_bound(rects):
+    """ Returns a rectangle that bounds all given rectangles
+    
+        >>> rects_bound([(-1,-1,0,0), (0,0,1,1), (3,3,1,1), (9,1,1,1)])
+        (0, 0, 4, 4)
+    """
+    def rb((ax,ay,aw,ah), (bx,by,bw,bh)):
+        x = min(ax, bx)
+        y = min(ay, by)
+        w = max(ax+aw, bx+bw) - x
+        h = max(ay+ah, by+bh) - y
+        return (x,y,w,h)
+    return reduce(rb, rects)
 
 def rects_merge(rects):
     """ Merge a list of rectangle (xywh) tuples.
@@ -304,21 +318,28 @@ def angle_fix(theta):
 
 ### NAVIGATION ###
 
-def reachable(grid, (x, y), empty=0):
+def reachable(grid, (x, y), border=1):
     """ Performs a 'flood fill' operation to find
         reachable areas on given tile map from (x,y). 
         Returns as binary grid with 1 for reachable.
         
+        :param border   can be a value or a function 
+                        indicating borders of region
+
         >>> reachable([[0,1,0],[0,1,0]], (0,0))
         [[1, 0, 0], [1, 0, 0]]
     """
     w,h = len(grid[0]), len(grid)
     reachability = [[0 for _ in range(w)] for _ in range(h)]
     edge = [(x, y)]
+    # If border is not a function, convert it to a simple compare
+    if not hasattr(border, '__call__'):
+        _border = border
+        border = lambda x: (x == _border)
     while edge:
         newedge = []
         for (x, y) in edge:
-            if 0 <= x < w and 0 <= y < h and grid[y][x] == empty and reachability[y][x] != 1:
+            if 0 <= x < w and 0 <= y < h and not border(grid[y][x]) and reachability[y][x] != 1:
                 reachability[y][x] = 1
                 newedge.extend(((x+1, y), (x-1, y), (x, y+1), (x, y-1)))                
         edge = newedge
@@ -365,16 +386,19 @@ def grid_path_length((x,y),(gx,gy),g):
     return None
 
 
-def make_nav_mesh(walls, bounds, offset=7, simplify=0.001, additional_points=[]):
+def make_nav_mesh(walls, bounds=None, offset=7, simplify=0.001, add_points=[]):
     """ Generate an almost optimal navigation mesh
         between the given walls (rectangles), within
         the world bounds (a big rectangle).
         Mesh is a dictionary of dictionaries:
             mesh[point1][point2] = distance
     """
+    # If bounds not given, assume outer walls are bounds.
+    if bounds is None:
+        bounds = rects_bound(walls)
     # 1) Offset walls and add nodes on corners
     walls = [rect_offset(w,offset) for w in walls]
-    nodes = set(additional_points)
+    nodes = set(add_points)
     for w in walls:
         for point in rect_corners(w):
     # 2) Remove points that are inside of other walls (or outside bounds)

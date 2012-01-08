@@ -103,18 +103,4 @@ class Scenario(object):
         for i,r in enumerate(replays):
             zf.writestr('replay_%04d.pickle'%i,r)
         zf.close()
-        
-
-class VacubotScenario(Scenario):
-    SETTINGS = core.Settings(max_speed=20, 
-                             max_turn=pi,
-                             agent_type='vacubot')
-    SKIN     = 'vacubot'
-    FIELD    = core.FieldGenerator(width=21, height=15, mirror=False, num_spawns=2).generate()
     
-    
-
-### MAIN ###
-
-if __name__ == '__main__':
-    VacubotScenario('domination/agent.py','domination/agent.py').test()

@@ -111,7 +111,7 @@ class Renderer(object):
         # Create a map surface
         self.mapsurface = pg.Surface((field.width*field.tilesize,field.height*field.tilesize))
         tile_fill(self.mapsurface, self.ims['floor'])
-        draw_tilemap(self.mapsurface, field.walls, self.ims['autowall'], field.tilesize)
+        draw_tilemap(self.mapsurface, field.wallgrid, self.ims['autowall'], field.tilesize)
         
         # Interface Elements
         self.render_stats   = pg.Surface((60,16))
