@@ -1478,6 +1478,7 @@ class Observation(object):
 
 class ReplayData(object):
     def __init__(self, game):
+        logging.warning("Replays are unstable, see http://git.io/replayissue")
         self.settings = game.settings
         self.version = __version__
         self.actions_red  = [] # List of lists of red agents' actions
