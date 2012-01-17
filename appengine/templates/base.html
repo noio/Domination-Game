@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <title>{% block title %}Domination Game{%endblock%}</title>
+    <link rel="stylesheet" href="/static/theme/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
+</head>
+
+<body>
+    <div id="header">
+	{% block extra_header %}
+	{% endblock extra_header %}
+    </div>
+    <div class="container">
+    {% block content %}
+
+    Dit is de base template.
+    
+    {% endblock content %}
+    
+    </div>
+
+    <div id="footer">
+    </div>
+
+</body>
+
+</html>

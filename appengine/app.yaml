@@ -1,0 +1,18 @@
+application: aamasgame
+version: 0-1
+runtime: python
+api_version: 1
+
+handlers:
+
+### STATIC HANDLERS ###
+- url: /favicon.ico
+  static_files: static/theme/favicon.ico
+  upload: static/theme/favicon.ico
+
+- url: /static
+  static_dir: static
+
+### DYNAMIC PAGES ###
+- url: /.*
+  script: main.py

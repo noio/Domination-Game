@@ -63,7 +63,7 @@ class TestDominationGame(unittest.TestCase):
         try:
             import pygame
             self.settings.max_steps = 20
-            settings = core.Settings(field_width=17, field_height=12, num_agents = 2, max_steps=20)
+            settings = core.Settings(max_steps=20)
             core.Game(settings=settings, rendered=True).run()
         except ImportError:
             logging.warning("It looks like you don't have pygame installed, skipping the render test.")
