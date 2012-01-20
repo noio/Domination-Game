@@ -18,10 +18,10 @@ a img {border:none;}
 
 html { font-size:100.01%; }
 body {
-  font-size: 75%;
+  font-size: 87.5%;
   color: #222;
   background: #fff;
-  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-family: "Lucida Grande", "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 
 h1,h2,h3,h4,h5,h6 { font-weight: normal; color: #111; }
@@ -87,9 +87,6 @@ input[type=text]:focus, input[type=password]:focus, input[type=url]:focus, input
 input.text:focus, input.title:focus,
 textarea:focus { border-color:#666; }
 select { background-color:#fff; border-width:1px; border-style:solid; }
-input[type=text], input[type=password], input[type=url], input[type=email],
-input.text, input.title,
-textarea, select {margin:0.5em 0;}
 input.text,
 input.title { width: 300px; padding:5px; }
 input.title { font-size:1.5em; }
@@ -101,5 +98,23 @@ form.inline p { margin-bottom:0; }
  STRUCTURE
 **********/
 
-.container  { width: 860px; margin: auto; }
+.container  { width: 960px; margin: auto; }
+#user		{text-align: right;}
 
+form.openid ul { text-align:center; list-style-type:none; display:inline;}
+form.openid ul li {float:left; padding:5px 5px 0px;}
+form.openid ul li span {padding:0 3px 0 3px}
+form.openid ul li.highlight { -moz-border-radius:4px; -webkit-border-radius:4px; background-color: #FD6}
+
+form.openid label {display:block; font-weight:bold; margin-bottom:.5em}
+
+form.openid fieldset       {font-size: 1.6em; clear: both; }
+form.openid input {font-size: inherit; height: 30px; }
+form.openid span  {height: 25px; padding-top: 3px; }
+form.openid input[type=submit] {margin: 7px 10px;}
+form.openid fieldset div > * {float: left; display: block; }
+
+.openid_logo{color:#F7931E;padding:6px 0px 8px 28px; background: url(openidims/openidico.png) no-repeat 0 4px; }
+
+.openid-input-user {width: 100px;}
+.openid-input-url {width: 300px;}

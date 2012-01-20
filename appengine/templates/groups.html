@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+{% for group in groups %}
+	<a href='{{group.url}}'>{{group.name}} ({{group.slug}})</a></br>
+{% endfor %}
+
+<form method="post" action="">
+    <fieldset>
+    	<label for='grp'>New group name: </label><input id='grp' name='groupname' type="text" style="width: 500px" /><input type="submit" value="Create group." />
+    </fieldset>
+</form>
+
+{% endblock content %}

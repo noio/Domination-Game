@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<ul>
+{% for team in teams %}
+	<li><a href='{{team.url}}'>{{team.number}}: {{team.name}}</a></br>
+		<form method="post" action="">
+			<input type='hidden' name='teamid' value="{{team.key.id}}"/> 
+			<input type='text' name='emails' value='{{team.emails|join:", "}}'/>
+			<input type='submit' value='Invite users.'/>
+		</form>
+	</li>
+{% endfor %}
+</ul>
+
+<form method="post" action="">
+    <fieldset>
+    	<label for='grp'>New team name: </label><input id='grp' name='teamname' type="text" style="width: 500px" /><input type="submit" value="Create team." />
+    </fieldset>
+</form>
+
+{% endblock content %}

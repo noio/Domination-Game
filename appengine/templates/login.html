@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form class="openid" method="post" action="/login/">
+	<input type='hidden' name='next' value='{{next}}'/>
+    <div><ul class="providers"> 
+    <li class="openid" title="OpenID">
+    	<img src="/static/theme/openidims/openidW.png" alt="icon" /> <span><strong>http://{your-openid-url}</strong></span></li> 
+    <li class="direct" title="Google"> 
+		<img src="/static/theme/openidims/googleW.png" alt="icon" /><span>https://www.google.com/accounts/o8/id</span></li> 
+    <li class="direct" title="Yahoo"> 
+    	<img src="/static/theme/openidims/yahooW.png" alt="icon" /><span>http://yahoo.com/</span></li> 
+    <li class="username" title="AOL screen name"> 
+    	<img src="/static/theme/openidims/aolW.png" alt="icon" /><span>http://openid.aol.com/<strong>{username}</strong></span></li> 
+    <li class="username" title="MyOpenID user name"> 
+    	<img src="/static/theme/openidims/myopenid.png" alt="icon" /><span>http://<strong>{username}</strong>.myopenid.com/</span></li> 
+    <li class="username" title="Flickr user name"> 
+    	<img src="/static/theme/openidims/flickr.png" alt="icon" /><span>http://flickr.com/<strong>{username}</strong>/</span></li> 
+    <li class="username" title="Wordpress blog name"> 
+    	<img src="/static/theme/openidims/wordpress.png" alt="icon" /><span>http://<strong>{username}</strong>.wordpress.com</span></li> 
+    <li class="username" title="Blogger blog name"> 
+    	<img src="/static/theme/openidims/blogger.png" alt="icon" /><span>http://<strong>{username}</strong>.blogspot.com/</span></li> 
+    <li class="username" title="LiveJournal blog name"> 
+    	<img src="/static/theme/openidims/livejournal.png" alt="icon" /><span>http://<strong>{username}</strong>.livejournal.com</span></li> 
+    <li class="username" title="ClaimID user name"> 
+    	<img src="/static/theme/openidims/claimid.png" alt="icon" /><span>http://claimid.com/<strong>{username}</strong></span></li> 
+    <li class="username" title="Vidoop user name"> 
+    	<img src="/static/theme/openidims/vidoop.png" alt="icon" /><span>http://<strong>{username}</strong>.myvidoop.com/</span></li> 
+    <li class="username" title="Verisign user name"> 
+    	<img src="/static/theme/openidims/verisign.png" alt="icon" /><span>http://<strong>{username}</strong>.pip.verisignlabs.com/</span></li> 
+    </ul></div> 
+    <fieldset>
+    	  <label for="openid_identifier">Enter your <a class="openid_logo" href="http://openid.net">OpenID</a></label> 
+    	  <div>
+    		  <span class='before'></span><input class='openid-input-url' type="text" name="openid" /><span class='after'></span>
+			  <input type="submit" value="Login" />
+		  </div> 
+    </fieldset>
+</form>
+<script type="text/javascript" charset="utf-8">
+	oidf = new OpenIDForm($$('form.openid')[0])
+</script>
+
+{% endblock %}

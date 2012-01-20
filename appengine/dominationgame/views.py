@@ -1,6 +1,7 @@
 ### Imports ###
 
 # Python imports
+import os
 import logging
 import urllib
 from datetime import datetime, time, date, timedelta
@@ -34,25 +35,106 @@ import models
 ### Constants ###
 
 ### Decorators for Request Handlers ###
+def team_required(func):
+    def team_wrapper(request, *args, **kwds):
+        if not request.user.team:
+            return HttpResponseRedirect(reverse(views.connect_account))
+        return func(request, *args, **kwds)
+    
+    return team_wrapper
+    
+    
+def login_required(func):
+    """Decorator that redirects to the login page if you're not logged in."""
+    
+    def login_wrapper(request, *args, **kwds):
+        if request.user is None:
+            return HttpResponseRedirect(reverse(login))
+        return func(request, *args, **kwds)
+    
+    return login_wrapper
+
+
 def admin_required(func):
     """Decorator that insists that you're logged in as administrator."""
     
     def admin_wrapper(request, *args, **kwds):
         if request.user is None:
-            return HttpResponseRedirect(
-                users.create_login_url(request.get_full_path().encode('utf-8')))
+            return HttpResponseRedirect(reverse(login))
         if not request.user_is_admin:
             return HttpResponseForbidden('You must be admin for this function')
         return func(request, *args, **kwds)
     
     return admin_wrapper
+    
+### Helper functions ###
+
+def respond(request, template, params={}):
+    params['user'] = request.user
+    return render_to_response(template, params)
 
 ### Page Handlers ###
 
 def frontpage(request):
-    """ Renders the frontpage/redirects to mobile front page
-    """
-    a = agent.AS_STRING
-    g = core.Game(rendered=False, red_brain_string=a, blue_brain_string=a)
-    g.run()
-    return render_to_response('front.html', {'stats':g.stats})
+    """ Renders the frontpage """
+    newest_group = models.Group.all().order("-added").get()
+    return HttpResponseRedirect(newest_group.url())
+
+def login(request):
+    if request.method == 'POST':
+        openid = request.POST['openid']
+        next = request.POST['next']
+        return HttpResponseRedirect(users.create_login_url(next, federated_identity=openid))
+    next = request.GET['next'] if 'next' in request.GET else '/'
+    return respond(request, 'login.html',{'next':next})
+
+@login_required
+def connect_account(request):
+    if request.method == 'POST':
+        secret_code = request.POST['secret_code']
+        team = models.Team.get_by_secret_code(secret_code)
+        if team:
+            request.user.team = team
+            request.user.put()
+            return HttpResponseRedirect('/')
+        return HttpResponse("Invalid code")
+    secret_code = request.GET.get('c','')
+    return respond(request, 'connect.html', {'secret_code':secret_code})
+
+@admin_required
+def groups(request):
+    """ Overview of groups """
+    if request.method == 'POST':
+        groupname = request.POST['groupname']
+        group = models.Group(name=groupname)
+        group.put()
+        return HttpResponseRedirect(group.url())
+    groups = models.Group.all()
+    return respond(request, 'groups.html', {'groups':groups})
+
+@admin_required
+def teams(request, groupslug):
+    """ Overview of teams and team names """
+    group = models.Group.all().filter('slug =', groupslug).get()
+    if not group:
+        return Http404()
+    if request.method == 'POST':
+        if 'teamname' in request.POST:
+            teamname = request.POST['teamname']
+            team = models.Team.create(name=teamname, group=group)
+            team.put()
+        elif 'teamid' in request.POST:
+            team = models.Team.get_by_id(int(request.POST['teamid']))
+            team.emails = [e.strip() for e in request.POST['emails'].split(',')]
+            team.send_invites()
+            team.put()
+    teams = models.Team.all()
+    return respond(request, 'teams.html', {'teams':teams})
+    
+def group(request, groupslug):
+    """ A group's home page, basically the front page """
+    group = models.Group.all().filter('slug =', groupslug).get()
+    return respond(request, 'group.html', {'group':group})
+
+def team(request, groupslug, teamid):
+    pass

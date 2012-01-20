@@ -12,6 +12,8 @@ MIDDLEWARE_CLASSES = (
     #'firepython.middleware.FirePythonDjango',
     #'appstats.recording.AppStatsDjangoMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'gaesessions.DjangoSessionMiddleware',
+    'dominationgame.middleware.AddUserToRequestMiddleware',
     #'django.middleware.http.ConditionalGetMiddleware',
 )
 TEMPLATE_CONTEXT_PROCESSORS = (
