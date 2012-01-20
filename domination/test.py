@@ -67,7 +67,16 @@ class TestDominationGame(unittest.TestCase):
             core.Game(settings=settings, rendered=True).run()
         except ImportError:
             logging.warning("It looks like you don't have pygame installed, skipping the render test.")
-            
+
+    def test_balance(self):
+        scores = []
+        for i in range(200):
+            game = core.Game(rendered=False).run()
+            scores.append(game.stats.score)
+        avg = sum(scores)/len(scores)
+        print avg
+        assertTrue(0.49 < avg < 0.51)
+        
     def test_field(self):
         f = core.FieldGenerator().generate()
         s = str(f)
@@ -91,5 +100,6 @@ class TestDominationGame(unittest.TestCase):
             self.assertEqual(replaygame.score_red, game.score_red)
 
 if __name__ == "__main__":
+    
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
     unittest.TextTestRunner(verbosity=2).run(suite)

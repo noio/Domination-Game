@@ -116,7 +116,11 @@ class GameStats(object):
     
     def __str__(self):
         return "%d steps. Score: %d-%d."%(self.steps,self.score_red,self.score_blue) 
-    
+        
+class GameLog(object):
+    def __write__(self, string):
+        pass
+        
 class Game(object):
     
     """ The main game class. Contains game data and methods for
@@ -469,7 +473,8 @@ class Game(object):
                             if sep is not None:
                                 if o1.solid and o2.solid:
                                     collisions.append(sep)
-                                pairs.add(((o1,o2) if id(o1) < id(o2) else (o2, o1)))
+                                if (o1, o2) not in pairs:
+                                    pairs.add((o2, o1))
                 if o1._moved:
                     sf = True
                     for o2 in self.broadphase_stat[k:]:
@@ -490,7 +495,8 @@ class Game(object):
                             if sep is not None:
                                 if o1.solid and o2.solid:
                                     collisions.append(sep)
-                                pairs.add((o1,o2) if (id(o1) < id(o2)) else (o2, o1))
+                                if (o1, o2) not in pairs:
+                                    pairs.add((o2, o1))
                     o1._moved = False
             something_collided = len(collisions) > 0
             # Sort the collisions on their first property, the penetration distance.
@@ -1133,11 +1139,10 @@ class GameObject(object):
         pass
         
     def __cmp__(self, other):
-        return self.uid - other.uid
+        return -1
     
-    def __hash__(self):
-        return id(self)
-        
+    def __lt__(self, other):
+        return True
         
 ## Gameobject Subclasses
 
@@ -1491,3 +1496,5 @@ class ReplayData(object):
         g.run()
         return g
 
+if __name__ == "__main__":
+    Game().run()
