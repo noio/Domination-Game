@@ -39,6 +39,7 @@ ROTATION_FRAMES     = 6 # Number of frames for rotation animation
 SHOOTING_FRAMES     = 10 # Number of frames for shooting animation
 DRAW_BOUNDING_BOXES = False
 DRAW_NAV_MESH       = False
+DRAW_IDS            = True
 
 ### CLASSES ###
 class Renderer(object):
@@ -197,6 +198,9 @@ class Renderer(object):
                     pg.draw.rect(vp, (255,255,0), (int(o._x),int(o._y),int(o.width), int(o.height)), 1)
                 else:
                     pg.draw.ellipse(vp, (255,255,0), (int(o._x),int(o._y),int(o.width), int(o.height)), 1)
+            if DRAW_IDS and hasattr(o, 'id'):
+                txt = self.font_small.render("%d"%(o.id),False,(0,0,0))
+                vp.blit(txt, dest=(dstx-txt.get_width(), dsty-txt.get_height()))
         
         # Selection/Overlay
         for t in game.tanks:
