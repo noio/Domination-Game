@@ -1518,4 +1518,4 @@ class ReplayData(object):
         return g
 
 if __name__ == "__main__":
-    Game().run()
+    g = Game(verbose=False).run()
