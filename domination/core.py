@@ -202,7 +202,9 @@ class Game(object):
                     execfile(red_brain, g)
                 self.red_brain_class = g['Agent']
                 self.red_name = self.agent_name(self.red_brain_class)
-            except:
+            except Exception, e:
+                print "Red agent has syntax/indentation error"
+                traceback.print_exc(file=sys.stdout)
                 self.red_brain_class = None
                 self.red_name = "error"
             # Blue brain
@@ -213,7 +215,9 @@ class Game(object):
                     execfile(blue_brain, g)
                 self.blue_brain_class = g['Agent']
                 self.blue_name = self.agent_name(self.blue_brain_class)
-            except:
+            except Exception, e:
+                print "Blue agent has syntax/indentation error"
+                traceback.print_exc(file=sys.stdout)
                 self.blue_brain_class = None
                 self.blue_name = "error"
         # Load up a replay
