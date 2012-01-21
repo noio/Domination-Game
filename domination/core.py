@@ -195,19 +195,27 @@ class Game(object):
                 self.settings.tilesize = self.field.tilesize
             # Read agent brains (from string or file)
             g = AGENT_GLOBALS.copy()
-            if red_brain_string is not None:
-                exec(red_brain_string, g)
-            else:
-                execfile(red_brain, g)
-            self.red_brain_class = g['Agent']
-            self.red_name = self.agent_name(self.red_brain_class)
+            try:
+                if red_brain_string is not None:
+                    exec(red_brain_string, g)
+                else:
+                    execfile(red_brain, g)
+                self.red_brain_class = g['Agent']
+                self.red_name = self.agent_name(self.red_brain_class)
+            except:
+                self.red_brain_class = None
+                self.red_name = "error"
             # Blue brain
-            if blue_brain_string is not None:
-                exec(blue_brain_string, g)
-            else:
-                execfile(blue_brain, g)
-            self.blue_brain_class = g['Agent']
-            self.blue_name = self.agent_name(self.blue_brain_class)
+            try:
+                if blue_brain_string is not None:
+                    exec(blue_brain_string, g)
+                else:
+                    execfile(blue_brain, g)
+                self.blue_brain_class = g['Agent']
+                self.blue_name = self.agent_name(self.blue_brain_class)
+            except:
+                self.blue_brain_class = None
+                self.blue_name = "error"
         # Load up a replay
         else:
             print '[Game]: Playing replay.'
@@ -297,24 +305,26 @@ class Game(object):
         print "Loading agents."
         if self.record or self.replay is None:
             # Initialize new tanks with brains
-            for i,s in enumerate(reds):
-                if self.settings.field_known:
-                    brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
-                                             field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.red_init)
-                else:
-                    brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
-                t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
-                self.tanks.append(t)
-                self.add_object(t)
-            for i,s in enumerate(blues):
-                if self.settings.field_known:
-                    brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
-                                             field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.blue_init)
-                else:
-                    brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
-                t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
-                self.tanks.append(t)
-                self.add_object(t)
+            if self.red_brain_class is not None:
+                for i,s in enumerate(reds):
+                    if self.settings.field_known:
+                        brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
+                                                 field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.red_init)
+                    else:
+                        brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
+                    t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
+                    self.tanks.append(t)
+                    self.add_object(t)
+            if self.blue_brain_class is not None:
+                for i,s in enumerate(blues):
+                    if self.settings.field_known:
+                        brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
+                                                 field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.blue_init)
+                    else:
+                        brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
+                    t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
+                    self.tanks.append(t)
+                    self.add_object(t)
         else:
             # Initialize tanks to play replays
             for i,(s,a) in enumerate(zip(reds,self.replay.actions_red)):
