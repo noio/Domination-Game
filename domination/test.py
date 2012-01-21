@@ -9,7 +9,6 @@ working properly. This includes saving fields and replays.
 import unittest
 import core
 import run
-import logging
 
 ### CONSTANTS
 
@@ -52,9 +51,6 @@ w w w w w w w w w w w w w w w w w w w
 ### CLASSES
 
 class TestDominationGame(unittest.TestCase):
-    
-    def setUp(self):
-        self.settings = core.Settings()
         
     def test_basic(self):
         core.Game(rendered=False).run()
@@ -66,16 +62,16 @@ class TestDominationGame(unittest.TestCase):
             settings = core.Settings(max_steps=20)
             core.Game(settings=settings, rendered=True).run()
         except ImportError:
-            logging.warning("It looks like you don't have pygame installed, skipping the render test.")
+            print("It looks like you don't have pygame installed, skipping the render test.")
 
     def test_balance(self):
         scores = []
-        for i in range(200):
+        for i in range(100):
             game = core.Game(rendered=False).run()
             scores.append(game.stats.score)
         avg = sum(scores)/len(scores)
         print avg
-        assertTrue(0.49 < avg < 0.51)
+        self.assertTrue(0.45 < avg < 0.55)
         
     def test_field(self):
         f = core.FieldGenerator().generate()

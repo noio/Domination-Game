@@ -24,16 +24,14 @@ import itertools
 import copy
 import traceback
 import bisect
-import logging
 import hashlib
-logging.basicConfig(format="[%(module)s] %(funcName)s %(lineno)d %(message)s", level=logging.WARNING)
 from pprint import pprint
 
 # Libraries
 try: 
     import numpy
 except ImportError: 
-    logging.warning("You do not have numpy installed, but "\
+    print("WARNING: You do not have numpy installed, but "\
           "this is fine if your agent isn't using it.")
 
 # Local
@@ -119,8 +117,17 @@ class GameStats(object):
         return "%d steps. Score: %d-%d."%(self.steps,self.score_red,self.score_blue) 
         
 class GameLog(object):
-    def __write__(self, string):
-        pass
+    """ Simple writable object that can replace
+        sys.stdout
+    """
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+        self.log = []
+        
+    def write(self, string):
+        if self.verbose and string != '\n':
+            print >> sys.__stdout__, string
+        self.log.append(string)
         
 class Game(object):
     
@@ -175,9 +182,7 @@ class Game(object):
         if self.record and self.replay is not None:
             raise Exception("Cannot record and play replay at the same time.")
         # Set up a new game
-        if replay is None:
-            self.random = random.Random()
-            
+        if replay is None:            
             self.settings = settings
             self.red_brain = red_brain
             self.blue_brain = blue_brain
@@ -205,7 +210,7 @@ class Game(object):
             self.blue_name = self.agent_name(self.blue_brain_class)
         # Load up a replay
         else:
-            logging.info('[Game]: Playing replay.')
+            print '[Game]: Playing replay.'
             if replay.version != __version__:
                 raise Exception("Replay is for older game version.")
             self.settings = replay.settings
@@ -249,9 +254,16 @@ class Game(object):
             so if there is no random behavior in the agents, the
             outcome of each game will be identical.
         """
+        # Create a logger and redirect stdout
+        self.log = GameLog(self.verbose)
+        sys.stdout = self.log
+        self.random = random.Random()
         # Initialize new replay
         if self.record:
             self.replay = ReplayData(self)
+            self.replay.randomstate = self.random.getstate()
+        elif self.replay:
+            self.random.setstate(self.replay.randomstate)
         # Load field objects
         allobjects = self.field.get_objects()
         cps = [o for o in allobjects if isinstance(o, ControlPoint)]
@@ -282,7 +294,7 @@ class Game(object):
             self.add_object(o)
         self.controlpoints = cps
         # Initialize tanks
-        logging.info("Loading agents.")
+        print "Loading agents."
         if self.record or self.replay is None:
             # Initialize new tanks with brains
             for i,s in enumerate(reds):
@@ -330,6 +342,8 @@ class Game(object):
         try:
             for s in xrange(settings.max_steps):
                 self.step = s+1
+                if self.step % 10 == 0:
+                    print "Step %d: %d - %d"%(self.step, self.score_red, self.score_blue)
                 if self.step_callback is not None:
                     self.step_callback(self)
                 ## UPDATE & CHECK VICTORY
@@ -428,14 +442,14 @@ class Game(object):
             that the game is over so that they can write any remaining info.
         """
         if interrupted:
-            logging.warning("Game was interrupted.")
+            print "Game was interrupted."
             self.interrupted = True
         self.state = Game.STATE_ENDED
         self.stats.score_red = self.score_red
         self.stats.score_blue = self.score_blue
         self.stats.score = self.score_red / float(self.score_red + self.score_blue)
         self.stats.steps = self.step
-        self.log(str(self.stats))
+        print self.stats
         if self.record:
             self.replay.settings = copy.copy(self.settings)
             self.replay.field = self.field
@@ -447,6 +461,8 @@ class Game(object):
         if self.record or self.replay is None:
             for tank in self.tanks:
                 tank.brain.finalize(interrupted)
+        # Set the stdout back to the standard output stream
+        sys.stdout = sys.__stdout__
     
     def substep(self):
         """ Performs a single physics substep. All objects are moved by
@@ -506,9 +522,9 @@ class Game(object):
                     o1._moved = False
             something_collided = len(collisions) > 0
             # Sort the collisions on their first property, the penetration distance.
-            collisions.sort(reverse=True)
+            collisions.sort(reverse=True, key=lambda c: c[0])
             for (p, o1, o2, px, py) in collisions:
-                if p < 0.75: 
+                if p < 1: 
                     break
                 if not o1._moved and not o2._moved:
                     if o1.movable:
@@ -736,13 +752,6 @@ class Game(object):
             else:
                 t.selected = False 
     
-    def log(self, message):
-        """Logs the given message, and prints it if
-        verbose is set to True
-        """
-        if self.verbose:
-            print message
-            
     def __str__(self):
         args = ','.join(['%r'%self.red_name,
                          '%r'%self.blue_name,
@@ -1290,7 +1299,7 @@ class Tank(GameObject):
             # Ignore action (NO-OP) if agent thought too long.
             if self.time_thought > self.game.settings.think_time:
                 (turn, speed, shoot) = (0,0,False)
-                self.game.log('[Game]: Agent %s-%d timed out (%.3fs).'%('RED'if self.team==0 else 'BLU',self.id,self.time_thought))
+                print '[Game]: Agent %s-%d timed out (%.3fs).'%('RED'if self.team==0 else 'BLU',self.id,self.time_thought)
             if self.record:
                 self.actions.append((turn,speed,shoot))
             if self.game.renderer is not None and self.game.renderer.active_team == self.team:
@@ -1462,7 +1471,7 @@ class CrumbFountain(Fountain):
     CHILD_CLASS  = Crumb
     
     def SPREAD(self, x, y):
-        return x + random.gauss(0, 32), y + random.gauss(0, 32)
+        return x + self.game.random.gauss(0, 32), y + self.game.random.gauss(0, 32)
 
 class TankSpawn(GameObject):
     SIZE = 16
@@ -1496,11 +1505,10 @@ class Observation(object):
 
 class ReplayData(object):
     def __init__(self, game):
-        logging.warning("Replays are unstable, see http://git.io/replayissue")
         self.settings = game.settings
         self.version = __version__
         self.actions_red  = [] # List of lists of red agents' actions
-        self.actions_blue = [] # List of lists of blue agents' actions
+        self.actions_blue = [] # List of lists of blue agents' actions        
 
     def play(self):
         """ Convenience method for setting up a game to play this replay. 
