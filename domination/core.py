@@ -249,7 +249,7 @@ class Game(object):
         """
         unsafe_chars = r'[^a-z0-9\-]+'
         if hasattr(agent_class, "NAME"):
-            n = re.sub(unsafe_chars, '-', agent_class.NAME)
+            n = re.sub(unsafe_chars, '-', agent_class.NAME.lower())
             return n[:32]
         else:
             return "noname"
