@@ -19,9 +19,25 @@ class AddUserToRequestMiddleware(object):
   def process_view(self, request, view_func, view_args, view_kwargs):
     google_user = users.get_current_user()
     if google_user:
-        request.user = models.Account.get_or_insert(google_user.nickname())
+        request.user = models.Account.get_or_insert(google_user.nickname(), nickname=google_user.nickname())
         request.user.google_user = google_user
         request.user.logout_url = users.create_logout_url('/')
     else:
         request.user = None
     request.user_is_admin = users.is_current_user_admin()
+    
+
+class ScopeToGroupMiddleware(object):
+    """ Finds which group the user is looking at, and sets
+        the user's current team to his team in that group.
+    """
+    
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        if 'groupslug' in view_kwargs:
+            request.group = models.Group.all().filter('slug =', view_kwargs['groupslug']).get()
+            if request.user and request.group:
+                team = models.Team.get(request.user.teams)
+                team = filter(lambda t: t.group.key() == request.group.key(), team)
+                if team:
+                    request.user.current_team = team[0]
+                

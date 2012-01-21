@@ -99,7 +99,7 @@ form.inline p { margin-bottom:0; }
 **********/
 
 .container  { width: 960px; margin: auto; }
-#user		{text-align: right;}
+#hud		{text-align: right;}
 
 form.openid ul { text-align:center; list-style-type:none; display:inline;}
 form.openid ul li {float:left; padding:5px 5px 0px;}

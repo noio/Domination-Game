@@ -1,0 +1,40 @@
+{% extends "base_group.html" %}
+
+{% block headertext %} {{block.super}} / Dashboard {%endblock%}
+
+{% block content %}
+
+<h3>Team {{user.current_team.name}}</h3>
+<h4>Members</h4>
+<ul>
+	{% for member in user.current_team.members %}
+		<li>{{member.nickname}} ({{member.key.name}})</li>
+	{% endfor %}
+</ul>
+
+<form method="post" action="">
+	<div>
+	{% for letter in "ABC"|make_list %}
+		<div>
+			<label>Brain {{letter}}</label><br/>
+			<select multiple="no" name="brain-{{letter}}" size="12">
+				{% for brain in user.current_team.brain_set %}
+				<option>v{{brain.number}} {{brain.name}}</option>
+				{% endfor %}
+			</select>
+		</div>
+	{% endfor %}
+	</div>
+</form>
+
+<form method="post" action="">	
+	<input type='submit' value='Upload new brain'></input>
+	<textarea id='newbrain' name='newbrain' rows='50' cols='80'></textarea>
+	<script type="text/javascript" charset="utf-8">
+		var myCodeMirror = CodeMirror.fromTextArea(document.id('newbrain'));
+	</script>
+	<input type='submit' value='Upload new brain'></input>
+</form>
+
+
+{% endblock content %}

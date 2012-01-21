@@ -14,6 +14,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'gaesessions.DjangoSessionMiddleware',
     'dominationgame.middleware.AddUserToRequestMiddleware',
+    'dominationgame.middleware.ScopeToGroupMiddleware',
     #'django.middleware.http.ConditionalGetMiddleware',
 )
 TEMPLATE_CONTEXT_PROCESSORS = (

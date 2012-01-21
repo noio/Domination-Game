@@ -3,24 +3,26 @@
 <head>
     <title>{% block title %}Domination Game{%endblock%}</title>
     <link rel="stylesheet" href="/static/theme/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<link rel="stylesheet" href="/static/theme/codemirror.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    
 	<script src="/static/javascript/mootools-core-1.4.2-full.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/static/javascript/mootools-more-1.4.0.1.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/static/javascript/openid.js" type="text/javascript" charset="utf-8"></script>
-	
+	<script src="/static/javascript/codemirror.js" type="text/javascript" charset="utf-8"></script>
 </head>
 
 <body>
     <div class="container">
 	    <div id="header">
-			<div id="user">
+			<div id="hud">
 			{% if user %}
+				{% if user.current_team %} <a href='{% url dominationgame.views.dashboard user.current_team.group.slug %}'>Dashboard</a> | {% endif %}
 				<a href='{{user.logout_url}}'>Logout</a>
 			{% else %}
 				<a href='/login'>Login</a>
 			{% endif %}
 			</div>
-		{% block extra_header %}
-		{% endblock extra_header %}
+		<h2>{% block headertext %}{% endblock %}</h2>
 	    </div>
 		
     {% block content %}

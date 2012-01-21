@@ -1,7 +1,11 @@
-{% extends "base.html" %}
+{% extends "base_group.html" %}
 
 {% block content %}
 
-{{group.name}} ({{group.slug}})
+{{group.brain_set.count}} brains submitted.
+
+{% for team in group.team_set %}
+	Team {{team.name}}
+{% endfor %}
 
 {% endblock content %}

@@ -77,7 +77,7 @@ class Group(db.Model):
         return reverse(views.group, args=[self.slug])
     
 class Team(db.Model):
-    group = db.ReferenceProperty(Group)
+    group = db.ReferenceProperty(Group, required=True)
     name = db.StringProperty(required=True)
     number = db.IntegerProperty(default=1)
     hashed_code = db.StringProperty(required=True)
@@ -85,10 +85,10 @@ class Team(db.Model):
     emails = db.StringListProperty()
     
     @classmethod
-    def create(cls, **kwargs):
+    def create(cls, group, **kwargs):
         kwargs['hashed_code'] = b64.urlsafe_b64encode(os.urandom(32))
         kwargs['number'] = Team.all().count() + 1
-        return cls(**kwargs)
+        return cls(group=group, **kwargs)
         
     @classmethod
     def get_by_secret_code(cls, secret_code):
@@ -97,6 +97,10 @@ class Team(db.Model):
 
     def url(self):
         return reverse(views.team, args=[self.group.slug, self.key().id()])
+        
+    def members(self):
+        """ Returns a list of members """
+        return Account.all().filter('teams', self.key())
         
     def send_invites(self):
         secret_code = b64.urlsafe_b64encode(os.urandom(32))
@@ -122,15 +126,36 @@ class Team(db.Model):
                            subject="Invitation to join a team for %s"%(self.group.name),
                            body=mailbody)
         self.put()
+        
 
+        
 class Account(db.Model):
-    team = db.ReferenceProperty(Team)
     added = db.DateTimeProperty(auto_now_add=True)
+    nickname = db.StringProperty()
+    teams = db.ListProperty(db.Key)
+    
+    current_team = None
     
 class Brain(db.Model):
-    score = db.FloatProperty(default=100)
-    uncertainty = db.FloatProperty(default=1)
-    active = db.BooleanProperty(default=False)
-    code = db.TextProperty(required=True)
-    team = db.ReferenceProperty(Team)
-    added = db.DateTimeProperty(auto_now_add=True)
+    score        = db.FloatProperty(default=100.0)
+    uncertainty  = db.FloatProperty(default=1.0)
+    active       = db.BooleanProperty(default=False)
+    code         = db.TextProperty(required=True)
+    group        = db.ReferenceProperty(Group, required=True)
+    team         = db.ReferenceProperty(Team, required=True)
+    name         = db.StringProperty(default='unnamed')
+    number       = db.IntegerProperty(default=1)
+    added        = db.DateTimeProperty(auto_now_add=True)
+    modified     = db.DateTimeProperty(auto_now=True)
+    throws_error = db.BooleanProperty(default=False)
+    
+    @classmethod
+    def create(cls, team, code, **kwargs):
+        kwargs['number'] = team.brain_set.count() + 1
+        kwargs['group'] = team.group
+        # Try to extract a name
+        namerx = r'NAME *= *[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]'
+        match = re.search(r'NAME *= *[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]', code)
+        if match:
+            kwargs['name'] = match.groups(1)[0]
+        return cls(team=team, code=code, **kwargs)

@@ -37,8 +37,8 @@ import models
 ### Decorators for Request Handlers ###
 def team_required(func):
     def team_wrapper(request, *args, **kwds):
-        if not request.user.team:
-            return HttpResponseRedirect(reverse(views.connect_account))
+        if not request.user.current_team:
+            return HttpResponseRedirect(reverse(connect_account))
         return func(request, *args, **kwds)
     
     return team_wrapper
@@ -78,6 +78,8 @@ def respond(request, template, params={}):
 def frontpage(request):
     """ Renders the frontpage """
     newest_group = models.Group.all().order("-added").get()
+    if not newest_group:
+        return HttpResponseRedirect(reverse(groups))
     return HttpResponseRedirect(newest_group.url())
 
 def login(request):
@@ -94,7 +96,8 @@ def connect_account(request):
         secret_code = request.POST['secret_code']
         team = models.Team.get_by_secret_code(secret_code)
         if team:
-            request.user.team = team
+            if team not in request.user.teams:
+                request.user.teams.append(team.key())
             request.user.put()
             return HttpResponseRedirect('/')
         return HttpResponse("Invalid code")
@@ -136,5 +139,15 @@ def group(request, groupslug):
     group = models.Group.all().filter('slug =', groupslug).get()
     return respond(request, 'group.html', {'group':group})
 
-def team(request, groupslug, teamid):
-    pass
+@team_required
+def dashboard(request, groupslug):
+    if request.method == 'POST':
+        if 'newbrain' in request.POST:
+            if len(request.POST['newbrain']) > 0:
+                brain = models.Brain.create(team=request.user.current_team,
+                            code=request.POST['newbrain'])
+                if not brain:
+                    return HttpResponse("Syntax Error")
+                brain.put()
+    group = models.Group.all().filter('slug =', groupslug).get()
+    return respond(request, 'dashboard.html', {'group':group})
