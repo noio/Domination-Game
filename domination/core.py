@@ -25,6 +25,7 @@ import copy
 import traceback
 import bisect
 import logging
+import hashlib
 logging.basicConfig(format="[%(module)s] %(funcName)s %(lineno)d %(message)s", level=logging.WARNING)
 from pprint import pprint
 
@@ -175,6 +176,8 @@ class Game(object):
             raise Exception("Cannot record and play replay at the same time.")
         # Set up a new game
         if replay is None:
+            self.random = random.Random()
+            
             self.settings = settings
             self.red_brain = red_brain
             self.blue_brain = blue_brain
@@ -207,6 +210,8 @@ class Game(object):
                 raise Exception("Replay is for older game version.")
             self.settings = replay.settings
             self.field = replay.field
+            self.red_name = replay.red_name
+            self.blue_name = replay.blue_name
 
         # Variables for performance timing
         self.sim_time = 0.0 
@@ -228,7 +233,7 @@ class Game(object):
         unsafe_chars = r'[^a-z0-9\-]+'
         if hasattr(agent_class, "NAME"):
             n = re.sub(unsafe_chars, '-', agent_class.NAME)
-            return n[:16]
+            return n[:32]
         else:
             return "noname"
         
@@ -433,8 +438,9 @@ class Game(object):
         self.log(str(self.stats))
         if self.record:
             self.replay.settings = copy.copy(self.settings)
-            self.replay.settings.max_steps = self.step
-            self.replay.field    = self.field
+            self.replay.field = self.field
+            self.replay.red_name = self.red_name
+            self.replay.blue_name = self.blue_name
             self.replay.actions_red = [tank.actions for tank in self.tanks_red]
             self.replay.actions_blue = [tank.actions for tank in self.tanks_blue]
         # Finalize tanks brains.
@@ -456,7 +462,7 @@ class Game(object):
         iteration = Game.SIMULATION_MAXITER
         pairs = set([])
         while something_collided and iteration > 0:
-            self.broadphase_mov.sort(key=lambda o:(o._x, o.uid))
+            self.broadphase_mov.sort(key=lambda o:(o._x))
             collisions = []
             k = 0
             for i, o1 in enumerate(self.broadphase_mov):
@@ -532,16 +538,16 @@ class Game(object):
     def add_object(self,o):
         """ Add an object to the game and collision list. """
         o.game = self
-        o.uid = self.object_uid
+        o.uid = hashlib.md5(str(self.object_uid)).digest()
         self.object_uid += 1
         self.objects.append(o)
         if o.physical:
             if o.movable:
                 self.broadphase_mov.append(o)
-                self.broadphase_mov.sort(key=lambda o:(o._x, o.uid))
+                self.broadphase_mov.sort(key=lambda o:(o._x))
             else:
                 self.broadphase_stat.append(o)
-                self.broadphase_stat.sort(key=lambda o:(o._x, o.uid))
+                self.broadphase_stat.sort(key=lambda o:(o._x))
         o.added_to_game(self)
         
     def rem_object(self,o):
@@ -594,7 +600,7 @@ class Game(object):
             sep_as_circles = False
         else:
             if (object1.shape == GameObject.SHAPE_CIRC):
-                switched = True
+                objects_switched = True
                 (object1, object2) = (object2, object1)
             cx   = object2._x + object2.width/2
             cy   = object2._y + object2.height/2
@@ -695,7 +701,7 @@ class Game(object):
                     if isect:
                         # Append the t0 (intersection time), position and object
                         hits.append((isect[0][0],isect[0][1],o))
-        hits.sort()
+        hits.sort(key=lambda h: h[0])
         return hits
     
     def click(self, pos):
@@ -1138,11 +1144,18 @@ class GameObject(object):
         """
         pass
         
-    def __cmp__(self, other):
-        return -1
+    def __eq__(self, other):
+        return id(self) == id(other)
+    
+    def __ne__(self, other):
+        return id(self) != id(other)
     
     def __lt__(self, other):
-        return True
+        return self.uid < other.uid
+    
+    def __cmp__(self, other):
+        raise Exception("no sorting")
+    
         
 ## Gameobject Subclasses
 
