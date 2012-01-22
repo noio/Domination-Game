@@ -4,8 +4,6 @@
 Contains functions for running multiple games and tournaments.
 
 """
-__author__ = "Thomas van den Berg and Tim Doolan"
-__version__ = "1.0"
 
 ### IMPORTS ###
 # Python

@@ -9,8 +9,8 @@ give two paths to the run_games() function.
 
 >>> run.games('agent.py','agent.py')
 """
-__author__ = "Thomas van den Berg and Tim Doolan"
-__version__ = "1.0"
+
+__version__ = '1.2.0'
 
 ### IMPORTS ###
 # Python
