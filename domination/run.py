@@ -9,7 +9,10 @@ Contains functions for running multiple games and tournaments.
 # Python
 import datetime
 import sys
-import cPickle as pickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 import zipfile
 import math
 from optparse import OptionParser
