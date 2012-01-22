@@ -36,7 +36,6 @@ class Agent(object):
             return a tuple in the form: (turn, speed, shoot)
         """
         obs = self.observation
-        
         # Check if agent reached goal.
         if self.goal is not None and point_dist(self.goal, obs.loc) < self.settings.tilesize:
             self.goal = None

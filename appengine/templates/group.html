@@ -2,7 +2,19 @@
 
 {% block content %}
 
-{{group.brain_set.count}} brains submitted.
+<table>
+	<thead><tr><th>#</th><th>Score</th><th>Name</th></tr></thead>
+	<tbody>
+		{% for brain in group.ladder %}
+		<tr>
+			<td>{{forloop.counter}}</td>
+			<td>{{brain.conservative}}</td>
+			<td><strong>{{brain.team.name}}</strong> v{{brain.number}} {{brain.name}}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+			
 
 {% for team in group.team_set %}
 	Team {{team.name}}

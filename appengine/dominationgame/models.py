@@ -20,6 +20,9 @@ from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 
+# Library Imports
+from domination import core as domcore
+
 # Local Imports
 import views
 
@@ -75,6 +78,11 @@ class Group(db.Model):
         if self.slug is None:
             self.slug = slugify(self.name)
         return reverse(views.group, args=[self.slug])
+        
+    def ladder(self):
+        recent = datetime.now() - timedelta(days=7)
+        q = self.brain_set.filter('last_active > ',recent)
+        return sorted(q, key=lambda b: b.conservative, reverse=True)
     
 class Team(db.Model):
     group = db.ReferenceProperty(Group, required=True)
@@ -128,7 +136,6 @@ class Team(db.Model):
         self.put()
         
 
-        
 class Account(db.Model):
     added = db.DateTimeProperty(auto_now_add=True)
     nickname = db.StringProperty()
@@ -137,17 +144,24 @@ class Account(db.Model):
     current_team = None
     
 class Brain(db.Model):
+    # Performance stats
     score        = db.FloatProperty(default=100.0)
-    uncertainty  = db.FloatProperty(default=1.0)
-    active       = db.BooleanProperty(default=False)
-    code         = db.TextProperty(required=True)
+    uncertainty  = db.FloatProperty(default=30.0)
+    conservative = db.FloatProperty(default=100.0)
+    active       = db.BooleanProperty(default=True)
+    games_played = db.IntegerProperty(default=1)
+    num_errors   = db.IntegerProperty(default=0)
+    # Identity
     group        = db.ReferenceProperty(Group, required=True)
     team         = db.ReferenceProperty(Team, required=True)
     name         = db.StringProperty(default='unnamed')
     number       = db.IntegerProperty(default=1)
+    # Timestamps
     added        = db.DateTimeProperty(auto_now_add=True)
     modified     = db.DateTimeProperty(auto_now=True)
-    throws_error = db.BooleanProperty(default=False)
+    last_active  = db.DateTimeProperty(auto_now_add=True)
+    # Code
+    code         = db.TextProperty(required=True)
     
     @classmethod
     def create(cls, team, code, **kwargs):
@@ -158,4 +172,45 @@ class Brain(db.Model):
         match = re.search(r'NAME *= *[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]', code)
         if match:
             kwargs['name'] = match.groups(1)[0]
+            
         return cls(team=team, code=code, **kwargs)
+        
+class Game(db.Model):
+    group = db.ReferenceProperty(Group)
+    red = db.ReferenceProperty(Brain, collection_name="red_set")
+    blue = db.ReferenceProperty(Brain, collection_name="blue_set")
+    score_red = db.IntegerProperty()
+    score_blue = db.IntegerProperty()
+    stats = db.TextProperty()
+    log = db.TextProperty()
+    winner = db.StringProperty(choices=["red","blue","draw"])
+    
+    @classmethod
+    def play(cls, red_brain, blue_brain, ranked=True):
+        """ Play and store a single game. """
+        # Dereference the keys
+        red_brain = Brain.get(red_brain)
+        blue_brain = Brain.get(blue_brain)
+        # Run a game
+        dg = domcore.Game(red_brain_string=red_brain.code,
+                          blue_brain_string=blue_brain.code,
+                          verbose=False, rendered=False)
+        dg.run()
+        # Extract stats
+        stats = dg.stats
+        winner = "red" if stats.score > 0.5 else "blue" if stats.score < 0.5 else "draw"
+        # Truncate game log if needed
+        log = str(dg.log)
+        if len(log) > 16*1024:
+            msg = "\n== LOG TRUNCATED ==\n"
+            log = log[:16*1024-len(msg)] + msg
+        # Adjust agent scores:
+        
+        # Store stuff
+        game = cls(red=red_brain, 
+                   blue=blue_brain, 
+                   stats=repr(dg.stats.__dict__), 
+                   winner=winner,
+                   log=log)
+        game.put()
+        return game

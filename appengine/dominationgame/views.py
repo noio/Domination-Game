@@ -4,6 +4,7 @@
 import os
 import logging
 import urllib
+import random
 from datetime import datetime, time, date, timedelta
 
 # AppEngine imports
@@ -136,8 +137,7 @@ def teams(request, groupslug):
     
 def group(request, groupslug):
     """ A group's home page, basically the front page """
-    group = models.Group.all().filter('slug =', groupslug).get()
-    return respond(request, 'group.html', {'group':group})
+    return respond(request, 'group.html', {'group':request.group})
 
 @team_required
 def dashboard(request, groupslug):
@@ -149,5 +149,10 @@ def dashboard(request, groupslug):
                 if not brain:
                     return HttpResponse("Syntax Error")
                 brain.put()
-    group = models.Group.all().filter('slug =', groupslug).get()
-    return respond(request, 'dashboard.html', {'group':group})
+    print group.ladder()
+    return respond(request, 'dashboard.html', {'group':request.group})
+    
+    
+def play_games():
+    a,b = random.choice(models.Brain.all().fetch(100)),random.choice(models.Brain.all().fetch(100))
+    models.Game.play(a,b)
