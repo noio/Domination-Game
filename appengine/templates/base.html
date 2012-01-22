@@ -2,29 +2,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <title>{% block title %}Domination Game{%endblock%}</title>
+    <link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/theme/codemirror.css" type="text/css" media="screen" title="no title" charset="utf-8">
     <link rel="stylesheet" href="/static/theme/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
-	<link rel="stylesheet" href="/static/theme/codemirror.css" type="text/css" media="screen" title="no title" charset="utf-8">
     
-	<script src="/static/javascript/mootools-core-1.4.2-full.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/static/javascript/mootools-more-1.4.0.1.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/static/javascript/openid.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/static/javascript/codemirror.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/javascript/mootools-core-1.4.2-full.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/javascript/mootools-more-1.4.0.1.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/javascript/openid.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/javascript/codemirror.js" type="text/javascript" charset="utf-8"></script>
 </head>
 
 <body>
-    <div class="container">
-	    <div id="header">
-			<div id="hud">
-			{% if user %}
-				{% if user.current_team %} <a href='{% url dominationgame.views.dashboard user.current_team.group.slug %}'>Dashboard</a> | {% endif %}
-				<a href='{{user.logout_url}}'>Logout</a>
-			{% else %}
-				<a href='/login'>Login</a>
-			{% endif %}
+	<div class='topbar'>
+		<div class='fill'>
+		    <div class="container">
+				<h3><a href='/'>{% block headertext %}{% endblock %}</a></h3>
+				<ul class="nav secondary-nav">
+				{% if user %}
+					{% if user.current_team %} 
+						<li><a href='{% url dominationgame.views.dashboard user.current_team.group.slug %}'>Dashboard</a></li>{% endif %}
+					<li><a href='{{user.logout_url}}'>Logout</a></li>
+				{% else %}
+					<li><a href='/login'>Login</a></li>
+				{% endif %}
+				</ul>
 			</div>
-		<h2>{% block headertext %}{% endblock %}</h2>
-	    </div>
+		</div>
+	</div>
 		
+	<div class='container'>
     {% block content %}
 
     Dit is de base template.

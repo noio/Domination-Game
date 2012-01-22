@@ -2,7 +2,6 @@
 
 {% block content %}
 <form class="openid" method="post" action="/login/">
-	<input type='hidden' name='next' value='{{next}}'/>
     <div><ul class="providers"> 
     <li class="openid" title="OpenID">
     	<img src="/static/theme/openidims/openidW.png" alt="icon" /> <span><strong>http://{your-openid-url}</strong></span></li> 
@@ -29,13 +28,16 @@
     <li class="username" title="Verisign user name"> 
     	<img src="/static/theme/openidims/verisign.png" alt="icon" /><span>http://<strong>{username}</strong>.pip.verisignlabs.com/</span></li> 
     </ul></div> 
-    <fieldset>
-    	  <label for="openid_identifier">Enter your <a class="openid_logo" href="http://openid.net">OpenID</a></label> 
-    	  <div>
-    		  <span class='before'></span><input class='openid-input-url' type="text" name="openid" /><span class='after'></span>
-			  <input type="submit" value="Login" />
-		  </div> 
+	<fieldset>
+    	<input type='hidden' name='next' value='{{next}}'/>
+        <label for="openid_identifier">Enter your <a class="openid_logo" href="http://openid.net">OpenID</a>:</label> 
+        <div class='urlentry'>
+            <div class='input-prepend'><span class='add-on before'></span></div>
+            <input class='openid-input-url' type="text" name="openid" />
+            <div class='input-append'><span class='add-on after'></span></div>
+        </div> 
     </fieldset>
+    <div class='actions'><input class='btn' type="submit" value="Login" /></div>
 </form>
 <script type="text/javascript" charset="utf-8">
 	oidf = new OpenIDForm($$('form.openid')[0])
