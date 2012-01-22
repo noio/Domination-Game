@@ -21,14 +21,15 @@ import copy
 import traceback
 import bisect
 import hashlib
+import logging
 from pprint import pprint
 
 # Libraries
 try: 
     import numpy
 except ImportError: 
-    print("WARNING: You do not have numpy installed, but "\
-          "this is fine if your agent isn't using it.")
+    logging.warning("You do not have numpy installed, but "\
+                    "this is fine if your agent isn't using it.")
 
 # Local
 from utilities import *
@@ -125,6 +126,9 @@ class GameLog(object):
             print >> sys.__stdout__, string
         self.log.append(string)
         
+    def __str__(self):
+        return ''.join(self.log)
+        
 class Game(object):
     
     """ The main game class. Contains game data and methods for
@@ -174,6 +178,8 @@ class Game(object):
         self.record = record
         self.replay = replay
         self.verbose = verbose
+        self.log = GameLog(self.verbose)
+        sys.stdout = self.log
         self.step_callback = step_callback
         if self.record and self.replay is not None:
             raise Exception("Cannot record and play replay at the same time.")
@@ -199,7 +205,8 @@ class Game(object):
                 self.red_brain_class = g['Agent']
                 self.red_name = self.agent_name(self.red_brain_class)
             except Exception, e:
-                print "Red agent has syntax/indentation error"
+                self.red_raised_exception = True
+                print "Red agent has loading error"
                 traceback.print_exc(file=sys.stdout)
                 self.red_brain_class = None
                 self.red_name = "error"
@@ -212,7 +219,8 @@ class Game(object):
                 self.blue_brain_class = g['Agent']
                 self.blue_name = self.agent_name(self.blue_brain_class)
             except Exception, e:
-                print "Blue agent has syntax/indentation error"
+                self.blue_raised_exception = True
+                print "Blue agent has loading error"
                 traceback.print_exc(file=sys.stdout)
                 self.blue_brain_class = None
                 self.blue_name = "error"
@@ -263,8 +271,6 @@ class Game(object):
             outcome of each game will be identical.
         """
         # Create a logger and redirect stdout
-        self.log = GameLog(self.verbose)
-        sys.stdout = self.log
         self.random = random.Random()
         # Initialize new replay
         if self.record:
@@ -288,13 +294,14 @@ class Game(object):
         self.broadphase_stat = []
         # Performance tracking
         self.stats = GameStats()
-        self.think_time_red         = 0.0
-        self.think_time_blue        = 0.0
-        self.think_time_red_total   = 0.0
-        self.think_time_blue_total  = 0.0
-        self.update_time_total      = 0.0
-        self.sim_time_total         = 0.0
-        self.agent_raised_exception = False
+        self.think_time_red        = 0.0
+        self.think_time_blue       = 0.0
+        self.think_time_red_total  = 0.0
+        self.think_time_blue_total = 0.0
+        self.update_time_total     = 0.0
+        self.sim_time_total        = 0.0
+        self.red_raised_exception  = False
+        self.blue_raised_exception = False
         # Game objects
         self.tanks         = []
         self.controlpoints = []
@@ -1281,7 +1288,10 @@ class Tank(GameObject):
             try:
                 self.brain.observe(obs)
             except Exception, e:
-                self.game.agent_raised_exception = True
+                if self.team == TEAM_RED:
+                    self.game.red_raised_exception = True
+                else:
+                    self.game.blue_raised_exception = True
                 print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)
@@ -1299,7 +1309,10 @@ class Tank(GameObject):
             try:
                 (turn,speed,shoot) = self.brain.action()
             except Exception, e:
-                self.game.agent_raised_exception = True
+                if self.team == TEAM_RED:
+                    self.game.red_raised_exception = True
+                else:
+                    self.game.blue_raised_exception = True
                 print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)
@@ -1528,4 +1541,5 @@ class ReplayData(object):
         return g
 
 if __name__ == "__main__":
-    g = Game(verbose=False).run()
+    g = Game(verbose=True, rendered=True).run()
+
