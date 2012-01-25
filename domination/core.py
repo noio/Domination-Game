@@ -270,7 +270,6 @@ class Game(object):
             so if there is no random behavior in the agents, the
             outcome of each game will be identical.
         """
-        # Create a logger and redirect stdout
         self.random = random.Random()
         # Initialize new replay
         if self.record:

@@ -1,0 +1,4 @@
+cron:
+- description: run ladder match
+  url: /tasks/laddermatch
+  schedule: every 10 mins

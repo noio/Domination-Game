@@ -10,9 +10,11 @@ from datetime import datetime, time, date, timedelta
 # AppEngine imports
 from google.appengine.ext import db
 from google.appengine.ext.db import Key
+from google.appengine.ext import deferred
 from google.appengine.api import users
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch
+
 
 # Django imports
 from django import forms
@@ -72,6 +74,8 @@ def admin_required(func):
 
 def respond(request, template, params={}):
     params['user'] = request.user
+    if request.group:
+        params['group'] = request.group
     return render_to_response(template, params)
 
 ### Page Handlers ###
@@ -105,8 +109,35 @@ def connect_account(request):
     secret_code = request.GET.get('c','')
     return respond(request, 'connect.html', {'secret_code':secret_code})
 
+    
+def group(request, groupslug):
+    """ A group's home page, basically the front page """
+    return respond(request, 'group.html', {'group':request.group})
+    
+def team(request, groupslug, team_id):
+    team = models.Team.get_by_id(int(team_id))
+    return respond(request, 'team.html', {'team':team})
+    
+def brain(request, groupslug, brain_id):
+    brain = models.Brain.get_by_id(int(brain_id))
+    return respond(request, 'brain.html', {'brain':brain})
+
+@team_required
+def dashboard(request, groupslug):
+    if request.method == 'POST':
+        if 'newbrain' in request.POST:
+            if len(request.POST['newbrain']) > 0:
+                brain = models.Brain.create(team=request.user.current_team,
+                            code=request.POST['newbrain'])
+                if not brain:
+                    return HttpResponse("Syntax Error")
+                brain.put()
+    return respond(request, 'dashboard.html')
+
+### Admin Handlers & Tasks ###
+
 @admin_required
-def groups(request):
+def edit_groups(request):
     """ Overview of groups """
     if request.method == 'POST':
         groupname = request.POST['groupname']
@@ -117,7 +148,7 @@ def groups(request):
     return respond(request, 'groups.html', {'groups':groups})
 
 @admin_required
-def teams(request, groupslug):
+def edit_teams(request, groupslug):
     """ Overview of teams and team names """
     group = models.Group.all().filter('slug =', groupslug).get()
     if not group:
@@ -135,24 +166,18 @@ def teams(request, groupslug):
     teams = models.Team.all()
     return respond(request, 'teams.html', {'teams':teams})
     
-def group(request, groupslug):
-    """ A group's home page, basically the front page """
-    return respond(request, 'group.html', {'group':request.group})
 
-@team_required
-def dashboard(request, groupslug):
-    if request.method == 'POST':
-        if 'newbrain' in request.POST:
-            if len(request.POST['newbrain']) > 0:
-                brain = models.Brain.create(team=request.user.current_team,
-                            code=request.POST['newbrain'])
-                if not brain:
-                    return HttpResponse("Syntax Error")
-                brain.put()
-    print group.ladder()
-    return respond(request, 'dashboard.html', {'group':request.group})
-    
-    
-def play_games():
-    a,b = random.choice(models.Brain.all().fetch(100)),random.choice(models.Brain.all().fetch(100))
-    models.Game.play(a,b)
+@admin_required
+def laddermatch(request):
+    op = ''
+    for group in models.Group.all().filter("active", True):
+        brains = group.brain_set.fetch(10000)
+        if brains:
+            one = random.choice(brains)
+            # brains = filter(lambda two: two.team != one.team, brains)
+            if brains:
+                two = random.choice(brains)
+                deferred.defer(models.Game.play, one.key(), two.key())
+                op += "%s queued game %s vs %s.\n"%(group, one, two)
+    op += "Success."
+    return HttpResponse(op)

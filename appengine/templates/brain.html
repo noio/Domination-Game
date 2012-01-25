@@ -1,0 +1,17 @@
+{% extends "base_group.html" %}
+
+{% block content %}
+
+{{brain}}
+
+<pre id='code'>
+{{brain.code}}
+</pre>
+<pre id='output' class="cm-s-default">
+</pre>
+<script type="text/javascript" charset="utf-8">
+CodeMirror.runMode($("code").get('text'),  {name: "python"}, $('output'));
+$('code').destroy();
+</script>
+
+{% endblock content %}

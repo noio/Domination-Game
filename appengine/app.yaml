@@ -16,3 +16,6 @@ handlers:
 ### DYNAMIC PAGES ###
 - url: /.*
   script: main.py
+
+builtins:
+- deferred: on

@@ -9,7 +9,7 @@
 		<tr>
 			<td>{{forloop.counter}}</td>
 			<td>{{brain.conservative}}</td>
-			<td><strong>{{brain.team.name}}</strong> v{{brain.number}} {{brain.name}}</td>
+			<td><strong><a href="{{brain.team.url}}">{{brain.team}}</a></strong> <a href="{{brain.url}}">{{brain}}</a></td>
 		</tr>
 		{% endfor %}
 	</tbody>

@@ -19,7 +19,7 @@
 			<label>Brain {{letter}}</label><br/>
 			<select multiple="no" name="brain-{{letter}}" size="12">
 				{% for brain in user.current_team.brain_set %}
-				<option>v{{brain.number}} {{brain.name}}</option>
+					<option>{{brain}}</option>
 				{% endfor %}
 			</select>
 		</div>
