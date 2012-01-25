@@ -125,7 +125,7 @@ class Renderer(object):
             this allows skin packs to override only certain sprites.
         """
         path = os.path.join(ASSETS_PATH,skin)
-        if os.path.samefile(path, ASSETS_PATH) or os.path.exists(os.path.join(path,name)):
+        if path == ASSETS_PATH or os.path.exists(os.path.join(path,name)):
             return pg.image.load(os.path.join(path,name)).convert_alpha()
         else:
             return self.load_texture(name, os.path.split(skin)[0])
