@@ -1,8 +1,9 @@
 {% extends "base_group.html" %}
 
-{% block content %}
+{% block headertext %} {{block.super}} / T{{brain.team.number}}{{brain}} {%endblock%}
 
-{{brain}}
+
+{% block content %}
 
 <pre id='code'>
 {{brain.code}}
