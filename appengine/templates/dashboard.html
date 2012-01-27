@@ -1,39 +1,52 @@
 {% extends "base_group.html" %}
 
-{% block headertext %} {{block.super}} / Dashboard {%endblock%}
-
 {% block content %}
+<h1>{{user.current_team.name}} <small>Dashboard</small></h1>
 
-<h3>Team {{user.current_team.name}}</h3>
 <h4>Members</h4>
-<ul>
+<ul class='unstyled'>
 	{% for member in user.current_team.members %}
 		<li>{{member.nickname}} ({{member.key.name}})</li>
 	{% endfor %}
 </ul>
 
-<form method="post" action="">
-	<div>
+<form method="post" action="" class='form-stacked flushleft'>
+	<input id='activebrains' type='hidden' name='activebrains' value='{{user.current_team.activebrainkeyids|join:","}}'>
+	<fieldset>
+	<legend>Select active brains</legend>
+	<div id='active-agent-select' class='row'>
 	{% for letter in "ABC"|make_list %}
-		<div>
-			<label>Brain {{letter}}</label><br/>
+		<div class='span-one-third'>
+			<label>Brain {{letter}}</label>
 			<select multiple="no" name="brain-{{letter}}" size="12">
-				{% for brain in user.current_team.brain_set %}
-					<option>{{brain}}</option>
+				{% for brain in user.current_team.allbrains %}
+					<option value='{{brain.key.id}}'>{{brain}}</option>
 				{% endfor %}
 			</select>
 		</div>
 	{% endfor %}
 	</div>
+	
+	<div class='actions'><input type='submit' class='btn primary' value='Save'></input></div>
+	</fieldset>
 </form>
 
-<form method="post" action="">	
-	<input type='submit' value='Upload new brain'></input>
-	<textarea id='newbrain' name='newbrain' rows='50' cols='80'></textarea>
+<script type="text/javascript" charset="utf-8">
+var ids = $('activebrains').value.split(',');
+for (var i = 0; i < ids.length; i++){
+	$$('#active-agent-select select')[i].set('value', ids[i]);
+}
+</script>
+
+<form class='form-stacked flushleft' method="post" action="">	
+	<fieldset>
+	<legend>Upload new brain</legend>
+	<textarea id='newbrain' name='newbrain' rows='100' cols='80'># Paste your code.</textarea>
 	<script type="text/javascript" charset="utf-8">
-		var myCodeMirror = CodeMirror.fromTextArea(document.id('newbrain'));
+		var myCodeMirror = CodeMirror.fromTextArea(document.id('newbrain'), {'lineNumbers':true});
 	</script>
-	<input type='submit' value='Upload new brain'></input>
+	<div class='actions'><input type='submit' class='btn primary' value='Upload new brain'></input></div>
+	</fieldset>
 </form>
 
 

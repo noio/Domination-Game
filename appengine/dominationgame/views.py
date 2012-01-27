@@ -9,7 +9,6 @@ from datetime import datetime, time, date, timedelta
 
 # AppEngine imports
 from google.appengine.ext import db
-from google.appengine.ext.db import Key
 from google.appengine.ext import deferred
 from google.appengine.api import users
 from google.appengine.api import memcache
@@ -84,7 +83,7 @@ def frontpage(request):
     """ Renders the frontpage """
     newest_group = models.Group.all().order("-added").get()
     if not newest_group:
-        return HttpResponseRedirect(reverse(groups))
+        return HttpResponseRedirect(reverse(edit_groups))
     return HttpResponseRedirect(newest_group.url())
 
 def login(request):
@@ -115,23 +114,31 @@ def group(request, groupslug):
     return respond(request, 'group.html', {'group':request.group})
     
 def team(request, groupslug, team_id):
-    team = models.Team.get_by_id(int(team_id))
+    team = models.Team.get_by_id(int(team_id), parent=request.group)
     return respond(request, 'team.html', {'team':team})
     
 def brain(request, groupslug, brain_id):
-    brain = models.Brain.get_by_id(int(brain_id))
+    brain = models.Brain.get_by_id(int(brain_id), parent=request.group)
     return respond(request, 'brain.html', {'brain':brain})
+    
+def game(request, groupslug, game_id):
+    game = models.Game.get_by_id(int(game_id), parent=request.group)
+    return respond(request, 'game.html', {'game':game})
 
 @team_required
 def dashboard(request, groupslug):
     if request.method == 'POST':
         if 'newbrain' in request.POST:
-            if len(request.POST['newbrain']) > 0:
+            if len(request.POST['newbrain']) > 100:
                 brain = models.Brain.create(team=request.user.current_team,
-                            code=request.POST['newbrain'])
-                if not brain:
-                    return HttpResponse("Syntax Error")
-                brain.put()
+                            source=request.POST['newbrain'])
+        if 'activebrains' in request.POST:
+            brainids = []
+            for letter in 'ABC':
+                if 'brain-' + letter in request.POST:
+                    brainids.append(int(request.POST['brain-'+letter]))
+            request.user.current_team.activate(models.Brain.get_by_id(brainids, parent=request.group))
+                    
     return respond(request, 'dashboard.html')
 
 ### Admin Handlers & Tasks ###
@@ -145,7 +152,7 @@ def edit_groups(request):
         group.put()
         return HttpResponseRedirect(group.url())
     groups = models.Group.all()
-    return respond(request, 'groups.html', {'groups':groups})
+    return respond(request, 'groups_edit.html', {'groups':groups})
 
 @admin_required
 def edit_teams(request, groupslug):
@@ -159,12 +166,12 @@ def edit_teams(request, groupslug):
             team = models.Team.create(name=teamname, group=group)
             team.put()
         elif 'teamid' in request.POST:
-            team = models.Team.get_by_id(int(request.POST['teamid']))
+            team = models.Team.get_by_id(int(request.POST['teamid']), parent=request.group)
             team.emails = [e.strip() for e in request.POST['emails'].split(',')]
             team.send_invites()
             team.put()
     teams = models.Team.all()
-    return respond(request, 'teams.html', {'teams':teams})
+    return respond(request, 'teams_edit.html', {'teams':teams})
     
 
 @admin_required
@@ -178,6 +185,8 @@ def laddermatch(request):
             if brains:
                 two = random.choice(brains)
                 deferred.defer(models.Game.play, one.key(), two.key())
+                # models.Game.play(one.key(), two.key())
                 op += "%s queued game %s vs %s.\n"%(group, one, two)
     op += "Success."
+    logging.info(op)
     return HttpResponse(op)

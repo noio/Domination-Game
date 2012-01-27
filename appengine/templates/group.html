@@ -2,22 +2,42 @@
 
 {% block content %}
 
-<table>
-	<thead><tr><th>#</th><th>Score</th><th>Name</th></tr></thead>
-	<tbody>
-		{% for brain in group.ladder %}
-		<tr>
-			<td>{{forloop.counter}}</td>
-			<td>{{brain.conservative}}</td>
-			<td><strong><a href="{{brain.team.url}}">{{brain.team}}</a></strong> <a href="{{brain.url}}">{{brain}}</a></td>
-		</tr>
-		{% endfor %}
-	</tbody>
-</table>
+<div class='row'>
+	<div class='span12 offset2'>
+		<h2>Ranking</h2>
+	<table class='bordered-table zebra-striped'>
+		<thead><tr><th>#</th><th>Score</th><th>Name</th></tr></thead>
+		<tbody>
+			{% for brain in group.ladder %}
+			<tr>
+				<td>{{forloop.counter}}</td>
+				<td>{{brain.conservative}}</td>
+				<td><strong><a href="{{brain.team.url}}">{{brain.team}}</a></strong> <a href="{{brain.url}}">{{brain}}</a></td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	</div>
+</div>
+<div class='row'>
+	<div class='span8'>
+		<h3>Recent games</h3>
+		<table class='condensed-table'>
+			<thead><tr><th>Score</th><th>Red</th><th>Blue</th><th>Score</th></tr></thead>
+			<tbody>
+				{% for game in group.recent_games %}
+				<tr>
+					<td>{{game.score_red}}</td>
+					<td>{{game.red}}</td>
+					<td>{{game.blue}}</td>
+					<td>{{game.score_blue}}</td>
+					<td><a href='{{game.url}}'>{{game.winner}}</a></td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
 			
-
-{% for team in group.team_set %}
-	Team {{team.name}}
-{% endfor %}
 
 {% endblock content %}

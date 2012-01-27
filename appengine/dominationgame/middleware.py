@@ -33,11 +33,15 @@ class ScopeToGroupMiddleware(object):
     """
     
     def process_view(self, request, view_func, view_args, view_kwargs):
+        request.group = None
         if 'groupslug' in view_kwargs:
             request.group = models.Group.all().filter('slug =', view_kwargs['groupslug']).get()
-            if request.user and request.group:
+            if not request.group:
+                return Http404()
+            if request.user:
                 team = models.Team.get(request.user.teams)
-                team = filter(lambda t: t.group.key() == request.group.key(), team)
-                if team:
-                    request.user.current_team = team[0]
+                if team is not None: 
+                    team = filter(lambda t: t.group.key() == request.group.key(), team)
+                    if team:
+                        request.user.current_team = team[0]
                 

@@ -179,6 +179,7 @@ class Game(object):
         self.replay = replay
         self.verbose = verbose
         self.log = GameLog(self.verbose)
+        self.old_stdout = sys.stdout
         sys.stdout = self.log
         self.step_callback = step_callback
         if self.record and self.replay is not None:
@@ -477,8 +478,8 @@ class Game(object):
         if self.record or self.replay is None:
             for tank in self.tanks:
                 tank.brain.finalize(interrupted)
-        # Set the stdout back to the standard output stream
-        sys.stdout = sys.__stdout__
+        # Set the stdout back to whatever it was before
+        sys.stdout = self.old_stdout
     
     def substep(self):
         """ Performs a single physics substep. All objects are moved by

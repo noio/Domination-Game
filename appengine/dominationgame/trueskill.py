@@ -16,6 +16,7 @@ INITIAL_SIGMA = INITIAL_MU / 3.0
 BETA          = INITIAL_SIGMA / 5.0
 GAMMA         = INITIAL_SIGMA / 100.0
 EPSILON       = 1.0 #icdf((1.1)/2) * sqrt(2) * BETA
+DRAW_MARGIN   = 0.05
 
 ### Functions ###
 
@@ -56,7 +57,7 @@ def w_draw(t, e):
     return v_draw(t, e) ** 2 + ((e-t) * pdf(e-t) + (e+t) * pdf(e+t)) / (cdf(e-t) - cdf(-e-t))
   
 
-def adjust_skill((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON, gamma=GAMMA):
+def adjust((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON, gamma=GAMMA):
     """ Implements the 2-player skill update as described on
         http://research.microsoft.com/en-us/projects/trueskill/details.aspx#update
     """

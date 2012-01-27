@@ -13,4 +13,15 @@ indexes:
 - kind: Brain
   properties:
   - name: group
-  - name: last_active
+  - name: last_played
+
+- kind: Brain
+  properties:
+  - name: team
+  - name: added
+
+- kind: Game
+  properties:
+  - name: group
+  - name: added
+    direction: desc

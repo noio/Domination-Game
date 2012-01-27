@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>By entering the secret code that was sent to you below, you will join a team in this competition</p>
-<form method="post" action="/connect/" class='inline'>
-    <fieldset>
-    	<label for='code'>Team secret code: </label><input type="text" id='code' name='secret_code' style="width: 500px" value="{{secret_code}}"/><input type="submit" value="Connect to team." />
-    </fieldset>
-</form>
-
+<div class='hero-unit'>
+	<h1>Welcome<br/> to the Domination Game!</h1>
+	<p>By entering the secret code that was sent to you below, you will join a team in this competition</p>
+	<form method="post" action="/connect/" class='form-stacked'>
+	    <fieldset>
+	    	<label for='code'>Team secret code: </label><input type="text" id='code' name='secret_code' style="width: 500px" value="{{secret_code}}"/>
+			<input type="submit" class='btn primary' value="Connect to team." />
+	    </fieldset>
+	</form>
+</div>
 
 {% endblock %}

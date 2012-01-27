@@ -1,4 +1,7 @@
-body {padding: 40px 0 0 0;}
+body {padding: 50px 0 0 0;}
+
+form.flushleft { padding-left: 0}
+form.flushleft .actions { margin-left: 0}
 
 /**********
  STRUCTURE
@@ -19,7 +22,15 @@ form.openid label 	{ width: 200px; margin-bottom:.5em; float: left; padding: 4px
 form.openid input[type='text'] {font-size: inherit; }
 form.openid span  {height: 25px; padding-top: 10px; }
 
-
-
 .openid-input-user {width: 100px;}
 .openid-input-url {width: 300px;}
+
+
+#active-agent-select select {width: 100% }
+
+.CodeMirror-scroll {
+  height: auto;
+  overflow-y: hidden;
+  overflow-x: auto;
+  width: 100%
+}

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_group.html" %}
 
 {% block content %}
 
@@ -8,7 +8,7 @@
 		<form method="post" action="">
 			<input type='hidden' name='teamid' value="{{team.key.id}}"/> 
 			<input type='text' name='emails' value='{{team.emails|join:", "}}'/>
-			<input type='submit' value='Invite users.'/>
+			<input type='submit' class='btn' value='Invite users.'/>
 		</form>
 	</li>
 {% endfor %}
@@ -16,7 +16,7 @@
 
 <form method="post" action="">
     <fieldset>
-    	<label for='grp'>New team name: </label><input id='grp' name='teamname' type="text" style="width: 500px" /><input type="submit" value="Create team." />
+    	<label for='grp'>New team name: </label><input type="text" id='grp' name='teamname' style="width: 500px" /><input type="submit" class='btn' value="Create team." />
     </fieldset>
 </form>
 

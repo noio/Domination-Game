@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<form class="openid" method="post" action="/login/">
+<div class='hero-unit'>
+	<h1>Welcome</h1>
+	<p>Please log in using your OpenID. Enter your OpenID url or select one of the providers below.
+	</p>
+</div>
+<form class="openid form-stacked flushleft" method="post" action="/login/">
     <div><ul class="providers"> 
     <li class="openid" title="OpenID">
     	<img src="/static/theme/openidims/openidW.png" alt="icon" /> <span><strong>http://{your-openid-url}</strong></span></li> 
@@ -35,10 +40,11 @@
             <div class='input-prepend'><span class='add-on before'></span></div>
             <input class='openid-input-url' type="text" name="openid" />
             <div class='input-append'><span class='add-on after'></span></div>
-        </div> 
+        </div>
+		<input class='btn primary' type="submit" value="Login"  />
     </fieldset>
-    <div class='actions'><input class='btn' type="submit" value="Login" /></div>
 </form>
+
 <script type="text/javascript" charset="utf-8">
 	oidf = new OpenIDForm($$('form.openid')[0])
 </script>
