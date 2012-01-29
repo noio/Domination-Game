@@ -12,6 +12,13 @@ indexes:
 
 - kind: Brain
   properties:
+  - name: active
+  - name: team
+  - name: conservative
+    direction: desc
+
+- kind: Brain
+  properties:
   - name: group
   - name: last_played
 

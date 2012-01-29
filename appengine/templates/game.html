@@ -2,13 +2,10 @@
 
 {% block content %}
 
-<h1>{{game}}</h1>
+<h1>{{game.red}} vs. {{game.blue}}</h1>
 
-<div class='row'>
-	<div class='span6'>
-		<pre>{{game.log}}</pre>
-	<div>
-</div>
+<h3>Log</h3>
+<pre>{{game.log}}</pre>
 
 
 {% endblock content %}

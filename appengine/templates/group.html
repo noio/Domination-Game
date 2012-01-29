@@ -3,40 +3,84 @@
 {% block content %}
 
 <div class='row'>
-	<div class='span12 offset2'>
-		<h2>Ranking</h2>
-	<table class='bordered-table zebra-striped'>
-		<thead><tr><th>#</th><th>Score</th><th>Name</th></tr></thead>
-		<tbody>
-			{% for brain in group.ladder %}
-			<tr>
-				<td>{{forloop.counter}}</td>
-				<td>{{brain.conservative}}</td>
-				<td><strong><a href="{{brain.team.url}}">{{brain.team}}</a></strong> <a href="{{brain.url}}">{{brain}}</a></td>
-			</tr>
-			{% endfor %}
-		</tbody>
-	</table>
+	<div class="span6">
+		<h2>Home</h2>
+		<p>Welcome to {{group.name}}'s Domination Game home page. You can see an overview of the current rankings,
+		and a list of recently played games. The team ranking is computed periodically, so it might be slighly 
+		outdated.</p>
+		<h3>Rankings</h3>
+		<p>Rankings are based on matches played between randomly selected opponent brains. The teams' scores are
+		updated using a 2-player variation on the <a href="http://research.microsoft.com/en-us/projects/trueskill/">TrueSkill ranking system</a>, which is itself an extension of the <a href="http://en.wikipedia.org/wiki/Elo_rating_system">ELO rating system</a>. What you see here are the &ldquo;conservative skill estimates&rdquo;, the current estimated skill mean minus the standard deviation. Teams are ranked based on their highest scoring active brain.</p>
+	</div>
+	<div class='span10'>
+		<ul class="tabs">
+		  <li class="active"><a href="#ranking-brains">Brains</a></li>
+		  <li><a href="#ranking-teams">Teams</a></li>
+		</ul>
+		<div>
+			<div id="ranking-brains">
+				<table class='bordered-table zebra-striped'>
+					<thead><tr><th>#</th><th>Score</th><th>Name</th></tr></thead>
+					<tbody>
+						{% for brain in group.ladder_brains %}
+						<tr>
+							<td>{{forloop.counter}}</td>
+							<td>{{brain.conservative|floatformat:1}}</td>
+							<td><strong><a href="{{brain.team.url}}">{{brain.team}}</a></strong> <a href="{{brain.url}}">{{brain}}</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			<div id="ranking-teams">
+				<table class='bordered-table zebra-striped'>
+					<thead><tr><th>#</th><th>Score</th><th>Name</th></tr></thead>
+					<tbody>
+						{% for team in group.ladder_teams %}
+						<tr>
+							<td>{{forloop.counter}}</td>
+							<td>{{team.maxscore|floatformat:1}}</td>
+							<td><strong><a href="{{team.url}}">{{team}}</a></strong></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
 	</div>
 </div>
 <div class='row'>
 	<div class='span8'>
 		<h3>Recent games</h3>
-		<table class='condensed-table'>
-			<thead><tr><th>Score</th><th>Red</th><th>Blue</th><th>Score</th></tr></thead>
+		<table class='condensed-table games-played'>
+			<col align='right'><col align='right'><col align='center'>
+			<thead><tr>
+				<th class='aright'>Score</th>
+				<th class='aright'>Red</th>
+				<th class='acenter'>&nbsp;</th>
+				<th>Blue</th>
+				<th>Score</th>
+			</tr></thead>
 			<tbody>
 				{% for game in group.recent_games %}
 				<tr>
-					<td>{{game.score_red}}</td>
-					<td>{{game.red}}</td>
-					<td>{{game.blue}}</td>
+					<td class='aright'>{{game.score_red}}</td>
+					<td class='aright'>{% if game.error_red %}<span class='label warning'>err</span>{% endif %}
+						{{game.red}}
+					</td>
+					<td class='acenter'><a href='{{game.url}}'>{{game.winner}}</a></td>
+					<td>{{game.blue}}
+						{% if game.error_red %}<span class='label warning'>err</span>{% endif %}
+					</td>
 					<td>{{game.score_blue}}</td>
-					<td><a href='{{game.url}}'>{{game.winner}}</a></td>
 				</tr>
 				{% endfor %}
 			</tbody>
 		</table>
 	</div>
+	<div class='span8'>
+		<h3>Settings &amp; stats</h3>
+		<p>The settings for the current game are <code>{{group.gamesettings_obj}}</code>.</p>
 </div>
 			
 

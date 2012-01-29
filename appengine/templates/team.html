@@ -5,12 +5,19 @@
 <h1>{{team}}</h1>
 
 <div class='row'>
-	<div class='span4'>
-		<ul class='unstyled'>
-			{% for brain in team.activebrains %}
-			<li><a href='{{brain.url}}'>{{brain}}</a></li>
-			{% endfor %}
-		</ul>
+	<div class='span6'>
+		<table class='bordered-table'>
+			<thead><tr><th>Score</th><th>Name</th></thead>
+			<tbody>
+			{% for brain in team.activebrains %}<tr {% if not brain.active %}class="inactive"{%endif%}>
+			<td>{{brain.conservative}}</td>
+			<td>
+				<a href='{{brain.url}}'>{{brain}}</a>
+				{% if brain.num_errors %}<span class='label warning'>err</span>{% endif %}
+			</td>
+			</tr>{% endfor %}
+			</tbody>
+		</table>
 	<div>
 </div>
 

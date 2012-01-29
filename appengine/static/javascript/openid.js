@@ -45,7 +45,7 @@ OpenIDForm = new Class({
 			this.input.set('value', url);
 			this.before.slide('out');
 			this.after.slide('out');
-			this.input.slide('out');
+			this.input.morph('.openid-input-url');
 			this.form.submit();
 		}
 	},

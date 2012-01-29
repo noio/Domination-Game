@@ -10,6 +10,31 @@
     <script src="/static/javascript/mootools-more-1.4.0.1.js" type="text/javascript" charset="utf-8"></script>
     <script src="/static/javascript/openid.js" type="text/javascript" charset="utf-8"></script>
     <script src="/static/javascript/codemirror.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" charset="utf-8">
+		window.addEvent('domready', function(){
+			//Activate pills
+			$$('.tabs').each(function(ul){
+				var all_pills = ul.getElements('li');
+				var all_inside = $$(ul.getElements('li a').get('href').join(','));
+				all_inside.setStyle('display','none')
+				ul.getElements('li').each(function(li){
+					li.addEvent('click', function(e){
+						all_inside.setStyle('display','none');
+						all_pills.removeClass('active');
+						$$(this.getElement('a').get('href')).setStyle('display','block');
+						this.addClass('active');
+					}.bind(li));
+				});
+				$$(ul.getElement('li.active a').get('href')).setStyle('display','block');
+			});
+			
+			$$('.alert-message .close').each(function(closebtn){
+				closebtn.addEvent('click', function(e){
+					this.getParent().destroy();
+				})
+			});
+		})
+	</script>
 </head>
 
 <body>
@@ -29,8 +54,10 @@
 			</div>
 		</div>
 	</div>
-		
 	<div class='container'>
+		{% for message in messages %}
+			<div class='alert-message {{message.0}}'><a class="close" href="#">×</a>{{message.1}}</div>
+		{% endfor %}
     {% block content %}
 
     Dit is de base template.

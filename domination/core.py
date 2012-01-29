@@ -97,8 +97,8 @@ class Settings(object):
         
     def __repr__(self):
         default = Settings()
-        args = ('%s=%r'%(v,getattr(self,v)) for v in vars(self) if getattr(self,v) != getattr(default,v))
-        args = ','.join(args)
+        args = ('%s=%s'%(v,repr(getattr(self,v))) for v in vars(self) if getattr(self,v) != getattr(default,v))
+        args = ', '.join(args)
         return 'Settings(%s)'%args
                 
 class GameStats(object):

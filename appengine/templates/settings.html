@@ -1,0 +1,44 @@
+{% extends "base_group.html" %}
+
+{% block content %}
+
+<h3>Teams</h3>
+{% for team in teams %}
+
+		<form method="post" action="">
+			<label><a href='{{team.url}}'>{{team}} &nbsp;</a></label>
+			<div class='input'>
+			<input type='hidden' name='teamid' value="{{team.key.id}}"/> 
+			<input type='text' name='emails' class='xlarge' value='{{team.emails|join:", "}}'/>
+			<input type='submit' name='bsubmit' class='btn primary' value='Invite users'/>
+			<input type='submit' name='bsubmit' class='btn' value='Connect me'/>
+			</div>
+		</form>
+{% endfor %}
+
+<form method="post" action="">
+    <fieldset>
+		<legend>Create new team</legend>
+    	<label for='grp'>Name &nbsp;</label>
+		<div class='input'>
+			<input type="text" id='grp' name='teamname' /> <input type="submit" name='bsubmit' class='btn' value="Create team" />
+		</div>
+    </fieldset>
+</form>
+
+<h3>Game settings</h3>
+<form method="post" action="">
+    <fieldset>
+    	<label>Settings &nbsp;</label>
+		<div class='input'>
+			<textarea class="xxlarge" rows="5" name='gamesettings'>{{group.gamesettings}}</textarea>
+			<span class="help-block">Enter as a Settings constructor.</span>
+		</div>
+		<div class='actions'>
+			<input type="submit" name='bsubmit' class='btn primary' value="Update settings" />
+		</div>
+    </fieldset>
+</form>
+
+
+{% endblock content %}

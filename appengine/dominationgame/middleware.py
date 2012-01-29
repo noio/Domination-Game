@@ -7,7 +7,7 @@ import logging
 from google.appengine.api import users
 
 # Django imports
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.core.urlresolvers import reverse
 
 # Local imports
@@ -22,9 +22,11 @@ class AddUserToRequestMiddleware(object):
         request.user = models.Account.get_or_insert(google_user.nickname(), nickname=google_user.nickname())
         request.user.google_user = google_user
         request.user.logout_url = users.create_logout_url('/')
+        request.user.is_admin = users.is_current_user_admin()
     else:
         request.user = None
-    request.user_is_admin = users.is_current_user_admin()
+    models.Account.current_user = request.user
+
     
 
 class ScopeToGroupMiddleware(object):
@@ -37,7 +39,7 @@ class ScopeToGroupMiddleware(object):
         if 'groupslug' in view_kwargs:
             request.group = models.Group.all().filter('slug =', view_kwargs['groupslug']).get()
             if not request.group:
-                return Http404()
+                return HttpResponseNotFound()
             if request.user:
                 team = models.Team.get(request.user.teams)
                 if team is not None: 

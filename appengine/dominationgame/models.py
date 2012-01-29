@@ -43,23 +43,7 @@ class TimeDeltaProperty(db.Property):
     def make_value_from_datastore(self, value):
         if value is not None:
             return timedelta(seconds=value)
-            
-class DictProperty(db.StringProperty):
-    """ Quick 'n dirty way to store a dictionary in de datastore"""
 
-    def get_value_for_datastore(self, model_instance):
-        d = super(DictProperty, self).get_value_for_datastore(model_instance)
-        if d is not None:
-            return repr(d)
-        return None
-    
-    def make_value_from_datastore(self, value):
-        if value is not None:
-            return eval(value)
-
-    def validate(self, value):
-        if value is not None and type(value) != dict:
-            raise db.BadValueError("%r must be a dict."%value)
 
 class SlugProperty(db.StringProperty):
     """A (rough) App Engine equivalent to Django's SlugField."""
@@ -85,13 +69,14 @@ class SlugProperty(db.StringProperty):
 ### Models ###
 
 class Group(db.Model):
-    name = db.StringProperty(required=True)
-    slug = SlugProperty(name)
-    added = db.DateTimeProperty(auto_now_add=True)
+    name   = db.StringProperty(required=True)
+    slug   = SlugProperty(name)
+    added  = db.DateTimeProperty(auto_now_add=True)
     active = db.BooleanProperty(default=True)
     # Group settings
-    gamesettings = DictProperty(default={})
+    gamesettings  = db.TextProperty(default="{}")
     release_delay = TimeDeltaProperty(default=timedelta(days=10))
+    max_uploads   = db.IntegerProperty(default=10)
     
     def __str__(self):
         return self.name
@@ -101,13 +86,21 @@ class Group(db.Model):
             self.slug = slugify(self.name)
         return reverse("dominationgame.views.group", args=[self.slug])
         
-    def ladder(self):
-        recent = datetime.now() - timedelta(days=7)
-        q = self.brain_set.filter('last_played > ',recent)
+    def ladder_brains(self):
+        q = self.brain_set.filter('active',True)
         return sorted(q, key=lambda b: b.conservative, reverse=True)
+        
+    def ladder_teams(self):
+        return self.team_set
         
     def recent_games(self):
         return self.game_set.order('-added').fetch(10)
+        
+    def gamesettings_obj(self):
+        try:
+            return domcore.Settings(**eval(self.gamesettings))
+        except:
+            return domcore.Settings()
     
 class Team(db.Model):
     group       = db.ReferenceProperty(Group, required=True)
@@ -117,13 +110,14 @@ class Team(db.Model):
     added       = db.DateTimeProperty(auto_now_add=True)
     emails      = db.StringListProperty()
     # Brains
-    brain_ver   = db.IntegerProperty(default=0)
-    actives = db.ListProperty(db.Key)
+    brain_ver = db.IntegerProperty(default=0)
+    actives   = db.ListProperty(db.Key)
+    maxscore  = db.FloatProperty(default=0.0)
     
     @classmethod
     def create(cls, group, **kwargs):
         kwargs['hashed_code'] = b64.urlsafe_b64encode(os.urandom(32))
-        kwargs['number'] = Team.all().count() + 1
+        kwargs['number'] = group.team_set.count() + 1
         kwargs['parent'] = group
         return cls(group=group, **kwargs)
         
@@ -135,10 +129,14 @@ class Team(db.Model):
     def activate(self, brains):
         for brain in self.brain_set:
             brain.active = False
+            brain.put()
         for i,brain in enumerate(brains):
             brain.active = True
         self.actives = [b.key() for b in brains]
-        db.put(self.brain_set.fetch(10000))
+        def txn():
+            db.put(brains)
+            self.put()
+        db.run_in_transaction(txn)
     
     def send_invites(self):
         secret_code = b64.urlsafe_b64encode(os.urandom(32))
@@ -172,6 +170,11 @@ class Team(db.Model):
     def url(self):
         return reverse("dominationgame.views.team", args=[self.group.slug, self.key().id()])
         
+    def recent_upload_count(self):
+        """ How many brains were uploaded in the last 7 days. """
+        recent = datetime.now() - timedelta(days=7)
+        return self.brain_set.filter('added >', recent).count(10)
+        
     def members(self):
         """ Returns a list of members """
         return Account.all().filter('teams', self.key())
@@ -194,13 +197,14 @@ class Account(db.Model):
     nickname = db.StringProperty()
     teams = db.ListProperty(db.Key)
     
+    current_user = None
     current_team = None
     
 class Brain(db.Model):
     # Performance stats
     score        = db.FloatProperty(default=100.0)
     uncertainty  = db.FloatProperty(default=30.0)
-    conservative = db.FloatProperty(default=100.0)
+    conservative = db.FloatProperty(default=0.0)
     active       = db.BooleanProperty(default=False)
     games_played = db.IntegerProperty(default=1)
     num_errors   = db.IntegerProperty(default=0)
@@ -211,7 +215,6 @@ class Brain(db.Model):
     version = db.IntegerProperty(default=1)
     # Timestamps
     added       = db.DateTimeProperty(auto_now_add=True)
-    modified    = db.DateTimeProperty(auto_now=True)
     last_played = db.DateTimeProperty()
     # Source code
     source       = db.TextProperty(required=True)
@@ -253,6 +256,9 @@ class Brain(db.Model):
     def released(self):
         return self.release_date() < datetime.now()
         
+    def owned_by_current_user(self):
+        return Account.current_user.team == self.team
+        
         
 class Game(db.Model):
     added = db.DateTimeProperty(auto_now_add=True)
@@ -269,15 +275,18 @@ class Game(db.Model):
 
     
     @classmethod
-    def play(cls, red_key, blue_key, ranked=True):
+    def play(cls, group_key, red_key, blue_key, ranked=True):
         """ Play and store a single game. """
         # Dereference the keys
         red = Brain.get(red_key)
         blue = Brain.get(blue_key)
+        group = Group.get(group_key)
         # Run a game
-        logging.info("Running game: %s %s vs %s %s"%(red.team, red, blue.team, blue))
+        settings = group.gamesettings_obj()
+        logging.info("Running game: %s %s vs %s %s with %s"%(red.team, red, blue.team, blue, settings))
         dg = domcore.Game(red_brain_string=red.source,
                           blue_brain_string=blue.source,
+                          settings=settings,
                           verbose=False, rendered=False)
         dg.run()
         logging.info("Game done.")
@@ -310,7 +319,7 @@ class Game(db.Model):
                    error_blue=dg.blue_raised_exception,
                    stats=repr(dg.stats.__dict__), 
                    winner=winner,
-                   log=log, group=red.group, parent=red.group)
+                   log=log, group=group, parent=group)
         def txn():
             game.put()
             red.put()

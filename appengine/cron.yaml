@@ -1,4 +1,9 @@
 cron:
 - description: run ladder match
-  url: /tasks/laddermatch
-  schedule: every 10 mins
+  url: /tasks/laddermatch/
+  schedule: every 30 mins
+
+- description: update team scores
+  url: /tasks/update_team_scores/
+  schedule: every 2 hours
+  

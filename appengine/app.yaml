@@ -14,6 +14,10 @@ handlers:
   static_dir: static
 
 ### DYNAMIC PAGES ###
+- url: /tasks/.*
+  script: main.py
+  login: admin
+  
 - url: /.*
   script: main.py
 

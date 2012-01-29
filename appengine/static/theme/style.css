@@ -34,3 +34,6 @@ form.openid span  {height: 25px; padding-top: 10px; }
   overflow-x: auto;
   width: 100%
 }
+
+table .aright { text-align: right; }
+table .acenter { text-align: center; }

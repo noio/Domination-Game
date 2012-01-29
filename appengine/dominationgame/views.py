@@ -5,6 +5,7 @@ import os
 import logging
 import urllib
 import random
+import re
 from datetime import datetime, time, date, timedelta
 
 # AppEngine imports
@@ -19,7 +20,7 @@ from google.appengine.api import urlfetch
 from django import forms
 from django.shortcuts import render_to_response
 from django.conf import settings as django_settings
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.template import Template, Context
 from django.template.loader import render_to_string
@@ -63,7 +64,7 @@ def admin_required(func):
     def admin_wrapper(request, *args, **kwds):
         if request.user is None:
             return HttpResponseRedirect(reverse(login))
-        if not request.user_is_admin:
+        if not request.user.is_admin:
             return HttpResponseForbidden('You must be admin for this function')
         return func(request, *args, **kwds)
     
@@ -127,19 +128,26 @@ def game(request, groupslug, game_id):
 
 @team_required
 def dashboard(request, groupslug):
+    messages = []
     if request.method == 'POST':
         if 'newbrain' in request.POST:
-            if len(request.POST['newbrain']) > 100:
+            source = str(request.POST['newbrain']).strip()
+            source = re.sub(r'(\r\n|\r|\n)', '\n', source)
+            if request.user.current_team.recent_upload_count() >= request.group.max_uploads:
+                messages.append(("error", "Max uploads exceeded."))
+            elif len(source) < 100:
+                messages.append(("error","Code is too short."))
+            else:
                 brain = models.Brain.create(team=request.user.current_team,
-                            source=request.POST['newbrain'])
+                            source=source)
+                messages.append(("success","Brain uploaded."))
         if 'activebrains' in request.POST:
             brainids = []
             for letter in 'ABC':
                 if 'brain-' + letter in request.POST:
                     brainids.append(int(request.POST['brain-'+letter]))
             request.user.current_team.activate(models.Brain.get_by_id(brainids, parent=request.group))
-                    
-    return respond(request, 'dashboard.html')
+    return respond(request, 'dashboard.html',{'messages':messages})
 
 ### Admin Handlers & Tasks ###
 
@@ -155,11 +163,11 @@ def edit_groups(request):
     return respond(request, 'groups_edit.html', {'groups':groups})
 
 @admin_required
-def edit_teams(request, groupslug):
-    """ Overview of teams and team names """
-    group = models.Group.all().filter('slug =', groupslug).get()
+def settings(request, groupslug):
+    """ Overview of group settings and teams """
+    group = request.group
     if not group:
-        return Http404()
+        return HttpResponseNotFound()
     if request.method == 'POST':
         if 'teamname' in request.POST:
             teamname = request.POST['teamname']
@@ -167,26 +175,60 @@ def edit_teams(request, groupslug):
             team.put()
         elif 'teamid' in request.POST:
             team = models.Team.get_by_id(int(request.POST['teamid']), parent=request.group)
-            team.emails = [e.strip() for e in request.POST['emails'].split(',')]
-            team.send_invites()
-            team.put()
+            if request.POST['bsubmit'] == 'Invite users.':                
+                team.emails = [e.strip() for e in request.POST['emails'].split(',')]
+                team.send_invites()
+                team.put()
+            elif request.POST['bsubmit'] == 'Connect me.':
+                request.user.teams.append(team.key())
+                request.user.put()
+        elif 'gamesettings' in request.POST:
+            gamesettings = eval(request.POST['gamesettings'])
+            if type(gamesettings) == dict:
+                group.gamesettings = repr(gamesettings)
+                group.put()
     teams = models.Team.all()
-    return respond(request, 'teams_edit.html', {'teams':teams})
+    return respond(request, 'settings.html', {'teams':teams})
     
+### Task Views ###
 
-@admin_required
+# These don't have @admin_required, because they use a
+# separate entry in app.yaml
+
 def laddermatch(request):
-    op = ''
+    """ Runs a random match between two teams from each
+        active group.
+    """
+    msg = ''
     for group in models.Group.all().filter("active", True):
-        brains = group.brain_set.fetch(10000)
+        brains = group.brain_set.filter("active", True).fetch(10000)
         if brains:
             one = random.choice(brains)
             # brains = filter(lambda two: two.team != one.team, brains)
             if brains:
                 two = random.choice(brains)
-                deferred.defer(models.Game.play, one.key(), two.key())
-                # models.Game.play(one.key(), two.key())
-                op += "%s queued game %s vs %s.\n"%(group, one, two)
-    op += "Success."
-    logging.info(op)
-    return HttpResponse(op)
+                # Execute now if this is a direct request, queue if cron
+                if 'X-AppEngine-Cron' in request.META:
+                    deferred.defer(models.Game.play, group.key(), one.key(), two.key())
+                else:
+                    models.Game.play( group.key(), one.key(), two.key())
+                msg += "%s queued game %s vs %s.\n"%(group, one, two)
+    msg += "Success."
+    logging.info(msg)
+    return HttpResponse(msg)
+    
+def update_team_scores(request):
+    """ Updates the scores of all teams from each group
+    """
+    msg = ''
+    for group in models.Group.all().filter("active",True):
+        for team in group.team_set:
+            best = team.brain_set.filter("active",True).order("-conservative").get()
+            if best is not None:
+                msg += "%s's best score from %s is %.1f\n"%(team, best, best.conservative)
+                team.maxscore = best.conservative
+            else:
+                team.maxscore = 0
+    msg += 'Success'
+    logging.info(msg)
+    return HttpResponse(msg)
