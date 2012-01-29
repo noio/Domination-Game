@@ -176,9 +176,14 @@ class Game(object):
             :param step_callback:     Function that is called on every step. Useful for debugging.
         """
         self.record = record
-        self.replay = replay
         self.verbose = verbose
+        
+        # Public properties
         self.log = GameLog(self.verbose)
+        self.red_raised_exception  = False
+        self.blue_raised_exception = False
+        self.replay = replay
+        
         self.old_stdout = sys.stdout
         sys.stdout = self.log
         self.step_callback = step_callback
@@ -265,12 +270,10 @@ class Game(object):
         self.renderer = renderer.Renderer(self.field, **kwargs)
         
     def setup(self):
-        """ Sets up the game. Can be called on a game that has
-            already finished once, to play the game again
-            on the same map. Note that the game is deterministic,
-            so if there is no random behavior in the agents, the
-            outcome of each game will be identical.
+        """ Sets up the game.
         """
+        if self.state != Game.STATE_NEW:
+            raise Exception("Can only run a game once. Create new Game() for another simulation.")
         self.random = random.Random()
         # Initialize new replay
         if self.record:
@@ -300,8 +303,6 @@ class Game(object):
         self.think_time_blue_total = 0.0
         self.update_time_total     = 0.0
         self.sim_time_total        = 0.0
-        self.red_raised_exception  = False
-        self.blue_raised_exception = False
         # Game objects
         self.tanks         = []
         self.controlpoints = []
