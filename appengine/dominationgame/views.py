@@ -125,6 +125,15 @@ def brain(request, groupslug, brain_id):
 def game(request, groupslug, game_id):
     game = models.Game.get_by_id(int(game_id), parent=request.group)
     return respond(request, 'game.html', {'game':game})
+    
+def replay(request, groupslug, game_id):
+    game = models.Game.get_by_id(int(game_id), parent=request.group)
+    if game.replay:
+        response = HttpResponse(content_type=game.replay.content_type)
+        response['Content-Disposition'] = 'attachment; filename=replay%s.pickle.gz'%game.identifier()
+        response['X-AppEngine-BlobKey'] = game.replay.key()
+        return response
+    return HttpResponse404()
 
 @team_required
 def dashboard(request, groupslug):
@@ -175,11 +184,11 @@ def settings(request, groupslug):
             team.put()
         elif 'teamid' in request.POST:
             team = models.Team.get_by_id(int(request.POST['teamid']), parent=request.group)
-            if request.POST['bsubmit'] == 'Invite users.':                
+            if request.POST['bsubmit'] == 'Invite users':                
                 team.emails = [e.strip() for e in request.POST['emails'].split(',')]
                 team.send_invites()
                 team.put()
-            elif request.POST['bsubmit'] == 'Connect me.':
+            elif request.POST['bsubmit'] == 'Connect me':
                 request.user.teams.append(team.key())
                 request.user.put()
         elif 'gamesettings' in request.POST:
@@ -202,9 +211,10 @@ def laddermatch(request):
     msg = ''
     for group in models.Group.all().filter("active", True):
         brains = group.brain_set.filter("active", True).fetch(10000)
+        msg += '== Group %s ==\n'%(group)
         if brains:
             one = random.choice(brains)
-            # brains = filter(lambda two: two.team != one.team, brains)
+            brains = filter(lambda two: two != one, brains)
             if brains:
                 two = random.choice(brains)
                 # Execute now if this is a direct request, queue if cron
@@ -212,7 +222,9 @@ def laddermatch(request):
                     deferred.defer(models.Game.play, group.key(), one.key(), two.key())
                 else:
                     models.Game.play( group.key(), one.key(), two.key())
-                msg += "%s queued game %s vs %s.\n"%(group, one, two)
+                msg += "Queued game %s vs %s.\n"%(one, two)
+            else:
+                msg += 'Not enough brains.\n'
     msg += "Success."
     logging.info(msg)
     return HttpResponse(msg)
@@ -229,6 +241,7 @@ def update_team_scores(request):
                 team.maxscore = best.conservative
             else:
                 team.maxscore = 0
+            team.put()
     msg += 'Success'
     logging.info(msg)
     return HttpResponse(msg)

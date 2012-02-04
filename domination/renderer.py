@@ -7,7 +7,6 @@ anything from this module explicitly.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-__version__ = "0.1"
 
 ### IMPORTS ###
 # Python 

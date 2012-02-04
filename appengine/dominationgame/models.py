@@ -1,17 +1,24 @@
 ### Imports ###
 
+# Future imports
+from __future__ import with_statement
+
 # Python Imports
 import os
 import re
 import hashlib
 import logging
+import pickle
+import gzip
 import base64 as b64
 from datetime import datetime, date, time, timedelta
 
 # AppEngine Imports
-from google.appengine.api import mail
 from google.appengine.ext import db
 from google.appengine.ext import deferred
+from google.appengine.ext import blobstore
+from google.appengine.api import mail
+from google.appengine.api import files
 from google.appengine.api.app_identity import get_application_id, get_default_version_hostname
 
 # Django Imports
@@ -221,6 +228,9 @@ class Brain(db.Model):
     
     def __str__(self):
         return mark_safe("%s v%d"%(self.name, self.version))
+        
+    def identifier(self):
+        return "t%dv%d"%(self.team.number, self.version)
     
     @classmethod
     def create(cls, team, source, **kwargs):
@@ -261,17 +271,20 @@ class Brain(db.Model):
         
         
 class Game(db.Model):
-    added = db.DateTimeProperty(auto_now_add=True)
-    group = db.ReferenceProperty(Group, required=True)
-    red = db.ReferenceProperty(Brain, collection_name="red_set")
-    blue = db.ReferenceProperty(Brain, collection_name="blue_set")
-    score_red = db.IntegerProperty()
-    score_blue = db.IntegerProperty()
-    error_red = db.BooleanProperty(default=False)
-    error_blue = db.BooleanProperty(default=False) 
-    stats = db.TextProperty()
-    log = db.TextProperty()
-    winner = db.StringProperty(choices=["red","blue","draw"])
+    added           = db.DateTimeProperty(auto_now_add=True)
+    group           = db.ReferenceProperty(Group, required=True)
+    red             = db.ReferenceProperty(Brain, collection_name="red_set")
+    blue            = db.ReferenceProperty(Brain, collection_name="blue_set")
+    score_red       = db.IntegerProperty()
+    score_blue      = db.IntegerProperty()
+    red_score_diff  = db.FloatProperty()
+    blue_score_diff = db.FloatProperty()
+    error_red       = db.BooleanProperty(default=False)
+    error_blue      = db.BooleanProperty(default=False) 
+    stats           = db.TextProperty()
+    log             = db.TextProperty()
+    replay          = blobstore.BlobReferenceProperty()
+    winner          = db.StringProperty(choices=["red","blue","draw"])
 
     
     @classmethod
@@ -281,35 +294,54 @@ class Game(db.Model):
         red = Brain.get(red_key)
         blue = Brain.get(blue_key)
         group = Group.get(group_key)
+        
         # Run a game
         settings = group.gamesettings_obj()
         logging.info("Running game: %s %s vs %s %s with %s"%(red.team, red, blue.team, blue, settings))
         dg = domcore.Game(red_brain_string=red.source,
                           blue_brain_string=blue.source,
                           settings=settings,
-                          verbose=False, rendered=False)
+                          verbose=False, rendered=False, record=True)
         dg.run()
         logging.info("Game done.")
+        
         # Extract stats
         stats = dg.stats
+        red_score = (red.score, red.uncertainty)
+        blue_score = (blue.score, blue.uncertainty)
+        # Compute new scores
         if abs(0.5 - stats.score) < trueskill.DRAW_MARGIN:
             winner = "draw"
+            red_new, blue_new = trueskill.adjust(red_score, blue_score, draw=True)
         elif stats.score > 0.5:
             winner = "red"
+            red_new, blue_new = trueskill.adjust(red_score, blue_score)
         else:
             winner = "blue"
+            blue_new, red_new = trueskill.adjust(blue_score, red_score)
+            
+        # Extract replay & write to blob
+        replay = pickle.dumps(dg.replay, pickle.HIGHEST_PROTOCOL)
+        blobfile = files.blobstore.create(mime_type='application/gzip')
+        with files.open(blobfile, 'a') as f:
+            gz = gzip.GzipFile(fileobj=f,mode='wb')
+            gz.write(replay)
+            gz.close()
+            # f.write(replay)
+        files.finalize(blobfile)
+        replaykey = files.blobstore.get_blob_key(blobfile)
+        
         # Truncate game log if needed
         log = str(dg.log)
         if len(log) > 16*1024:
-            msg = "\n== LOG TRUNCATED ==\n"
+            msg = "\n== LOG TRUNCATED TO 16KB ==\n"
             log = log[:16*1024-len(msg)] + msg
+        
         # Adjust agent scores:
         logging.info("Storing game.")
-        # Compute new scores
-        red_new, blue_new = trueskill.adjust((red.score, red.uncertainty), 
-                                 (blue.score, blue.uncertainty), draw=(winner=="draw"))
         red.played_game(red_new, error=dg.red_raised_exception)
         blue.played_game(blue_new, error=dg.blue_raised_exception)
+        
         # Store stuff
         game = cls(red=red, 
                    blue=blue,
@@ -317,15 +349,24 @@ class Game(db.Model):
                    score_blue=stats.score_blue,
                    error_red=dg.red_raised_exception,
                    error_blue=dg.blue_raised_exception,
+                   red_score_diff=red_new[0] - red_score[0],
+                   blue_score_diff=blue_new[0] - blue_score[0],
                    stats=repr(dg.stats.__dict__), 
                    winner=winner,
-                   log=log, group=group, parent=group)
+                   replay=replaykey,
+                   log=log, 
+                   group=group, parent=group)
         def txn():
+            # Write the entities
             game.put()
             red.put()
             blue.put()
         db.run_in_transaction(txn)
         logging.info("Game was put.")
+        
+    def identifier(self):
+        date = self.added.strftime("%Y%m%d-%H%M")
+        return "%s_%s_vs_%s"%(date, self.red.identifier(), self.blue.identifier())
         
     def url(self):
         return reverse("dominationgame.views.game", args=[self.group.slug, self.key().id()])

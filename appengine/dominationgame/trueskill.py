@@ -76,3 +76,16 @@ def adjust((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON,
     
     return (new_mu_w, new_sig_w), (new_mu_l, new_sig_l)
     
+    
+if __name__ == "__main__":
+    a = (98.2, 29.4)
+    b = ( 93.2, 26.1 )
+    
+    (a, b) = adjust(a, b)
+    print a,b
+    (a, b) = adjust(a, b)
+    print a,b
+    (a, b) = adjust(a, b)
+    print a,b
+    (a, b) = adjust(a, b)
+    print a,b
