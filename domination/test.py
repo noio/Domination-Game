@@ -67,10 +67,10 @@ class TestDominationGame(unittest.TestCase):
     def test_balance(self):
         scores = []
         for i in range(100):
-            game = core.Game(rendered=False).run()
+            game = core.Game(rendered=False, verbose=False).run()
             scores.append(game.stats.score)
         avg = sum(scores)/len(scores)
-        print avg
+        print "Average score %.5f"%avg
         self.assertTrue(0.45 < avg < 0.55)
         
     def test_field(self):
@@ -89,7 +89,7 @@ class TestDominationGame(unittest.TestCase):
     def test_replay(self):
         settings = core.Settings(max_steps=200)
         for i in range(40):
-            game = core.Game(settings=settings, record=True, rendered=False)
+            game = core.Game(settings=settings, record=True, rendered=False, verbose=False)
             game.run()
             replaygame = core.Game(replay=game.replay, rendered=False)
             replaygame.run()

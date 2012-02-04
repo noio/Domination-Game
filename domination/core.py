@@ -109,9 +109,18 @@ class GameStats(object):
         self.steps = 0
         self.ammo_red = 0
         self.ammo_blue = 0
+        self.think_time_red = 0.0
+        self.think_time_blue = 0.0
     
     def __str__(self):
-        return "%d steps. Score: %d-%d."%(self.steps,self.score_red,self.score_blue) 
+        # return ("%d steps. Score: %d-%d.\n"
+        #                 "RED: %.2fs, %d ammo.\n"
+        #                 "BLU: %.2fs, %d ammo."%(self.steps,self.score_red,self.score_blue,
+        #                                         self.think_time_red,self.ammo_red,self.think_time_blue,self.ammo_blue))  
+        #
+        items = sorted(self.__dict__.items())
+        maxlen = max(len(k) for k,v in items)
+        return "== GAME STATS ==\n" + "\n".join(('%s : %r'%(k.ljust(maxlen), v)) for (k,v) in items)
         
 class GameLog(object):
     """ Simple writable object that can replace
@@ -192,8 +201,8 @@ class Game(object):
         # Set up a new game
         if replay is None:            
             self.settings = settings
-            self.red_brain = red_brain
-            self.blue_brain = blue_brain
+            self.red_brain_string = red_brain_string if red_brain_string else open(red_brain,'r').read()
+            self.blue_brain_string = blue_brain_string if blue_brain_string else open(blue_brain,'r').read()
             self.red_init = red_init
             self.blue_init = blue_init
             if field is None:
@@ -201,35 +210,6 @@ class Game(object):
             else:
                 self.field = field
                 self.settings.tilesize = self.field.tilesize
-            # Read agent brains (from string or file)
-            g = AGENT_GLOBALS.copy()
-            try:
-                if red_brain_string is not None:
-                    exec(red_brain_string, g)
-                else:
-                    execfile(red_brain, g)
-                self.red_brain_class = g['Agent']
-                self.red_name = self.agent_name(self.red_brain_class)
-            except Exception, e:
-                self.red_raised_exception = True
-                print "Red agent has loading error"
-                traceback.print_exc(file=sys.stdout)
-                self.red_brain_class = None
-                self.red_name = "error"
-            # Blue brain
-            try:
-                if blue_brain_string is not None:
-                    exec(blue_brain_string, g)
-                else:
-                    execfile(blue_brain, g)
-                self.blue_brain_class = g['Agent']
-                self.blue_name = self.agent_name(self.blue_brain_class)
-            except Exception, e:
-                self.blue_raised_exception = True
-                print "Blue agent has loading error"
-                traceback.print_exc(file=sys.stdout)
-                self.blue_brain_class = None
-                self.blue_name = "error"
         # Load up a replay
         else:
             print '[Game]: Playing replay.'
@@ -240,17 +220,12 @@ class Game(object):
             self.red_name = replay.red_name
             self.blue_name = replay.blue_name
 
-        # Variables for performance timing
-        self.sim_time = 0.0 
         # Create the renderer if needed
         if rendered:
             self.add_renderer()
         else:
             self.renderer = None
         
-        self.interrupted = False
-        self.clicked = None
-        self.keys = []
         self.state = Game.STATE_NEW
         
     def agent_name(self, agent_class):
@@ -272,8 +247,30 @@ class Game(object):
     def setup(self):
         """ Sets up the game.
         """
-        if self.state != Game.STATE_NEW:
-            raise Exception("Can only run a game once. Create new Game() for another simulation.")
+        # Read agent brains (from string or file)
+        g = AGENT_GLOBALS.copy()
+        try:
+            exec(self.red_brain_string, g)
+            self.red_brain_class = g['Agent']
+            self.red_name = self.agent_name(self.red_brain_class)
+        except Exception, e:
+            self.red_raised_exception = True
+            print "Red agent has loading error"
+            traceback.print_exc(file=sys.stdout)
+            self.red_brain_class = None
+            self.red_name = "error"
+        # Blue brain
+        try:
+            exec(self.blue_brain_string, g)
+            self.blue_brain_class = g['Agent']
+            self.blue_name = self.agent_name(self.blue_brain_class)
+        except Exception, e:
+            self.blue_raised_exception = True
+            print "Blue agent has loading error"
+            traceback.print_exc(file=sys.stdout)
+            self.blue_brain_class = None
+            self.blue_name = "error"
+            
         self.random = random.Random()
         # Initialize new replay
         if self.record:
@@ -287,9 +284,12 @@ class Game(object):
         reds = [o for o in allobjects if isinstance(o, TankSpawn) and o.team == TEAM_RED]
         blues = [o for o in allobjects if isinstance(o, TankSpawn) and o.team == TEAM_BLUE]
         # Game logic variables
-        self.score_red  = self.settings.max_score / 2
-        self.score_blue = self.settings.max_score / 2
-        self.step       = 0
+        self.score_red   = self.settings.max_score / 2
+        self.score_blue  = self.settings.max_score / 2
+        self.step        = 0
+        self.interrupted = False
+        self.clicked     = None
+        self.keys        = []
         # Simulation variables
         self.object_uid    = 0
         self.objects         = []
@@ -299,9 +299,8 @@ class Game(object):
         self.stats = GameStats()
         self.think_time_red        = 0.0
         self.think_time_blue       = 0.0
-        self.think_time_red_total  = 0.0
-        self.think_time_blue_total = 0.0
         self.update_time_total     = 0.0
+        self.sim_time              = 0.0
         self.sim_time_total        = 0.0
         # Game objects
         self.tanks         = []
@@ -390,8 +389,8 @@ class Game(object):
                 self.update_time_total += time.clock() - p
                 sum_red = sum(tank.time_thought for tank in self.tanks_red)
                 sum_blue = sum(tank.time_thought for tank in self.tanks_blue)
-                self.think_time_red_total += sum_red
-                self.think_time_blue_total += sum_blue
+                self.stats.think_time_red += sum_red
+                self.stats.think_time_blue += sum_blue
                 if self.tanks_red:
                     self.think_time_red = sum_red / len(self.tanks_red)
                 if self.tanks_blue:
