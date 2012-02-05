@@ -27,7 +27,10 @@ sys.path.insert(0, os.path.abspath('../domination'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
+
+autodoc_member_order = 'bysource'
+autoclass_content = "both"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -43,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Domination Game'
-copyright = u'2012, Thomas van den Berg & Tim Doolan'
+copyright = u'2012, Thomas van den Berg and Tim Doolan'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -186,7 +189,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'DominationGame.tex', u'Domination Game Documentation',
-   u'Thomas van den Berg \\& Tim Doolan', 'manual'),
+   u'Thomas van den Berg and Tim Doolan', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -208,37 +211,3 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_domain_indices = True
-
-
-# -- Options for manual page output --------------------------------------------
-
-# One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'dominationgame', u'Domination Game Documentation',
-     [u'Thomas van den Berg & Tim Doolan'], 1)
-]
-
-# If true, show URL addresses after external links.
-#man_show_urls = False
-
-
-# -- Options for Texinfo output ------------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-texinfo_documents = [
-  ('index', 'DominationGame', u'Domination Game Documentation',
-   u'Thomas van den Berg & Tim Doolan', 'DominationGame', 'One line description of project.',
-   'Miscellaneous'),
-]
-
-# Documents to append as an appendix to all manuals.
-#texinfo_appendices = []
-
-# If false, no module index is generated.
-#texinfo_domain_indices = True
-
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-#texinfo_show_urls = 'footnote'
