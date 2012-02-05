@@ -1,5 +1,6 @@
 *.pyc
-
+docs/Makefile
+docs/_*
 domination/renderer.pyc
 
 domination/__init__.pyc

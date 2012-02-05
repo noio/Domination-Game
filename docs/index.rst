@@ -6,7 +6,15 @@
 Home
 ====
 
-Contents:
+Intro 
+-----
+
+The domination game is a game played by two teams of agents. They will combat one another and accumulate points through capturing control points on the map. The team with the most agents on a control point will capture that control point. These control points remain captured by the same team even when left alone. Agents are capable of picking up ammo, that spawns at designated positions on the map, and use it to shoot other agents. Upon death, agents will respawn in their teams' designated spawn areas. Agents can freely roam the map, but are unable to walk through walls or other agents.    
+
+Within one iteration an agent can turn, change its speed, and shoot (in that order). To assure that simulations can terminate in reasonable time, there is a reaction time limit per iteration per agent. Simply, if the agent exceeds this limit it will not do anything. Map layouts (walls, control points and such) are known at the start of the game, but other info are not commonly known and have to be observed by the agents (ammopacks and agents). 
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
@@ -15,11 +23,9 @@ Contents:
    agents
    scenarios
    fields
-
-The domination game is a game played by two teams of agents. They will combat one another and accumulate points through capturing control points on the map. The team with the most agents on a control point will capture that control point. These control points remain captured by the same team even when left alone. Agents are capable of picking up ammo, that spawns at designated positions on the map, and use it to shoot other agents. Upon death, agents will respawn in their teams' designated spawn areas. Agents can freely roam the map, but are unable to walk through walls or other agents.    
-
-Within one iteration an agent can turn, change its speed, and shoot (in that order). To assure that simulations can terminate in reasonable time, there is a reaction time limit per iteration per agent. Simply, if the agent exceeds this limit it will not do anything. Map layouts (walls, control points and such) are known at the start of the game, but other info are not commonly known and have to be observed by the agents (ammopacks and agents). 
-
+   
+Quickstart
+----------
 
 If you're not going to read any of the other documentation, just do the following. 
 
