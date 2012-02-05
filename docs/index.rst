@@ -3,25 +3,40 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Domination Game's documentation!
-===========================================
+Home
+====
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
-
-.. py:module:: domination.core
-
-.. automodule:: core
-   :members: CAPTURE_MODE_NEUTRAL, CAPTURE_MODE_FIRST, CAPTURE_MODE_MAJORITY, ENDGAME_NONE, ENDGAME_SCORE, ENDGAME_CRUMBS
-
-.. autoclass:: core.Settings
-   :members:
-
-.. autoclass:: core.Game
-   :members:
-
+   
+   reference
    
 
+If you're not going to read any of the other documentation, just do the following. 
 
+1. Modify or extend the basic agent found in the source code (`agent.py <https://github.com/noio/Domination-Game/blob/master/domination/agent.py>`_).
+
+2. Import and extend the basic scenario::
+
+    import domination.run
+    
+    class MyScenario(domination.run.Scenario):
+       EPISODES = 10
+
+3. Test to see if the scenario works as expected::
+
+    ms = MyScenario('myagent.py', 'domination/agent.py')
+    ms.test()
+
+4. Run it, this will save the results to a comma-separated-value file::
+    
+	ms.run()
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
