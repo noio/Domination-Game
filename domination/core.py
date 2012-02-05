@@ -76,21 +76,39 @@ class Settings(object):
                        think_time=0.010,
                        capture_mode=CAPTURE_MODE_NEUTRAL,
                        end_condition=ENDGAME_SCORE):
-        self.max_steps     = max_steps     #: How long the game will last at most
-        self.max_score     = max_score     #: If either team scores this much, the game is finished
-        self.max_speed     = max_speed     #: Number of game units each tank can drive in its turn
-        self.max_turn      = max_turn      #: The maximum angle that a tank can rotate in a turn
-        self.max_range     = max_range     #: The shooting range of tanks in game units
-        self.max_see       = max_see       #: How far tanks can see (Manhattan distance)
-        self.field_known   = field_known   #: Whether the agents have knowledge of the field at game start
-        self.ammo_rate     = ammo_rate     #: How long it takes for ammo to reappear
-        self.ammo_amount   = ammo_amount   #: How many bullets there are in each ammo pack
-        self.agent_type    = agent_type    #: Type of the agents ('tank' or 'vacubot')
-        self.spawn_time    = spawn_time    #: Time that it takes for tanks to respawn
-        self.think_time    = think_time    #: How long the tanks have to do their computations (in seconds)
-        self.capture_mode  = capture_mode  #: One of the CAPTURE_MODE constants.
-        self.end_condition = end_condition #: One of the ENDGAME flags. Use bitwise OR for multiple.
-        self.tilesize      = tilesize      #: How big a single tile is (game units), change at risk of massive bugginess
+        """ Constructor for Settings class
+        
+            :param max_steps:     How long the game will last at most
+            :param max_score:     If either team scores this much, the game is finished
+            :param max_speed:     Number of game units each tank can drive in its turn
+            :param max_turn:      The maximum angle that a tank can rotate in a turn
+            :param max_range:     The shooting range of tanks in game units
+            :param max_see:       How far tanks can see (Manhattan distance)
+            :param field_known:   Whether the agents have knowledge of the field at game start
+            :param ammo_rate:     How long it takes for ammo to reappear
+            :param ammo_amount:   How many bullets there are in each ammo pack
+            :param agent_type:    Type of the agents ('tank' or 'vacubot')
+            :param spawn_time:    Time that it takes for tanks to respawn
+            :param think_time:    How long the tanks have to do their computations (in seconds)
+            :param capture_mode:  One of the CAPTURE_MODE constants.
+            :param end_condition: One of the ENDGAME flags. Use bitwise OR for multiple.
+            :param tilesize:      How big a single tile is (game units), change at risk of massive bugginess
+        """            
+        self.max_steps     = max_steps    
+        self.max_score     = max_score    
+        self.max_speed     = max_speed    
+        self.max_turn      = max_turn     
+        self.max_range     = max_range    
+        self.max_see       = max_see      
+        self.field_known   = field_known  
+        self.ammo_rate     = ammo_rate    
+        self.ammo_amount   = ammo_amount  
+        self.agent_type    = agent_type   
+        self.spawn_time    = spawn_time   
+        self.think_time    = think_time   
+        self.capture_mode  = capture_mode 
+        self.end_condition = end_condition
+        self.tilesize      = tilesize     
         # Validate
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
@@ -103,14 +121,14 @@ class Settings(object):
                 
 class GameStats(object):
     def __init__(self):
-        self.score_red = 0
-        self.score_blue = 0
-        self.score = 0.0
-        self.steps = 0
-        self.ammo_red = 0
-        self.ammo_blue = 0
-        self.think_time_red = 0.0
-        self.think_time_blue = 0.0
+        self.score_red  = 0  #:The number of points scored by red
+        self.score_blue = 0 #: The number of points scored by blue
+        self.score      = 0.0 #: The final score as a float (red/total)
+        self.steps      = 0 #: Number of steps the game lasted
+        self.ammo_red   = 0 #: Number of ammo packs that red picked up
+        self.ammo_blue  = 0 #: Idem for blue
+        self.think_time_red  = 0.0 #: Total time in seconds that red took to compute actions
+        self.think_time_blue = 0.0 #: Idem for blue
     
     def __str__(self):
         items = sorted(self.__dict__.items())
@@ -187,6 +205,7 @@ class Game(object):
         self.red_raised_exception  = False #: Whether the red agents raised an exception
         self.blue_raised_exception = False #: Whether the blue agents raised an exception
         self.replay = replay #: The replay object, can be accessed after game has run
+        self.stats = None #: Instance of :class:`core.GameStats`.
         
         self.old_stdout = sys.stdout
         sys.stdout = self.log
@@ -1502,25 +1521,24 @@ class TankSpawn(GameObject):
 
 class Observation(object):
     def __init__(self):
-        self.step       = 0     # Current timestep
-        self.loc        = (0,0) # Agent's location (x,y)
-        self.angle      = 0     # Current angle in radians
-        self.walls      = []    # Visible walls around the agent: a 2D binary array
-        self.friends    = []    # All/Visible friends: a list of (x,y,angle)-tuples
-        self.foes       = []    # Visible foes: a list of (x,y,angle)-tuples
-        self.cps        = []    # Controlpoints: a list of (x,y,TEAM_RED/TEAM_BLUE)-tuples
-        self.objects    = []    # Visible objects: a list of (x,y,type)-tuples
-        self.ammo       = 0     # Ammo count
-        self.score      = (0,0) # Current game score
-        self.collided   = False # Whether the agent has collided in the previous turn
-        self.respawn_in = -1    # How many timesteps left before this agent can move again.
+        self.step       = 0     #: Current timestep
+        self.loc        = (0,0) #: Agent's location (x,y)
+        self.angle      = 0     #: Current angle in radians
+        self.walls      = []    #: Visible walls around the agent: a 2D binary array
+        self.friends    = []    #: All/Visible friends: a list of (x,y,angle)-tuples
+        self.foes       = []    #: Visible foes: a list of (x,y,angle)-tuples
+        self.cps        = []    #: Controlpoints: a list of (x,y,TEAM_RED/TEAM_BLUE)-tuples
+        self.objects    = []    #: Visible objects: a list of (x,y,type)-tuples
+        self.ammo       = 0     #: Ammo count
+        self.score      = (0,0) #: Current game score
+        self.collided   = False #: Whether the agent has collided in the previous turn
+        self.respawn_in = -1    #: How many timesteps left before this agent can move again.
         # The following properties are only set when
         # the renderer is enabled:
-        self.selected = False   # Indicates if the agent is selected in the UI
-        self.clicked = None     # Indicates the position of a right-button click, if there was one
-        self.keys = []          # A list of all keys pressed in the previous turn
-        
-## Replay Classes
+        self.selected = False   #: Indicates if the agent is selected in the UI
+        self.clicked = None     #: Indicates the position of a right-button click, if there was one
+        self.keys = []          #: A list of all keys pressed in the previous turn
+
 
 class ReplayData(object):
     def __init__(self, game):

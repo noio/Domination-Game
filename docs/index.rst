@@ -11,8 +11,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
    
-   reference
-   
+   games
+   agents
+   scenarios
+
 
 If you're not going to read any of the other documentation, just do the following. 
 
