@@ -2,7 +2,7 @@ Creating Agents
 ===============
 
 Writing agents consists of creating a Python class that implements *five* methods, some 
-of which are optional. The agents are imported using Python's `exec method <http://docs.python.org/library/functions.html#exec>`_, after which 
+of which are optional. The agents are imported using Python's `exec method <http://docs.python.org/reference/simple_stmts.html#exec>`_, after which 
 the class named `Agent` is extracted. It is probably easiest to refer to and modify 
 the `default agent <https://github.com/noio/Domination-Game/blob/master/domination/agent.py>`_. 
 But there is a quick rundown of the functions below as well.
