@@ -58,7 +58,6 @@ class TestDominationGame(unittest.TestCase):
     def test_render(self):
         try:
             import pygame
-            self.settings.max_steps = 20
             settings = core.Settings(max_steps=20)
             core.Game(settings=settings, rendered=True).run()
         except ImportError:
@@ -82,7 +81,6 @@ class TestDominationGame(unittest.TestCase):
     def test_string_agent(self):
         game = core.Game(red_brain_string=RANDOM_AGENT, 
                          blue_brain_string=RANDOM_AGENT, 
-                         settings=self.settings,
                          rendered=False)
         game.run()
     

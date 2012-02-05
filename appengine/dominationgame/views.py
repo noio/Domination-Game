@@ -11,6 +11,7 @@ from datetime import datetime, time, date, timedelta
 # AppEngine imports
 from google.appengine.ext import db
 from google.appengine.ext import deferred
+from google.appengine.ext import blobstore
 from google.appengine.api import users
 from google.appengine.api import memcache
 from google.appengine.api import urlfetch
@@ -156,7 +157,12 @@ def dashboard(request, groupslug):
                 if 'brain-' + letter in request.POST:
                     brainids.append(int(request.POST['brain-'+letter]))
             request.user.current_team.activate(models.Brain.get_by_id(brainids, parent=request.group))
-    return respond(request, 'dashboard.html',{'messages':messages})
+    upload_url = blobstore.create_upload_url(reverse(upload_blob, kwargs={'groupslug':groupslug}))
+    return respond(request, 'dashboard.html',{'messages':messages,'upload_url':upload_url})
+    
+@team_required
+def upload_blob(request, groupslug):
+    return HttpResponse('ok')
 
 ### Admin Handlers & Tasks ###
 

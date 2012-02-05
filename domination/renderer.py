@@ -301,7 +301,7 @@ class Renderer(object):
                         if rect_contains_point((6,37,58,22),(uix,uiy)):
                             self.toggle_team(game)
                 elif event.button == 3:
-                    game.click((x,y))
+                    game._click((x,y))
             # Catch mouse dragging for selection
             elif event.type == pg.MOUSEMOTION:
                 x = (event.pos[0]-self.vp_rect[0])//self.upscale
@@ -320,12 +320,12 @@ class Renderer(object):
                     self.paused = not self.paused
                     self.pause_loop(game)
                 elif 97 <= event.key <= 122:
-                    game.keypress(event.key)
+                    game._keypress(event.key)
                     
     def toggle_team(self,game):
         self.agent_debug.fill((0,0,0,0))
         self.active_team = 1-self.active_team
-        game.select_tanks((0,0,0,0),team=self.active_team)
+        game._select_tanks((0,0,0,0),team=self.active_team)
         
     def pause_loop(self,game):
         while self.paused:

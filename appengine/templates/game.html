@@ -2,7 +2,26 @@
 
 {% block content %}
 
-<h1>{{game.red}} vs. {{game.blue}}</h1>
+
+<div class='row'>
+	<div class='span-one-third' style='text-align: right'>
+		<h3>Red</h3>
+		<a href='{{game.red.team.url}}'>{{game.red.team}}</a> <a href='{{game.red.url}}'>{{game.red}}</a><br/>
+		<h3>{{game.score_red}}</h3>
+		<span class='light'>{{game.red_score_diff|floatformat}}</span>
+	</div>
+	<div class='span-one-third'>
+		<h3>Blue</h3>
+		<a href='{{game.blue.team.url}}'>{{game.blue.team}}</a> <a href='{{game.blue.url}}'>{{game.blue}}</a>
+		<h3>{{game.score_blue}}</h3>
+		<span class='light'>{{game.blue_score_diff|floatformat}}</span>
+	</div>	
+	<div class='span-one-third'>
+		<strong>Date:</strong> {{game.added}} <br/>
+		
+		<strong><a href='{{game.replay_url}}'>Download Replay</a></strong>
+	</div>
+</div>
 
 <h3>Log</h3>
 <pre>{{game.log}}</pre>

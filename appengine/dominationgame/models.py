@@ -364,6 +364,9 @@ class Game(db.Model):
         db.run_in_transaction(txn)
         logging.info("Game was put.")
         
+    def stats_obj(self):
+        return eval(self.stats)
+        
     def identifier(self):
         date = self.added.strftime("%Y%m%d-%H%M")
         return "%s_%s_vs_%s"%(date, self.red.identifier(), self.blue.identifier())
@@ -371,3 +374,5 @@ class Game(db.Model):
     def url(self):
         return reverse("dominationgame.views.game", args=[self.group.slug, self.key().id()])
         
+    def replay_url(self):
+        return reverse("dominationgame.views.replay", args=[self.group.slug, self.key().id()])

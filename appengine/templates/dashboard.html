@@ -24,7 +24,8 @@
 
 <ul class='tabs'>
   <li class="active"><a href="#select-active">Select active</a></li>
-  <li><a href="#upload-new">Upload new</a></li>
+  <li><a href="#upload-agent">Upload agent</a></li>
+  <li><a href="#upload-blob">Upload blob</a></li>
 </ul>	
 
 <div>
@@ -61,7 +62,7 @@
 	</script>
 	</div>
 
-	<div id='upload-new'>
+	<div id='upload-agent'>
 	<form class='form-stacked flushleft' method="post" action="">	
 		<fieldset>
 		<legend>Upload new brain</legend>
@@ -73,6 +74,17 @@
 		</fieldset>
 	</form>
 	</div>
+	
+	<div id='upload-blob'>
+	<form class='form-stacked flushleft' method="post" action="{{upload_url}}" enctype="multipart/form-data">	
+		<fieldset>
+		<legend>Upload new binary blob</legend>
+		<input type="file" name="file">
+		<div class='actions'><input type='submit' class='btn primary' value='Upload new blob'></input></div>
+		</fieldset>
+	</form>
+	</div>
+	
 </div>
 
 

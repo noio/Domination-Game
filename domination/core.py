@@ -48,13 +48,13 @@ TEAM_RED     = 0
 TEAM_BLUE    = 1
 TEAM_NEUTRAL = 2
 
-CAPTURE_MODE_NEUTRAL  = 0
-CAPTURE_MODE_FIRST    = 1
-CAPTURE_MODE_MAJORITY = 2
+CAPTURE_MODE_NEUTRAL  = 0 #: Controlpoints are neutral when occupied by both teams
+CAPTURE_MODE_FIRST    = 1 #: Controlpoints stay in control of first team that captures them
+CAPTURE_MODE_MAJORITY = 2 #: Controlpoints are owned by the team with the most occupiers
 
-ENDGAME_NONE   = 0 #0b00
-ENDGAME_SCORE  = 1 #0b01
-ENDGAME_CRUMBS = 2 #0b10
+ENDGAME_NONE   = 0 #: End game when time expires
+ENDGAME_SCORE  = 1 #: End game when either team has 0 score
+ENDGAME_CRUMBS = 2 #: End game when all crumbs are picked up
 
 AGENT_GLOBALS = globals().copy()
 
@@ -76,21 +76,21 @@ class Settings(object):
                        think_time=0.010,
                        capture_mode=CAPTURE_MODE_NEUTRAL,
                        end_condition=ENDGAME_SCORE):
-        self.max_steps     = max_steps     # How long the game will last at most
-        self.max_score     = max_score     # If either team scores this much, the game is finished
-        self.max_speed     = max_speed     # Number of game units each tank can drive in its turn
-        self.max_turn      = max_turn      # The maximum angle that a tank can rotate in a turn
-        self.max_range     = max_range     # The shooting range of tanks in game units
-        self.max_see       = max_see       # How far tanks can see (Manhattan distance)
-        self.field_known   = field_known   # Whether the agents have knowledge of the field at game start
-        self.ammo_rate     = ammo_rate     # How long it takes for ammo to reappear
-        self.ammo_amount   = ammo_amount   # How many bullets there are in each ammo pack
-        self.agent_type    = agent_type    # Type of the agents ('tank' or 'vacubot')
-        self.spawn_time    = spawn_time    # Time that it takes for tanks to respawn
-        self.think_time    = think_time    # How long the tanks have to do their computations (in seconds)
-        self.capture_mode  = capture_mode  # Behavior of controlpoints when multiple agents are on them
-        self.end_condition = end_condition # FLAGS for end condition of game. (So you can set multiple using "OR")
-        self.tilesize      = tilesize      # How big a single tile is (game units), change at risk of massive bugginess
+        self.max_steps     = max_steps     #: How long the game will last at most
+        self.max_score     = max_score     #: If either team scores this much, the game is finished
+        self.max_speed     = max_speed     #: Number of game units each tank can drive in its turn
+        self.max_turn      = max_turn      #: The maximum angle that a tank can rotate in a turn
+        self.max_range     = max_range     #: The shooting range of tanks in game units
+        self.max_see       = max_see       #: How far tanks can see (Manhattan distance)
+        self.field_known   = field_known   #: Whether the agents have knowledge of the field at game start
+        self.ammo_rate     = ammo_rate     #: How long it takes for ammo to reappear
+        self.ammo_amount   = ammo_amount   #: How many bullets there are in each ammo pack
+        self.agent_type    = agent_type    #: Type of the agents ('tank' or 'vacubot')
+        self.spawn_time    = spawn_time    #: Time that it takes for tanks to respawn
+        self.think_time    = think_time    #: How long the tanks have to do their computations (in seconds)
+        self.capture_mode  = capture_mode  #: One of the CAPTURE_MODE constants.
+        self.end_condition = end_condition #: One of the ENDGAME flags. Use bitwise OR for multiple.
+        self.tilesize      = tilesize      #: How big a single tile is (game units), change at risk of massive bugginess
         # Validate
         if max_score % 2 != 0:
             raise Exception("Max score (%d) has to be even."%max_score)
@@ -113,11 +113,6 @@ class GameStats(object):
         self.think_time_blue = 0.0
     
     def __str__(self):
-        # return ("%d steps. Score: %d-%d.\n"
-        #                 "RED: %.2fs, %d ammo.\n"
-        #                 "BLU: %.2fs, %d ammo."%(self.steps,self.score_red,self.score_blue,
-        #                                         self.think_time_red,self.ammo_red,self.think_time_blue,self.ammo_blue))  
-        #
         items = sorted(self.__dict__.items())
         maxlen = max(len(k) for k,v in items)
         return "== GAME STATS ==\n" + "\n".join(('%s : %r'%(k.ljust(maxlen), v)) for (k,v) in items)
@@ -188,10 +183,10 @@ class Game(object):
         self.verbose = verbose
         
         # Public properties
-        self.log = GameLog(self.verbose)
-        self.red_raised_exception  = False
-        self.blue_raised_exception = False
-        self.replay = replay
+        self.log = GameLog(self.verbose) #: The game log as an instance of class:`GameLog`
+        self.red_raised_exception  = False #: Whether the red agents raised an exception
+        self.blue_raised_exception = False #: Whether the blue agents raised an exception
+        self.replay = replay #: The replay object, can be accessed after game has run
         
         self.old_stdout = sys.stdout
         sys.stdout = self.log
@@ -228,7 +223,7 @@ class Game(object):
         
         self.state = Game.STATE_NEW
         
-    def agent_name(self, agent_class):
+    def _agent_name(self, agent_class):
         """ Retrieves the name of an agent
             This is defined by a static property NAME in the agent's class.
         """
@@ -244,32 +239,33 @@ class Game(object):
         globals()['renderer'] = renderer
         self.renderer = renderer.Renderer(self.field, **kwargs)
         
-    def setup(self):
+    def _setup(self):
         """ Sets up the game.
         """
         # Read agent brains (from string or file)
         g = AGENT_GLOBALS.copy()
-        try:
-            exec(self.red_brain_string, g)
-            self.red_brain_class = g['Agent']
-            self.red_name = self.agent_name(self.red_brain_class)
-        except Exception, e:
-            self.red_raised_exception = True
-            print "Red agent has loading error"
-            traceback.print_exc(file=sys.stdout)
-            self.red_brain_class = None
-            self.red_name = "error"
-        # Blue brain
-        try:
-            exec(self.blue_brain_string, g)
-            self.blue_brain_class = g['Agent']
-            self.blue_name = self.agent_name(self.blue_brain_class)
-        except Exception, e:
-            self.blue_raised_exception = True
-            print "Blue agent has loading error"
-            traceback.print_exc(file=sys.stdout)
-            self.blue_brain_class = None
-            self.blue_name = "error"
+        if not self.replay:
+            try:
+                exec(self.red_brain_string, g)
+                self.red_brain_class = g['Agent']
+                self.red_name = self._agent_name(self.red_brain_class)
+            except Exception, e:
+                self.red_raised_exception = True
+                print "Red agent has loading error"
+                traceback.print_exc(file=sys.stdout)
+                self.red_brain_class = None
+                self.red_name = "error"
+            # Blue brain
+            try:
+                exec(self.blue_brain_string, g)
+                self.blue_brain_class = g['Agent']
+                self.blue_name = self._agent_name(self.blue_brain_class)
+            except Exception, e:
+                self.blue_raised_exception = True
+                print "Blue agent has loading error"
+                traceback.print_exc(file=sys.stdout)
+                self.blue_brain_class = None
+                self.blue_name = "error"
             
         self.random = random.Random()
         # Initialize new replay
@@ -306,7 +302,7 @@ class Game(object):
         self.tanks         = []
         self.controlpoints = []
         for o in allobjects:
-            self.add_object(o)
+            self._add_object(o)
         self.controlpoints = cps
         # Initialize tanks
         print "Loading agents."
@@ -321,7 +317,7 @@ class Game(object):
                         brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                     t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
                     self.tanks.append(t)
-                    self.add_object(t)
+                    self._add_object(t)
             if self.blue_brain_class is not None:
                 for i,s in enumerate(blues):
                     if self.settings.field_known:
@@ -331,17 +327,17 @@ class Game(object):
                         brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                     t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
                     self.tanks.append(t)
-                    self.add_object(t)
+                    self._add_object(t)
         else:
             # Initialize tanks to play replays
             for i,(s,a) in enumerate(zip(reds,self.replay.actions_red)):
                 t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, spawn=s, actions=a[:])
                 self.tanks.append(t)
-                self.add_object(t)
+                self._add_object(t)
             for i,(s,a) in enumerate(zip(blues,self.replay.actions_blue)):
                 t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, spawn=s, actions=a[:])
                 self.tanks.append(t)
-                self.add_object(t)
+                self._add_object(t)
         self.tanks_red = [tank for tank in self.tanks if tank.team == TEAM_RED]
         self.tanks_blue = [tank for tank in self.tanks if tank.team == TEAM_BLUE]
         self.state = Game.STATE_READY
@@ -350,7 +346,7 @@ class Game(object):
     def run(self):
         """ Start and loop the game. """
         if self.state != Game.STATE_READY:
-            self.setup()
+            self._setup()
         res      = Game.SIMULATION_SUBSTEPS
         render   = self.renderer is not None
         settings = self.settings
@@ -377,7 +373,7 @@ class Game(object):
                         tcx, tcy = tank._x + tank.width/2, tank._y + tank.height/2
                         target = (cos(tank.angle) * settings.max_range + tcx, 
                                   sin(tank.angle) * settings.max_range + tcy)
-                        hits   = self.raycast((tcx, tcy), target, exclude=tank)
+                        hits   = self._raycast((tcx, tcy), target, exclude=tank)
                         tank._hitx, tank._hity = target
                         if hits:
                             t, (px,py), who = hits[0]
@@ -437,7 +433,7 @@ class Game(object):
                 for step in xrange(res):
                     p = time.clock()
                     # Perform one physics substep
-                    self.substep()
+                    self._substep()
                     self.sim_time += time.clock() - p
                     if render:
                         self.renderer.render(self)
@@ -451,10 +447,10 @@ class Game(object):
             self.state = Game.STATE_INTERRUPT
         except KeyboardInterrupt:
             self.state = Game.STATE_INTERRUPT
-        self.end(interrupted=(self.state==Game.STATE_INTERRUPT))
+        self._end(interrupted=(self.state==Game.STATE_INTERRUPT))
         return self # For chaining, if you're into that.
     
-    def end(self, interrupted=False):
+    def _end(self, interrupted=False):
         """ End the game, writes scores to a file and tells all the agents
             that the game is over so that they can write any remaining info.
         """
@@ -481,7 +477,7 @@ class Game(object):
         # Set the stdout back to whatever it was before
         sys.stdout = self.old_stdout
     
-    def substep(self):
+    def _substep(self):
         """ Performs a single physics substep. All objects are moved by
             their respective _dx and _dy amounts, collisions are computed,
             and all objects are repeatedly separated until no large collisions
@@ -508,7 +504,7 @@ class Game(object):
                             break
                         # Otherwise check if the y's intersect too
                         if o2._y < (o1._y + o1.height) and o1._y < (o2._y + o2.height):
-                            sep = self.compute_separation(o1,o2)
+                            sep = self._compute_separation(o1,o2)
                             if sep is not None:
                                 if o1.solid and o2.solid:
                                     collisions.append(sep)
@@ -530,7 +526,7 @@ class Game(object):
                             break
                         # Otherwise check if the y's intersect too
                         if o2._y < (o1._y + o1.height) and o1._y < (o2._y + o2.height):
-                            sep = self.compute_separation(o1,o2)
+                            sep = self._compute_separation(o1,o2)
                             if sep is not None:
                                 if o1.solid and o2.solid:
                                     collisions.append(sep)
@@ -568,7 +564,7 @@ class Game(object):
             o1.collide(o2)
             o2.collide(o1)
         
-    def add_object(self,o):
+    def _add_object(self,o):
         """ Add an object to the game and collision list. """
         o.game = self
         o.uid = hashlib.md5(str(self.object_uid)).digest()
@@ -583,7 +579,7 @@ class Game(object):
                 self.broadphase_stat.sort(key=lambda o:(o._x))
         o.added_to_game(self)
         
-    def rem_object(self,o):
+    def _rem_object(self,o):
         """ Removes an object from the game and collision lists. """
         self.objects.remove(o)
         if o.physical:
@@ -595,7 +591,7 @@ class Game(object):
         if hasattr(o, 'parent'):
             o.parent.remove_child(o)
                 
-    def get_objects_in_bounds(self, xmin, xmax, ymin, ymax, solid_only=True):
+    def _get_objects_in_bounds(self, xmin, xmax, ymin, ymax, solid_only=True):
         """ Return a list of all objects whose bounding boxes
             intersect the given bounds.
         """
@@ -612,7 +608,7 @@ class Game(object):
                 if ymin < (o._y + o.height) and o._y < ymax:
                     yield o
     
-    def compute_separation(self, object1, object2):
+    def _compute_separation(self, object1, object2):
         """ Compute object separation/penetration
             Returns a tuple or None.
             The tuple consists of the penetration distance, 
@@ -707,7 +703,7 @@ class Game(object):
             px, py = -px, -py
         return (p, object1, object2, px, py)
         
-    def raycast(self, p0, p1, exclude=None):
+    def _raycast(self, p0, p1, exclude=None):
         """ Shoots a ray from p0 to p1 and determines
             which objects are hit and at what time
             in the parametric line equation p0 + t*(p1-p0)
@@ -718,7 +714,7 @@ class Game(object):
         ymin, ymax = (p0y, p1y) if p0y < p1y else (p1y, p0y)
         
         # List collided pairs
-        in_box = self.get_objects_in_bounds(xmin,xmax,ymin,ymax)
+        in_box = self._get_objects_in_bounds(xmin,xmax,ymin,ymax)
         # Determine actual hits
         hits = []
         for o in in_box:
@@ -737,19 +733,19 @@ class Game(object):
         hits.sort(key=lambda h: h[0])
         return hits
     
-    def click(self, pos):
+    def _click(self, pos):
         """ Tells the game that the right-mouse button was clicked
             somewhere on the field.
         """
         self.clicked = pos
     
-    def keypress(self, key):
+    def _keypress(self, key):
         """ Tells the game that some key on the keyboard was pressed.
         """
         self.keys.append(key)
         
-    def select_tanks(self, rect, team=0):
-        """ Function that can be called by the renderer to set
+    def _select_tanks(self, rect, team=0):
+        """ Function that is called by the renderer to set
             selected=True on tanks in the given rectangle. Handy
             for manually selecting and controlling tanks.
         """
@@ -1252,7 +1248,7 @@ class Tank(GameObject):
         obs.selected   = self.selected
         obs.clicked    = self.game.clicked
         obs.keys       = self.game.keys
-        close = self.game.get_objects_in_bounds(self.x - rng, self.x + self.width + rng,
+        close = self.game._get_objects_in_bounds(self.x - rng, self.x + self.width + rng,
                     self.y - rng, self.y + self.height + rng, solid_only=False)
         
         for o in close:
@@ -1416,7 +1412,7 @@ class Ammo(GameObject):
             elif other.team == TEAM_BLUE:
                 self.game.stats.ammo_blue += 1
             other.ammo += self.game.settings.ammo_amount
-            self.game.rem_object(self)
+            self.game._rem_object(self)
             self.pickedup = True
 
 class Crumb(Ammo):
@@ -1475,7 +1471,7 @@ class Fountain(GameObject):
                 c = self.CHILD_CLASS(x - self.CHILD_CLASS.SIZE/2.0, y - self.CHILD_CLASS.SIZE/2.0)
                 c.parent = self
                 self.children.append(c)
-                self.game.add_object(c)
+                self.game._add_object(c)
                 return
             attempts -= 1
             
