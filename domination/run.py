@@ -26,6 +26,7 @@ pi = math.pi
 ### CLASSES ###
 
 class Scenario(object):
+    """ A scenario is used to run multiple games under the same conditions. """
     
     SETTINGS     = core.Settings()
     FIELD        = core.FieldGenerator().generate()

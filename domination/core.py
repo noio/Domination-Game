@@ -205,7 +205,7 @@ class Game(object):
         self.red_raised_exception  = False #: Whether the red agents raised an exception
         self.blue_raised_exception = False #: Whether the blue agents raised an exception
         self.replay = replay #: The replay object, can be accessed after game has run
-        self.stats = None #: Instance of :class:`core.GameStats`.
+        self.stats = None #: Instance of :class:`~core.GameStats`.
         
         self.old_stdout = sys.stdout
         sys.stdout = self.log
@@ -1058,6 +1058,8 @@ class FieldGenerator(object):
     def generate(self):
         """ Generates a new field using the parameters for random 
             distribution set in the constructor. 
+            
+            :returns: A :class:`~core.Field` instance.
         """
         # Create a new field
         field = Field(width=self.width, height=self.height, tilesize=self.tilesize)

@@ -14,6 +14,7 @@ Contents:
    games
    agents
    scenarios
+   fields
 
 
 If you're not going to read any of the other documentation, just do the following. 
@@ -40,5 +41,4 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`

@@ -1,13 +1,13 @@
 Running a Game
 ==============
 
-In order to run a game, you need to import the domination module, and either create a *Scenario*, or call the *Game* object directly.
+In order to run a game, you need to import the domination module, and either create a :class:`~run.Scenario`, or create a :class:`~core.Game` object directly.
 
 
 Creating a Game object directly
 -------------------------------
 
-The simplest way you can use the game object, is to just instantiate it and call its :py:meth:`~domination.core.Game.run` method. This will run a game with all its default settings::
+The simplest way you can use the game object, is to just instantiate it and call its :py:meth:`~core.Game.run` method. This will run a game with all its default settings::
 
     core.Game('domination/agent.py','domination/agent.py').run()
 
@@ -35,7 +35,6 @@ If we like, we can mess around a bit with the game object and its properties::
 Game
 ----
 
-.. py:module domination.core
 
 The :class:`~core.Game` class has the following specification.
 
