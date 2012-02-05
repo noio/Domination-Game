@@ -9,3 +9,5 @@ The original concept for the game was developed by Okke Formsma and Arno Veenstr
 new version of the framework was developed by Thomas van den Berg and Tim Doolan.
 
 Please refer to the [wiki](https://github.com/noio/Domination-Game/wiki) for information on using this framework.
+
+Soon, all the documentation will be moved to [RTD](http://readthedocs.org/docs/domination-game/).
