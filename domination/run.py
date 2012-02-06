@@ -9,6 +9,9 @@ Contains functions for running multiple games and tournaments.
 # Python
 import datetime
 import sys
+import os
+import csv
+import glob
 try:
     import cPickle as pickle
 except ImportError:
@@ -19,6 +22,7 @@ from optparse import OptionParser
 
 # Local
 import core
+from utilities import *
 
 # Shortcuts
 pi = math.pi
@@ -28,86 +32,118 @@ pi = math.pi
 class Scenario(object):
     """ A scenario is used to run multiple games under the same conditions. """
     
+    #: The settings with which these games will be played
     SETTINGS     = core.Settings()
-    FIELD        = core.FieldGenerator().generate()
-    EPISODES     = 10
-    SKIN         = ''
-    SAVE_TO_FILE = False
-    
-    @classmethod
-    def observation_function(cls,observation):
-        return observation
-        
+    #: The field that these games will be played on
+    FIELD        = core.FieldGenerator().generate() 
+    REPEATS      = 3     #: How many times to repeat each game
+    SWAP_TEAMS   = False #: Repeat each run with blue/red swapped
+            
     def setup(self):
         pass
         
     def before_each(self):
         pass
         
-    def after_each(self):
+    def after_each(self, game):
+        """ Function that is run after each game.
+            :param game: The previous game
+        """
         pass
     
-    def finalize(self):
-        pass
         
     """ You shouldn't have to override any
         of the methods below, but you may.
     """ 
-    def __init__(self, red_brain, blue_brain, 
-                       red_init={}, blue_init={}):
-        self.red_brain = red_brain
-        self.blue_brain = blue_brain
-        self.red_init = red_init
-        self.blue_init = blue_init
-        
-        self.replays = []
-        self.stats = []
-        
-    def single(self, rendered=False):
+    def _single(self, red, blue, rendered=False):
+        """ Runs a single game, returns results, called repeatedly
+            by :meth:`Scenario._multi`.
+        """
         self.before_each()
-        game = core.Game(self.red_brain, self.blue_brain,
-                    red_init=self.red_init, blue_init=self.blue_init,
+        # Open blobs for reading if we can find 'em
+        red_blob = os.path.splitext(red)[0] + '_blob'
+        blue_blob = os.path.splitext(blue)[0] + '_blob'
+        red_init = {'blob': open(red_blob,'r')} if os.path.exists(red_blob) else {}
+        blue_init = {'blob': open(blue_blob,'r')} if os.path.exists(blue_blob) else {}
+        # Run the game
+        game = core.Game(red, blue, 
+                    red_init=red_init, blue_init=blue_init,
                     field=self.FIELD, settings=self.SETTINGS,
                     record=True, verbose=False, rendered=False)
         if rendered:
             game.add_renderer()
         game.run()
-        self.last_game = game
-        self.replays.append(game.replay)
-        self.stats.append(game.stats)
-        self.after_each()
+        # Close the blobs
+        if 'blob' in red_init:
+            red_init['blob'].close()
+        if 'blob' in blue_init:
+            blue_init['blob'].close()
+        self.after_each(game)
+        return (game.stats, game.replay)
         
-    def run(self):
+        
+    def _multi(self, teams, output_folder=None, rendered=False):
+        """ Runs multiple games, given as  a list of
+            (red, red_init, blue, blue_init) tuples. 
+        """
         self.setup()
-        self.replays = []
-        self.stats = []
-        for i in range(self.EPISODES):
-            self.single()
-            print "Ran %d games."%(i+1)
+        # Manipulate the playlist a bit
+        teams = teams * self.REPEATS
+        if self.SWAP_TEAMS:
+            teams = teams + [(b, r) for (r, b) in teams]
+        # Run the games
+        stats   = []
+        replays = []
+        for i, (red, blue) in enumerate(teams):
+            (stats, replay) = self._single(red, blue, rendered=rendered)
+            print "======= Game %d/%d done. =======" % (i+1, len(teams))
+            print stats
+            
         now = datetime.datetime.now()
         self.filename = 'dg%s_%s_vs_%s'%(now.strftime("%Y%m%d-%H%M"), self.last_game.red_name, self.last_game.blue_name)
-        self.finalize()
-        if self.SAVE_TO_FILE:
-            self.write_scores()
-            self.save_replays()
-        return self # For chaining, if you're into that.
-        
-    def test(self):
-        self.setup()
-        self.single(rendered=True)
-        self.finalize()
-        return self
-        
-    def write_scores(self):
-        statsfile = open(self.filename+'.stats.csv', 'w')
-        statsfile.write("# Score, steps\n")
-        statsfile.write('\n'.join( "%.2f, %d" % (s.score, s.steps) for s in self.stats ))
-        statsfile.close()
-        
-    def save_replays(self):
-        replays = [pickle.dumps(r) for r in self.replays]
-        zf = zipfile.ZipFile(self.filename+'.replays.zip','w')
-        for i,r in enumerate(replays):
-            zf.writestr('replay_%04d.pickle'%i,r)
-        zf.close()
+        if output_folder is not None:
+            if os.path.exists(output_folder):
+                print "WARNING: Output directory exists; overwriting results"
+            else:
+                os.makedirs(output_folder)
+            # Write stats to a CSV
+            fieldnames = ('red', 'blue', 'score', 'score_red', 'score_blue', 'steps', 'ammo_red', 'ammo_blue')
+            csvf = csv.DictWriter(fid, fieldnames, extrasaction='ignore')
+            csvf.writerow(dict(zip(fieldnames, fieldnames)))
+            # Create a zip with the replays
+            zipf = zipfile.ZipFile(os.path.join(output_folder,'replays.zip','w'))
+            
+            for i, ((r, b), stats, replay) in enumerate(zip(teams, stats, replays)):
+                # Write to the csv file
+                s = stats.__dict__
+                s.update([('red',r,'blue',b)])
+                csvf.writerow(s)
+                # Write a replay
+                r = os.path.splitext(os.path.basename(r))[0]
+                b = os.path.splitext(os.path.basename(b))[0]
+                zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, r, b), pickle(replay))
+                
+            csvf.close()
+            zipf.close()
     
+    @classmethod
+    def test(cls, red, blue):
+        scen = cls()
+        scen.REPEATS = 1
+        scen.SWAP_TEAMS = False
+        scen._multi([red, blue], rendered=True)
+    
+    @classmethod
+    def one_on_one(cls, red, blue, output_folder=None):
+        scen = cls()
+        scen._multi([red, blue], output_folder=output_folder)
+        
+    @classmethod
+    def tournament(cls, agents=None, from_folder=None, output_folder=None):
+        if from_folder is not None:
+            agents = glob.glob(os.path.join(from_folder,'*.py'))
+        pairs = list(all_pairs(agents))
+        print pairs
+        scen = cls()
+        scen._multi(pairs, output_folder=output_folder)
+        

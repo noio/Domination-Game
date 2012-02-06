@@ -1,6 +1,7 @@
 *.pyc
 docs/Makefile
 docs/_*
+_tmp/*
 domination/renderer.pyc
 
 domination/__init__.pyc

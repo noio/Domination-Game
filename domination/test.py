@@ -6,9 +6,16 @@ working properly. This includes saving fields and replays.
 
 ### IMPORTS
 
+# Python Imports
+import os
 import unittest
+import shutil
+import tempfile
+
+# Local Imports
 import core
 import run
+from utilities import *
 
 ### CONSTANTS
 
@@ -62,15 +69,6 @@ class TestDominationGame(unittest.TestCase):
             core.Game(settings=settings, rendered=True).run()
         except ImportError:
             print("It looks like you don't have pygame installed, skipping the render test.")
-
-    def test_balance(self):
-        scores = []
-        for i in range(100):
-            game = core.Game(rendered=False, verbose=False).run()
-            scores.append(game.stats.score)
-        avg = sum(scores)/len(scores)
-        print "Average score %.5f"%avg
-        self.assertTrue(0.45 < avg < 0.55)
         
     def test_field(self):
         f = core.FieldGenerator().generate()
@@ -92,8 +90,32 @@ class TestDominationGame(unittest.TestCase):
             replaygame = core.Game(replay=game.replay, rendered=False)
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
+            
+    def test_scenario(self):
+        tmpdir = tempfile.mkdtemp()
+        for l in 'abc':
+            shutil.copy('domination/agent.py',os.path.join(tmpdir,'agent%s.py'%l))
+            run.Scenario.tournament(from_folder=tmpdir)
+        shutil.rmtree(tmpdir)
+        
 
-if __name__ == "__main__":
-    
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+
+def check_balance():
+    scores = []
+    for i in range(10000):
+        game = core.Game('domination/agent_adjustable.py','domination/agent_adjustable.py',rendered=False, verbose=False).run()
+        scores.append(game.stats.score)
+        print "Average score %.5f std %.5f"%(mean(scores), stdev(scores))
+
+def test_scenario():
+    tmpdir = '_tmp'
+    for l in 'abc':
+        shutil.copy('domination/agent.py',os.path.join(tmpdir,'agent%s.py'%l))
+    run.Scenario.tournament(from_folder=tmpdir)
+
+
+if __name__ == "__main__":    
+    test_scenario()
+    # check_balance()
+    # suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
+    # unittest.TextTestRunner(verbosity=2).run(suite)

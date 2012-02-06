@@ -26,6 +26,14 @@ astar = astar.astar
 ### EXCEPTIONS ###
 class GameInterrupt(Exception):
     pass
+    
+### LISTS ###
+
+def all_pairs(seq):
+    l = len(seq)
+    for i in range(l):
+        for j in range(i+1, l):
+            yield seq[i], seq[j]
 
 ### NUMERICAL ###
 
