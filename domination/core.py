@@ -61,7 +61,7 @@ AGENT_GLOBALS = globals().copy()
 ### CLASSES ###
 
 class Settings(object):
-    def __init__(self, max_steps=500,
+    def __init__(self, max_steps=600,
                        max_score=1000,
                        max_turn=pi/3,
                        max_speed=40,
@@ -1035,8 +1035,8 @@ class Field(object):
 class FieldGenerator(object):
     """ Generates field objects from random distribution """
     
-    def __init__(self, width=39, height=24, tilesize=16, mirror=True,
-                       num_red=5, num_blue=5, num_points=3, num_ammo=6, num_crumbsource=0,
+    def __init__(self, width=41, height=26, tilesize=16, mirror=True,
+                       num_red=6, num_blue=6, num_points=3, num_ammo=6, num_crumbsource=0,
                        wall_fill=0.4, wall_len=(4,4), wall_width=4, 
                        wall_orientation=0.5, wall_gridsize=4):
         self.width            = width

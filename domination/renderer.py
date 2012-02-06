@@ -37,8 +37,8 @@ SPF                 = 1/120.0 # Seconds per frame
 ROTATION_FRAMES     = 6 # Number of frames for rotation animation
 SHOOTING_FRAMES     = 10 # Number of frames for shooting animation
 DRAW_BOUNDING_BOXES = False
-DRAW_NAV_MESH       = False
-DRAW_IDS            = True
+DRAW_NAV_MESH       = True
+DRAW_IDS            = False
 
 ### CLASSES ###
 class Renderer(object):
@@ -144,8 +144,8 @@ class Renderer(object):
         if DRAW_NAV_MESH:
             for n1 in game.field.mesh:
                 for n2 in game.field.mesh[n1]:
-                    pg.draw.line(vp,(120,120,120),n1,n2,2)
-                pg.draw.circle(vp,(120,120,120),n1,3)
+                    pg.draw.line(vp,(120,180,120),n1,n2,2)
+                pg.draw.circle(vp,(120,180,120),n1,3)
         ## OBJECTS
         for o in game.objects:                
             if o.graphic is None:

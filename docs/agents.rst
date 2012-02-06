@@ -40,12 +40,28 @@ This method will be called for each agent at the beginning of each game.
 
 .. automethod:: agent.Agent.__init__
 
-The `settings` object is an instance of `Settings`, and contains all the game 
-settings such as game length and maximum score. The `field_rects`,`field_grid`, 
-and `nav_mesh` arguments provide some information about the map that the game 
-will be played on. The first contains a list of walls on the map as `(x,y,width,height)` 
-tuples, the second contains the same information, but as a 2D binary array instead. 
-The third contains a graph that you can use for navigating the map, but more on that later.
+The `settings` object is an instance of :class:`~core.Settings`, and contains all the game 
+settings such as game length and maximum score. The ``field_rects``, ``field_grid``, 
+and ``nav_mesh`` arguments provide some information about the map that the game 
+will be played on. The first contains a list of walls on the map as ``(x,y,width,height)``
+tuples, the second contains the same information, but as a 2D binary array instead.
+
+Navigation Mesh
+^^^^^^^^^^^^^^^
+
+Also passed to the agent constructor is a 'navigation mesh'. This is a directed graph containing **the set of points from which all points on the map can be seen**, and the straight lines connecting them.
+
+.. image:: navmesh.png
+
+It is structured as a dictionary where the keys are ``(x, y)`` tuples defining connectivity and distances. All connections are in this dictionary *two times*, both A → B and B → A are in there. The example below shows a point at ``(0, 0)`` connected to two other points, at ``(1, 0)`` and ``(0 ,2)``::
+
+    {(0, 0): {(1, 0): 1.0, 
+              (0, 2): 2.0},
+     (1, 0): {(0, 0): 1.0},
+     (0, 2): {(0, 0): 2.0}}
+   
+Agent Parameters
+^^^^^^^^^^^^^^^^
 
 Finally, you can provide extra arguments to "parametrize" your agents. You can set 
 these arguments when you start a new game. For example, if your initialization looks as follows::
@@ -56,6 +72,10 @@ Then you can set this parameter to different values when you start the game::
 
     MyScenario('my_agent.py','opponent.py',red_init={'aggressiveness':10.0}).run()
     MyScenario('my_agent.py','opponent.py',red_init={'aggressiveness':20.0}).run()
+    
+It is suggested that you pass an open file to your agent this way, if you want the agent to read e.g. a Q-table::
+
+    red_init={'blob': open('my_q_table','r')}
 
 Observe
 -------
