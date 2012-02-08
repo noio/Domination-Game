@@ -36,7 +36,7 @@ If you're not going to read any of the other documentation, just do the followin
     import domination.run
     
     class MyScenario(domination.run.Scenario):
-       EPISODES = 10
+       REPEATS = 10
 
 3. Run the scenario::
 
