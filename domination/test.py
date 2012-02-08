@@ -90,13 +90,6 @@ class TestDominationGame(unittest.TestCase):
             replaygame = core.Game(replay=game.replay, rendered=False)
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
-            
-    def test_scenario(self):
-        tmpdir = tempfile.mkdtemp()
-        for l in 'abc':
-            shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
-            run.Scenario.tournament(from_folder=tmpdir)
-        shutil.rmtree(tmpdir)
         
 
 
@@ -113,9 +106,10 @@ def test_scenario():
         shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
     run.Scenario.tournament(from_folder=tmpdir)
 
+def run_tests():
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == "__main__":    
-    test_scenario()
-    # check_balance()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
-    # unittest.TextTestRunner(verbosity=2).run(suite)
+    run_tests()
+    # test_scenario()
