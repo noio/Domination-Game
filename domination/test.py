@@ -91,10 +91,10 @@ class TestDominationGame(unittest.TestCase):
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
             
-    def test_scenario():
+    def test_scenario(self):
         tmpdir = '_tmp'
         if not os.path.exists(tmpdir):
-            mkdir(tmpdir)
+            os.mkdir(tmpdir)
         for l in 'abc':
             shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
         run.Scenario.tournament(from_folder=tmpdir, output_folder='_tmp')
