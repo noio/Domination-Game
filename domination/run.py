@@ -36,7 +36,7 @@ class Scenario(object):
     SETTINGS     = core.Settings()
     #: The field that these games will be played on
     FIELD        = core.FieldGenerator().generate() 
-    REPEATS      = 3     #: How many times to repeat each game
+    REPEATS      = 2     #: How many times to repeat each game
     SWAP_TEAMS   = False #: Repeat each run with blue/red swapped
             
     def setup(self):
@@ -95,12 +95,12 @@ class Scenario(object):
         stats   = []
         replays = []
         for i, (red, blue) in enumerate(teams):
-            (stats, replay) = self._single(red, blue, rendered=rendered)
+            (stat, replay) = self._single(red, blue, rendered=rendered)
             print "======= Game %d/%d done. =======" % (i+1, len(teams))
-            print stats
+            print stat
+            stats.append(stat)
+            replays.append(replay)
             
-        now = datetime.datetime.now()
-        self.filename = 'dg%s_%s_vs_%s'%(now.strftime("%Y%m%d-%H%M"), self.last_game.red_name, self.last_game.blue_name)
         if output_folder is not None:
             if os.path.exists(output_folder):
                 print "WARNING: Output directory exists; overwriting results"
@@ -108,22 +108,23 @@ class Scenario(object):
                 os.makedirs(output_folder)
             # Write stats to a CSV
             fieldnames = ('red', 'blue', 'score', 'score_red', 'score_blue', 'steps', 'ammo_red', 'ammo_blue')
-            csvf = csv.DictWriter(fid, fieldnames, extrasaction='ignore')
+            now = datetime.datetime.now()
+            fn = os.path.join(output_folder,'%s'%now.strftime("%Y%m%d-%H%M"))
+            csvf = csv.DictWriter(open(fn+'_games.csv','w'), fieldnames, extrasaction='ignore')
             csvf.writerow(dict(zip(fieldnames, fieldnames)))
             # Create a zip with the replays
-            zipf = zipfile.ZipFile(os.path.join(output_folder,'replays.zip','w'))
+            zipf = zipfile.ZipFile(fn+'_replays.zip','w')
             
             for i, ((r, b), stats, replay) in enumerate(zip(teams, stats, replays)):
                 # Write to the csv file
                 s = stats.__dict__
-                s.update([('red',r,'blue',b)])
+                s.update([('red',r),('blue',b)])
                 csvf.writerow(s)
                 # Write a replay
                 r = os.path.splitext(os.path.basename(r))[0]
                 b = os.path.splitext(os.path.basename(b))[0]
-                zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, r, b), pickle(replay))
+                zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, r, b), pickle.dumps(replay))
                 
-            csvf.close()
             zipf.close()
     
     @classmethod

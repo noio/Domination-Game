@@ -90,6 +90,15 @@ class TestDominationGame(unittest.TestCase):
             replaygame = core.Game(replay=game.replay, rendered=False)
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
+            
+    def test_scenario():
+        tmpdir = '_tmp'
+        if not os.path.exists(tmpdir):
+            mkdir(tmpdir)
+        for l in 'abc':
+            shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
+        run.Scenario.tournament(from_folder=tmpdir, output_folder='_tmp')
+            
         
 
 
@@ -100,11 +109,7 @@ class TestDominationGame(unittest.TestCase):
 #         scores.append(game.stats.score)
 #         print "Average score %.5f std %.5f"%(mean(scores), stdev(scores))
 
-def test_scenario():
-    tmpdir = '_tmp'
-    for l in 'abc':
-        shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
-    run.Scenario.tournament(from_folder=tmpdir)
+
 
 def run_tests():
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
@@ -112,4 +117,3 @@ def run_tests():
 
 if __name__ == "__main__":    
     run_tests()
-    # test_scenario()

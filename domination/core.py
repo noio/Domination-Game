@@ -183,7 +183,7 @@ class Game(object):
                        record=False,
                        replay=None,
                        rendered=True, 
-                       verbose=True,
+                       verbose=False,
                        step_callback=None):
         """ Constructor for Game class 
             
