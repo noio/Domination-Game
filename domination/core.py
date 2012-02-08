@@ -1539,7 +1539,12 @@ class Observation(object):
         self.selected = False   #: Indicates if the agent is selected in the UI
         self.clicked = None     #: Indicates the position of a right-button click, if there was one
         self.keys = []          #: A list of all keys pressed in the previous turn
-
+        
+    def __str__(self):
+        items = sorted(self.__dict__.items())
+        maxlen = max(len(k) for k,v in items)
+        return "== Observation ==\n" + "\n".join(('%s : %r'%(k.ljust(maxlen), v)) for (k,v) in items)
+        
 
 class ReplayData(object):
     def __init__(self, game):
