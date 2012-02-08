@@ -94,23 +94,23 @@ class TestDominationGame(unittest.TestCase):
     def test_scenario(self):
         tmpdir = tempfile.mkdtemp()
         for l in 'abc':
-            shutil.copy('domination/agent.py',os.path.join(tmpdir,'agent%s.py'%l))
+            shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
             run.Scenario.tournament(from_folder=tmpdir)
         shutil.rmtree(tmpdir)
         
 
 
-def check_balance():
-    scores = []
-    for i in range(10000):
-        game = core.Game('domination/agent_adjustable.py','domination/agent_adjustable.py',rendered=False, verbose=False).run()
-        scores.append(game.stats.score)
-        print "Average score %.5f std %.5f"%(mean(scores), stdev(scores))
+# def check_balance():
+#     scores = []
+#     for i in range(10000):
+#         game = core.Game('domination/agent_adjustable.py','domination/agent_adjustable.py',rendered=False, verbose=False).run()
+#         scores.append(game.stats.score)
+#         print "Average score %.5f std %.5f"%(mean(scores), stdev(scores))
 
 def test_scenario():
     tmpdir = '_tmp'
     for l in 'abc':
-        shutil.copy('domination/agent.py',os.path.join(tmpdir,'agent%s.py'%l))
+        shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
     run.Scenario.tournament(from_folder=tmpdir)
 
 

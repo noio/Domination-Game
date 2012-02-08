@@ -366,4 +366,4 @@ def draw_tilemap(surface, tiles, graphic, tilesize):
 
 if __name__ == "__main__":
     import core
-    core.Game('domination/agent.py','domination/agent.py', rendered=True).run()
+    core.Game(core.DEFAULT_AGENT_FILE,core.DEFAULT_AGENT_FILE, rendered=True).run()

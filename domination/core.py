@@ -13,6 +13,7 @@ __version__ = '1.2.0'
 import random
 import sys
 import re
+import os
 import math
 import time
 import datetime
@@ -55,6 +56,8 @@ CAPTURE_MODE_MAJORITY = 2 #: Controlpoints are owned by the team with the most o
 ENDGAME_NONE   = 0 #: End game when time expires
 ENDGAME_SCORE  = 1 #: End game when either team has 0 score
 ENDGAME_CRUMBS = 2 #: End game when all crumbs are picked up
+
+DEFAULT_AGENT_FILE = os.path.join(os.path.dirname(__file__), 'agent.py')
 
 AGENT_GLOBALS = globals().copy()
 
@@ -166,8 +169,8 @@ class Game(object):
     STATE_INTERRUPT = 3
     STATE_ENDED     = 4
         
-    def __init__(self, red_brain='domination/agent.py',
-                       blue_brain='domination/agent.py',
+    def __init__(self, red_brain=DEFAULT_AGENT_FILE,
+                       blue_brain=DEFAULT_AGENT_FILE,
                        red_brain_string=None,
                        blue_brain_string=None,
                        settings=Settings(),
