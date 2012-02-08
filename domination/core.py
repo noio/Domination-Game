@@ -176,7 +176,7 @@ class Game(object):
                        record=False,
                        replay=None,
                        rendered=True, 
-                       verbose=False,
+                       verbose=True,
                        step_callback=None):
         """ Constructor for Game class 
             

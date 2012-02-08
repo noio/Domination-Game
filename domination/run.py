@@ -148,5 +148,8 @@ class Scenario(object):
         scen = cls()
         scen._multi(pairs, output_folder=output_folder)
         
+if __name__ == '__main__':
+    Scenario.test(core.DEFAULT_AGENT_FILE, core.DEFAULT_AGENT_FILE)
+        
 
         
