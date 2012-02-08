@@ -22,7 +22,6 @@ from django import forms
 from django.shortcuts import render_to_response
 from django.conf import settings as django_settings
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
-from django.http import HttpResponseForbidden, HttpResponseNotFound
 from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.template import Context, Template, RequestContext
@@ -134,7 +133,7 @@ def replay(request, groupslug, game_id):
         response['Content-Disposition'] = 'attachment; filename=replay%s.pickle.gz'%game.identifier()
         response['X-AppEngine-BlobKey'] = game.replay.key()
         return response
-    return HttpResponse404()
+    return HttpResponseNotFound()
 
 @team_required
 def dashboard(request, groupslug):
@@ -191,9 +190,7 @@ def settings(request, groupslug):
         elif 'teamid' in request.POST:
             team = models.Team.get_by_id(int(request.POST['teamid']), parent=request.group)
             if request.POST['bsubmit'] == 'Invite users':                
-                team.emails = [e.strip() for e in request.POST['emails'].split(',')]
-                team.send_invites()
-                team.put()
+                team.send_invites([e.strip() for e in request.POST['emails'].split(',')])
             elif request.POST['bsubmit'] == 'Connect me':
                 request.user.teams.append(team.key())
                 request.user.put()

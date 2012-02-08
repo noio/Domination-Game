@@ -38,10 +38,9 @@ If you're not going to read any of the other documentation, just do the followin
     class MyScenario(domination.run.Scenario):
        EPISODES = 10
 
-3. Test to see if the scenario works as expected::
+3. Run the scenario::
 
-    ms = MyScenario('myagent.py', 'domination/agent.py')
-    ms.test()
+    MyScenario.test('myagent.py', 'domination/agent.py')
 
 4. Run it, this will save the results to a comma-separated-value file::
     

@@ -8,10 +8,11 @@
 		<form method="post" action="">
 			<label><a href='{{team.url}}'>{{team}} &nbsp;</a></label>
 			<div class='input'>
-			<input type='hidden' name='teamid' value="{{team.key.id}}"/> 
-			<input type='text' name='emails' class='xlarge' value='{{team.emails|join:", "}}'/>
-			<input type='submit' name='bsubmit' class='btn primary' value='Invite users'/>
-			<input type='submit' name='bsubmit' class='btn' value='Connect me'/>
+				<input type='hidden' name='teamid' value="{{team.key.id}}"/> 
+				<p>{{team.emails|join:", "}}</p>
+				<input type='text' name='emails' class='xlarge' value=''/>
+				<input type='submit' name='bsubmit' class='btn primary' value='Invite users'/>
+				<input type='submit' name='bsubmit' class='btn' value='Connect me'/>
 			</div>
 		</form>
 {% endfor %}

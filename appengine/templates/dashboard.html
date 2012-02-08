@@ -6,11 +6,8 @@
 <div class='row'>
 	<div class='span10'>
 		<p>Welcome to your dashboard. Here you and your teammembers can choose which of your uploaded brains are 
-			active in the competition ladder. You can also upload new brains here. Note that you are only allowed
-			to upload <strong>{{group.max_uploads}} brains</strong> in every 7 day period, 
-			you have uploaded <strong>{{user.current_team.recent_upload_count}}</strong>.
+			active in the competition ladder. You can also upload new brains and binary data here.
 		</p>
-		<p>Note also that all code you upload here will be open sourced after a period of {{group.release_delay.days}} days.</p>
 	</div>
 	<div class='span6'>
 	<h4>Members</h4>
@@ -23,14 +20,37 @@
 </div>
 
 <ul class='tabs'>
-  <li class="active"><a href="#select-active">Select active</a></li>
-  <li><a href="#upload-agent">Upload agent</a></li>
+  <li class="active"><a href="#upload-agent">Upload agent</a></li>
+  <li><a href="#select-active">Select active</a></li>
   <li><a href="#upload-blob">Upload blob</a></li>
 </ul>	
 
 <div>
+
+	<div id='upload-agent'>
+		<p>You have uploaded <strong>{{user.current_team.recent_upload_count}}/{{group.max_uploads}} brains</strong> in this 7 day period.
+			Note that all code you upload here will be <strong>opensourced after {{group.release_delay.days}} days</strong>. This means it will
+			be avaible to other teams and any other visitors to this site.
+		</p>
+		
+		<form class='form-stacked flushleft' method="post" action="">	
+			<fieldset>
+			<legend>Upload new brain</legend>
+			<textarea id='newbrain' name='newbrain' rows='100' cols='80'># Paste your code.</textarea>
+			<script type="text/javascript" charset="utf-8">
+				var myCodeMirror = CodeMirror.fromTextArea(document.id('newbrain'), {'lineNumbers':true});
+			</script>
+			<div class='actions'><input type='submit' class='btn primary' value='Upload new brain'></input></div>
+			</fieldset>
+		</form>
+	</div>
+	
 	<div id='select-active'>
+		<p>Select your active brains. You can have throee brains active at the same time, these will be selected at
+			random to play games against other agents. Note that <strong>Agent A</strong> is assumed to be your best agent,
+			this is the agent that is downloaded in a snapshot.</p>
 	<form method="post" action="" class='form-stacked flushleft'>
+		<p>
 		<input id='activebrains' type='hidden' name='activebrains' value='{{user.current_team.activebrainkeyids|join:","}}'>
 		<fieldset>
 		<legend>Select active brains</legend>
@@ -56,33 +76,25 @@
 	for (var i = 0; i < ids.length; i++){
 		var l = "ABC"[i];
 		var htmlid = 'brain-'+l+'-'+ids[i];
-		console.log(htmlid)
 		$(htmlid).set('checked', true);
 	}
 	</script>
 	</div>
 
-	<div id='upload-agent'>
-	<form class='form-stacked flushleft' method="post" action="">	
-		<fieldset>
-		<legend>Upload new brain</legend>
-		<textarea id='newbrain' name='newbrain' rows='100' cols='80'># Paste your code.</textarea>
-		<script type="text/javascript" charset="utf-8">
-			var myCodeMirror = CodeMirror.fromTextArea(document.id('newbrain'), {'lineNumbers':true});
-		</script>
-		<div class='actions'><input type='submit' class='btn primary' value='Upload new brain'></input></div>
-		</fieldset>
-	</form>
-	</div>
 	
 	<div id='upload-blob'>
-	<form class='form-stacked flushleft' method="post" action="{{upload_url}}" enctype="multipart/form-data">	
-		<fieldset>
-		<legend>Upload new binary blob</legend>
-		<input type="file" name="file">
-		<div class='actions'><input type='submit' class='btn primary' value='Upload new blob'></input></div>
-		</fieldset>
-	</form>
+		<p>Upload a binary blob here. A <em>reader</em> to this file will be passed to your agent in the <code>__init__</code>
+			method, with an argument name <code>blob</code>. If you pickled an object into this file, use it with 
+			<code>obj = pickle.reads(blob.read())</code>. Feel free to store any kind of data in here (pickled is a good choice), 
+			but keep it under 4 MB. 
+		</p>
+		<form class='form-stacked flushleft' method="post" action="{{upload_url}}" enctype="multipart/form-data">	
+			<fieldset>
+			<legend>Upload new binary blob</legend>
+			<input type="file" name="file">
+			<div class='actions'><input type='submit' class='btn primary' value='Upload new blob'></input></div>
+			</fieldset>
+		</form>
 	</div>
 	
 </div>

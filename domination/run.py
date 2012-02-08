@@ -132,7 +132,7 @@ class Scenario(object):
         scen = cls()
         scen.REPEATS = 1
         scen.SWAP_TEAMS = False
-        scen._multi([red, blue], rendered=True)
+        scen._multi([(red, blue)], rendered=True)
     
     @classmethod
     def one_on_one(cls, red, blue, output_folder=None):
@@ -147,4 +147,6 @@ class Scenario(object):
         print pairs
         scen = cls()
         scen._multi(pairs, output_folder=output_folder)
+        
+
         

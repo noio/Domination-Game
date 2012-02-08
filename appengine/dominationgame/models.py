@@ -145,7 +145,8 @@ class Team(db.Model):
             self.put()
         db.run_in_transaction(txn)
     
-    def send_invites(self):
+    def send_invites(self, new_emails):
+        self.emails = list(set(self.emails + new_emails))
         secret_code = b64.urlsafe_b64encode(os.urandom(32))
         self.hashed_code = b64.urlsafe_b64encode(hashlib.sha224(secret_code).digest())
         url = APP_URL + reverse("dominationgame.views.connect_account") + '?c=' + secret_code
@@ -163,7 +164,7 @@ class Team(db.Model):
                 Your TA
                 """%(str(self), url)
         logging.info(mailbody)
-        for email in self.emails:
+        for email in new_emails:
             mail.send_mail(sender="noreply@%s.appspotmail.com"%get_application_id(),
                            to=email,
                            subject="Invitation to join a team for %s"%(self.group.name),
