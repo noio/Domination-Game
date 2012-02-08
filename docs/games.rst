@@ -16,7 +16,7 @@ However, creating a game object directly is useful mainly if you want to do some
 
 If we like, we can mess around a bit with the game object and its properties::
 
-	import domination
+	from domination import core
 
 	# Make it a short game
 	settings = core.Settings(max_steps=20)

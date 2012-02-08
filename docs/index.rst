@@ -29,7 +29,7 @@ Quickstart
 
 If you're not going to read any of the other documentation, just do the following. 
 
-1. Modify or extend the basic agent found in the source code (`agent.py <https://github.com/noio/Domination-Game/blob/master/domination/agent.py>`_).
+1. Copy and modify the basic agent found in the source code (`agent.py <https://github.com/noio/Domination-Game/blob/master/domination/agent.py>`_).
 
 2. Import and extend the basic scenario::
 
@@ -40,7 +40,7 @@ If you're not going to read any of the other documentation, just do the followin
 
 3. Run the scenario::
 
-    MyScenario.test('domination/agent.py', 'domination/agent.py')
+    MyScenario.test('your_agent.py', 'domination/agent.py')
 
 
 
