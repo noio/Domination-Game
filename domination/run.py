@@ -43,6 +43,9 @@ class Scenario(object):
         pass
         
     def before_each(self):
+        """ Function that is run before each game.
+            Use it to regenerate the map, for example.
+        """
         pass
         
     def after_each(self, game):
@@ -94,6 +97,7 @@ class Scenario(object):
         # Run the games
         stats   = []
         replays = []
+        print '\n'.join(repr(t) for t in teams)
         for i, (red, blue) in enumerate(teams):
             (stat, replay) = self._single(red, blue, rendered=rendered)
             print "======= Game %d/%d done. =======" % (i+1, len(teams))
@@ -137,7 +141,7 @@ class Scenario(object):
     @classmethod
     def one_on_one(cls, red, blue, output_folder=None):
         scen = cls()
-        scen._multi([red, blue], output_folder=output_folder)
+        scen._multi([(red, blue)], output_folder=output_folder)
         
     @classmethod
     def tournament(cls, agents=None, from_folder=None, output_folder=None):
@@ -149,7 +153,8 @@ class Scenario(object):
         scen._multi(pairs, output_folder=output_folder)
         
 if __name__ == '__main__':
-    Scenario.test(core.DEFAULT_AGENT_FILE, core.DEFAULT_AGENT_FILE)
+    Scenario.one_on_one(core.DEFAULT_AGENT_FILE, core.DEFAULT_AGENT_FILE)
+
         
 
         
