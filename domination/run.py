@@ -128,11 +128,11 @@ class Scenario(object):
             zipf.close()
     
     @classmethod
-    def test(cls, red, blue, output_folder=None):
+    def test(cls, red, blue):
         scen = cls()
         scen.REPEATS = 1
         scen.SWAP_TEAMS = False
-        scen._multi([(red, blue)], rendered=True, output_folder=output_folder)
+        scen._multi([(red, blue)], rendered=True)
     
     @classmethod
     def one_on_one(cls, red, blue, output_folder=None):
