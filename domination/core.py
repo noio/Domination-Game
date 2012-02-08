@@ -25,13 +25,6 @@ import hashlib
 import logging
 from pprint import pprint
 
-# Libraries
-try: 
-    import numpy
-except ImportError: 
-    logging.warning("You do not have numpy installed, but "\
-                    "this is fine if your agent isn't using it.")
-
 # Local
 from utilities import *
 from libs import *
