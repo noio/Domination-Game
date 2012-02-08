@@ -13,14 +13,8 @@ For example, we subclass the Scenario module from domination.run::
 	   EPISODES = 10 # how many matches
 	   SETTINGS = core.Settings() # the settings for the game, such as range, speed, etcetera
 	   FIELD = core.FieldGenerator().generate() # the map for the games
-
-    
-We then create an instance of this new scenario::   
-
-    ms = MyScenario('firstagent.py', 'secondagent.py')
-
     
 We can now run our scenario and save the results::
 
-    ms.run()
-    ms.write_scores()
+    ms.one_on_one('agent_one.py', 'agent_two.py', output_file='results')
+
