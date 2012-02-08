@@ -127,7 +127,7 @@ class Scenario(object):
                 # Write a replay
                 r = os.path.splitext(os.path.basename(r))[0]
                 b = os.path.splitext(os.path.basename(b))[0]
-                zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, r, b), pickle.dumps(replay))
+                zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, r, b), pickle.dumps(replay, pickle.HIGHEST_PROTOCOL))
                 
             zipf.close()
     

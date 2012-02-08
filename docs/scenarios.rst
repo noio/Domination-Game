@@ -10,9 +10,9 @@ For example, we subclass the Scenario module from domination.run::
 	import domination
 
 	class MyScenario(domination.run.Scenario) :
-	   EPISODES = 10 # how many matches
-	   SETTINGS = core.Settings() # the settings for the game, such as range, speed, etcetera
-	   FIELD = core.FieldGenerator().generate() # the map for the games
+	   REPEATS  = 10
+	   SETTINGS = core.Settings() 
+	   FIELD    = core.FieldGenerator().generate()
     
 We can now run our scenario and save the results::
 
