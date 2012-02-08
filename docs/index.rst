@@ -40,11 +40,9 @@ If you're not going to read any of the other documentation, just do the followin
 
 3. Run the scenario::
 
-    MyScenario.test('myagent.py', 'domination/agent.py')
+    MyScenario.test('domination/agent.py', 'domination/agent.py')
 
-4. Run it, this will save the results to a comma-separated-value file::
-    
-	ms.run()
+
 
 Indices and tables
 ==================
