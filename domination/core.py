@@ -148,7 +148,10 @@ class GameLog(object):
         
     def write(self, string):
         if self.verbose and string != '\n':
-            print >> sys.__stdout__, string
+            try:
+                print >> sys.__stdout__, string
+            except:
+                pass
         self.log.append(string)
         
     def __str__(self):
