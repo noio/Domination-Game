@@ -43,7 +43,7 @@ If you're not going to read any of the other documentation, just do the followin
 	   REPEATS = 10
 	   SETTINGS = core.Settings(max_steps=100)
    
-	MyScenario.test('my_agent.py', 'domination/agent.py')
+	MyScenario.test(red='my_agent.py', blue='domination/agent.py')
   
 
 
