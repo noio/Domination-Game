@@ -309,7 +309,7 @@ class Renderer(object):
                 if event.buttons[0] and self.mouse_down:
                     rx,ry,rw,rh = self.selection_rect
                     self.selection_rect = (rx,ry,x-rx, y-ry)
-                    game.select_tanks(self.selection_rect,team=self.active_team)
+                    game._select_tanks(self.selection_rect,team=self.active_team)
             # Catch mouse release
             elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
                 self.mouse_down = False
