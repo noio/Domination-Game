@@ -16,5 +16,5 @@ For example, we subclass the Scenario module from domination.run::
     
 We can now run our scenario and save the results::
 
-    ms.one_on_one('agent_one.py', 'agent_two.py', output_file='results')
+    ms.one_on_one('agent_one.py', 'agent_two.py', output_folder='results')
 

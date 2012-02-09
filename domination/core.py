@@ -32,7 +32,7 @@ from libs import *
 # Shortcuts
 sqrt = math.sqrt
 try:
-    inf  = float('inf')
+    inf = float('inf')
 except ValueError:
     inf = 1e1000000
 pi   = math.pi

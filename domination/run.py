@@ -153,8 +153,6 @@ class Scenario(object):
         scen._multi(pairs, output_folder=output_folder)
         
 if __name__ == '__main__':
-    Scenario.one_on_one(core.DEFAULT_AGENT_FILE, core.DEFAULT_AGENT_FILE)
-
-        
+    Scenario.one_on_one(core.DEFAULT_AGENT_FILE, core.DEFAULT_AGENT_FILE, output_folder='_tmp')
 
         

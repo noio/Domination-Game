@@ -51,7 +51,7 @@ Navigation Mesh
 
 Also passed to the agent constructor is a 'navigation mesh'. This is a directed graph containing **the set of points from which all points on the map can be seen**, and the straight lines connecting them.
 
-.. image:: navmesh.png
+.. image:: ims/navmesh.png
 
 It is structured as a dictionary where the keys are ``(x, y)`` tuples defining connectivity and distances. All connections are in this dictionary *two times*, both A → B and B → A are in there. The example below shows a point at ``(0, 0)`` connected to two other points, at ``(1, 0)`` and ``(0 ,2)``::
 

@@ -26,7 +26,7 @@ from sys import maxint
 
 # Shortcuts
 try:
-    inf  = float('inf')
+    inf = float('inf')
 except ValueError:
     inf = 1e1000000
 
