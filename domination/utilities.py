@@ -19,7 +19,10 @@ from libs import astar
 
 # Shortcuts
 sqrt  = math.sqrt
-inf   = float('inf')
+try:
+    inf  = float('inf')
+except ValueError:
+    inf = 1e1000000
 pi    = math.pi
 astar = astar.astar
 

@@ -25,7 +25,10 @@ from heapq import heappush, heappop
 from sys import maxint
 
 # Shortcuts
-inf = float('inf')
+try:
+    inf  = float('inf')
+except ValueError:
+    inf = 1e1000000
 
 # Represent each node as a list, ordering the elements so that a heap of nodes
 # is ordered by f = g + h, with h as a first, greedy tie-breaker and num as a

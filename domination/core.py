@@ -31,7 +31,10 @@ from libs import *
 
 # Shortcuts
 sqrt = math.sqrt
-inf  = float('inf')
+try:
+    inf  = float('inf')
+except ValueError:
+    inf = 1e1000000
 pi   = math.pi
 sin  = math.sin
 cos  = math.cos
