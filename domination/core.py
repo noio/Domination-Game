@@ -23,6 +23,8 @@ import traceback
 import bisect
 import hashlib
 import logging
+import cPickle as pickle
+
 from pprint import pprint
 
 # Local
@@ -345,7 +347,7 @@ class Game(object):
                         brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
                                                  field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.blue_init)
                     else:
-                        brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
+                        brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), **self.blue_init)
                     t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
                     self.tanks.append(t)
                     self._add_object(t)

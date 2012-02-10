@@ -10,24 +10,24 @@ But there is a quick rundown of the functions below as well.
 The first thing you need to do is create a new file with a class named `Agent` 
 that contains these 5 methods::
 
-	class Agent(object):
+    class Agent(object):
 
-	    NAME = "my_agent" # Replay filenames and console output will contain this name.
+        NAME = "my_agent" # Replay filenames and console output will contain this name.
     
-	    def __init__(self, id, team, settings=None, field_rects=None, field_grid=None, nav_mesh=None):
-	        pass
+        def __init__(self, id, team, settings=None, field_rects=None, field_grid=None, nav_mesh=None):
+            pass
         
-	    def observe(self, observation):
-	        pass
+        def observe(self, observation):
+            pass
         
-	    def action(self):
-	        return (0,0,False)
+        def action(self):
+            return (0,0,False)
         
-	    def debug(self, surface):
-	        pass
+        def debug(self, surface):
+            pass
         
-	    def finalize(self, interrupted=False):
-	        pass
+        def finalize(self, interrupted=False):
+            pass
 
 
 Initialize
@@ -73,10 +73,6 @@ Then you can set this parameter to different values when you start the game::
     MyScenario('my_agent.py','opponent.py',red_init={'aggressiveness':10.0}).run()
     MyScenario('my_agent.py','opponent.py',red_init={'aggressiveness':20.0}).run()
     
-It is suggested that you pass an open file to your agent this way, if you want the agent to read e.g. a Q-table::
-
-    red_init={'blob': open('my_q_table','r')}
-
 Observe
 -------
 
@@ -133,14 +129,33 @@ The recommended way to establish communication between agents is to define `stat
 
 In Python, static variables can be defined in the class body, and accessed through the class definition. Be careful, setting ``Agent.attribute`` is quite different from setting ``my_agent = Agent(); my_agent.attribute``::
 
-	class Agent:
-	    initial_knowledge = 1
+    class Agent:
+        shared_knowledge = 1
 
-	    def __init__(self, etc):
-	        print Agent.initial_knowledge
-	        # is identical to
-	        print self.__class__.initial_knowledge
+        def __init__(self, etc):
+            print Agent.shared_knowledge
+            # is identical to
+            print self.__class__.shared_knowledge
        
-	        # BUT THIS IS DIFFERENT:
-	        self.initial_knowledge = 5
+            # BUT THIS IS DIFFERENT:
+            self.shared_knowledge = 5
 
+(Binary) Data
+-------------
+
+You might want to supply your agent with additional (binary) data, for example a Q/value table, or some kind 
+of policy representation. The convention for doing this is to pass an open file-pointer to the agent's constructor::
+
+    Game(..., red_init={'blob': open('my_q_table','rb')} )
+
+This is also the way that your data will be passed to the agent in the web app. If you have stored your data as a
+pickled file, you can simply read it with::
+
+    # In class Agent
+    def __init__(..., blob=None ):
+        if blob is not None:
+            my_data = pickle.reads(blob.read())
+            blob.seek(0) #: Reset the filepointer for the next agent.
+            
+Of course, the way you store your data in this file is up to you, you can store it in any format, and even 
+read it line-by-line if you want.
