@@ -38,7 +38,7 @@ This method will be called for each agent at the beginning of each game.
 
 .. py:module: domination.agent
 
-.. automethod:: agent.Agent.__init__
+.. automethod:: domination.agent.Agent.__init__
 
 The `settings` object is an instance of :class:`~core.Settings`, and contains all the game 
 settings such as game length and maximum score. The ``field_rects``, ``field_grid``, 
@@ -82,7 +82,7 @@ agents usually don't observe the entire game field, but only a part of it. Agent
 use this function to update what they know about the game, e.g. computing the most 
 likely locations of enemies. The properties of the `Observation` object are listed below.
 
-.. automethod:: agent.Agent.observe
+.. automethod:: domination.agent.Agent.observe
 
 .. literalinclude:: ../domination/core.py
    :pyobject: Observation
@@ -103,7 +103,7 @@ are supposed to look like ``(turn, speed, shoot)``.
 in the renderer). Note that any exceptions raised by your agent are ignored, and the agent
 simply loses it's turn. Turn and speed are capped by the game settings.
 
-.. automethod:: agent.Agent.action
+.. automethod:: domination.agent.Agent.action
 
 
 Debug
@@ -111,7 +111,7 @@ Debug
 
 Allows the agents to draw on the game UI, refer to the pygame reference to see how you can `draw <http://www.pygame.org/docs/ref/draw.html>`_ on a `pygame.surface <http://pygame.org/docs/ref/surface.html>`_. The given surface is not cleared automatically. Additionally, this function will only be called when the renderer is active, and it will only be called for the active team.
 
-.. automethod:: agent.Agent.debug
+.. automethod:: domination.agent.Agent.debug
 
 
 Finalize
@@ -119,7 +119,7 @@ Finalize
 
 This method gives your agent an opportunity to store data or clean up after the game is finished. Learning agents could store their Q-tables, which they load up in ``__init__``.
 
-.. automethod:: agent.Agent.finalize
+.. automethod:: domination.agent.Agent.finalize
 
 
 Communication

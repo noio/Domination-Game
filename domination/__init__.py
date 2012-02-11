@@ -2,6 +2,7 @@
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-__version__ = "1.2.0"
+MAJOR,MINOR,PATCH = 1,2,1
+__version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 __all__ = ["core","run","renderer","test"]

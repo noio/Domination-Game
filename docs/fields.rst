@@ -2,5 +2,5 @@ Customizing the Field
 =====================
 
 
-.. autoclass:: core.FieldGenerator
+.. autoclass:: domination.core.FieldGenerator
    :members:

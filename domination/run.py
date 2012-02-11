@@ -50,6 +50,7 @@ class Scenario(object):
         
     def after_each(self, game):
         """ Function that is run after each game.
+            
             :param game: The previous game
         """
         pass
@@ -179,6 +180,13 @@ class Scenario(object):
     
     @classmethod
     def test(cls, red, blue):
+        """ Test this scenario, this will run a single
+            game and render it, so you can verify the
+            FIELD and SETTINGS.
+            
+            :param red:  Path to red agent
+            :param blue: Path to blue agent
+        """
         scen = cls()
         scen.REPEATS = 1
         scen.SWAP_TEAMS = False
@@ -186,11 +194,23 @@ class Scenario(object):
     
     @classmethod
     def one_on_one(cls, red, blue, output_folder=None):
+        """ Runs the set amount of REPEATS and SWAP_TEAMS if
+            desired, between two given agents.
+            
+            :param output_folder: Folder in which results will be stored
+        """
         scen = cls()
         scen._multi([(red, blue)], output_folder=output_folder)
         
     @classmethod
     def tournament(cls, agents=None, folder=None, output_folder=None):
+        """ Runs a full tournament between the agents specified,
+            respecting the REPEATS and SWAP_TEAMS settings.
+        
+            :param agents:        A list of paths to agents
+            :param folder:        A folder that contains all agents, overrides the agents parameter.
+            :param output_folder: Folder in which results will be stored.
+        """
         if folder is not None:
             agents = glob.glob(os.path.join(folder,'*.py'))
             if output_folder is None:
