@@ -33,7 +33,7 @@ ASSETS_PATH = os.path.join(os.path.dirname(__file__),'assets')
 
 C_RED               = (229,100,92)
 C_BLUE              = (81,142,221)
-SPF                 = 1/120.0 # Seconds per frame
+SPF                 = 1/30.0 # Seconds per frame
 ROTATION_FRAMES     = 6 # Number of frames for rotation animation
 SHOOTING_FRAMES     = 10 # Number of frames for shooting animation
 DRAW_BOUNDING_BOXES = False
@@ -331,6 +331,9 @@ class Renderer(object):
         while self.paused:
             self.render(game)
             self.handle_events(game)
+            
+    def quit(self):
+        pg.display.quit()
         
 ### HELPER FUNCTIONS ###
 def tile_fill(surface, bitmap, rect=None, area=None):

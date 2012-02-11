@@ -474,9 +474,11 @@ class Game(object):
         return self # For chaining, if you're into that.
     
     def _end(self, interrupted=False):
-        """ End the game, writes scores to a file and tells all the agents
-            that the game is over so that they can write any remaining info.
+        """ End the game  and tells all the agents that the game
+             is over so that they can write any remaining info.
         """
+        if self.renderer is not None:
+            self.renderer.quit()
         if interrupted:
             print "Game was interrupted."
             self.interrupted = True
