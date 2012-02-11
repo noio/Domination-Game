@@ -156,6 +156,7 @@ pickled file, you can simply read it with::
         if blob is not None:
             my_data = pickle.reads(blob.read())
             blob.seek(0) #: Reset the filepointer for the next agent.
+                         #  if you omit this, the next agent will raise an EOFError
             
 Of course, the way you store your data in this file is up to you, you can store it in any format, and even 
 read it line-by-line if you want.

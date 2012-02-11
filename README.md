@@ -12,10 +12,11 @@ environment for learning about cooperative and competitive autonomous systems. I
 - **Fair**: the default game rules are tweaked so that it is easy to evaluate the relative skill of agents,
             without too much randomness.
 
+Please refer to the http://domination-game.rtfd.org/ for information on using this framework.
 
 ![Screenshot of the Domination Game](https://github.com/noio/Domination-Game/raw/master/screenshot.png)
 
 The original concept for the game was developed by Okke Formsma and Arno Veenstra, this 
 new version of the framework was developed by Thomas van den Berg and Tim Doolan.
 
-Please refer to the http://rtfd.org/docs/domination-game/ for information on using this framework.
+
