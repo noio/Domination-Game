@@ -29,13 +29,22 @@
 
 	<div id='upload-agent'>
 		<p>You have uploaded <strong>{{user.current_team.recent_upload_count}}/{{group.max_uploads}} brains</strong> in this 7 day period.
-			Note that all code you upload here will be <strong>opensourced after {{group.release_delay.days}} days</strong>. This means it will
-			be avaible to other teams and any other visitors to this site.
+			Note that all code you upload here will be <strong>released after {{group.release_delay.days}} days</strong>. This means it will
+			be avaible to other teams and any other visitors to this site. You can select which of your uploaded binary blobs will be supplied
+            to this agent every game, this means you have to upload this blob first.
 		</p>
 		
 		<form class='form-stacked flushleft' method="post" action="">	
 			<fieldset>
 			<legend>Upload new brain</legend>
+
+            Use binary blob: <select name='blobid'>
+                <option value='None'>None</option>
+                {% for braindata in user.current_team.braindata_set %}
+                    <option value='{{braindata.key.id}}'>{{braindata.filename}}-{{braindata.added}}</option>
+                {% endfor %}
+            </select>
+            <hr/>
 			<textarea id='newbrain' name='newbrain' rows='100' cols='80'># Paste your code.</textarea>
 			<script type="text/javascript" charset="utf-8">
 				var myCodeMirror = CodeMirror.fromTextArea(document.id('newbrain'), {'lineNumbers':true});
@@ -88,11 +97,11 @@
 			<code>obj = pickle.reads(blob.read())</code>. Feel free to store any kind of data in here (pickled is a good choice), 
 			but keep it under 4 MB. 
 		</p>
-		<form class='form-stacked flushleft' method="post" action="{{upload_url}}" enctype="multipart/form-data">	
+		<form class='form-stacked flushleft' method="POST" action="{{upload_url}}" enctype="multipart/form-data">	
 			<fieldset>
 			<legend>Upload new binary blob</legend>
-			<input type="file" name="file">
-			<div class='actions'><input type='submit' class='btn primary' value='Upload new blob'></input></div>
+            <input type="file" name="file">
+			<div class='actions'><input type='submit' name='submit' class='btn primary' value='Submit'></input></div>
 			</fieldset>
 		</form>
 	</div>

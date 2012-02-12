@@ -208,6 +208,29 @@ class Account(db.Model):
     current_user = None
     current_team = None
     
+class BrainData(db.Model):
+    """ Stores reference to binary data blob for an
+        agent brain
+    """
+    blob     = blobstore.BlobReferenceProperty(required=True)
+    filename = db.StringProperty()
+    added    = db.DateTimeProperty(auto_now_add=True)
+    team     = db.ReferenceProperty(Team, required=True)
+    
+    @classmethod
+    def create(cls, team, datafile):
+        file_name = files.blobstore.create(mime_type='application/octet-stream')
+        with files.open(file_name, 'a') as f:
+            for chunk in datafile.chunks():
+                f.write(chunk)
+        files.finalize(file_name)
+        blob_key = files.blobstore.get_blob_key(file_name)
+        braindata = cls(blob=blobstore.BlobInfo.get(blob_key),
+                        team=team,
+                        filename=datafile.name,
+                        parent=team.group)
+        braindata.put()
+    
 class Brain(db.Model):
     # Performance stats
     score        = db.FloatProperty(default=100.0)
@@ -226,6 +249,7 @@ class Brain(db.Model):
     last_played = db.DateTimeProperty()
     # Source code
     source       = db.TextProperty(required=True)
+    data         = db.ReferenceProperty(BrainData)    
     
     def __str__(self):
         return mark_safe("%s v%d"%(self.name, self.version))
@@ -270,6 +294,7 @@ class Brain(db.Model):
     def owned_by_current_user(self):
         return Account.current_user.team == self.team
         
+
         
 class Game(db.Model):
     added           = db.DateTimeProperty(auto_now_add=True)

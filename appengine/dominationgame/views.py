@@ -139,6 +139,7 @@ def replay(request, groupslug, game_id):
 def dashboard(request, groupslug):
     messages = []
     if request.method == 'POST':
+
         if 'newbrain' in request.POST:
             source = str(request.POST['newbrain']).strip()
             source = re.sub(r'(\r\n|\r|\n)', '\n', source)
@@ -147,21 +148,45 @@ def dashboard(request, groupslug):
             elif len(source) < 100:
                 messages.append(("error","Code is too short."))
             else:
+                if 'blobid' in request.POST:
+                    braindata = models.BrainData.get_by_id(int(request.POST['blobid']), parent=request.group)
+                else:
+                    braindata = None
                 brain = models.Brain.create(team=request.user.current_team,
-                            source=source)
+                            source=source, data=braindata)
                 messages.append(("success","Brain uploaded."))
+
         if 'activebrains' in request.POST:
             brainids = []
             for letter in 'ABC':
                 if 'brain-' + letter in request.POST:
                     brainids.append(int(request.POST['brain-'+letter]))
             request.user.current_team.activate(models.Brain.get_by_id(brainids, parent=request.group))
-    upload_url = blobstore.create_upload_url(reverse(upload_blob, kwargs={'groupslug':groupslug}))
+
+        if 'file' in request.FILES:
+            d = models.BrainData.create(team=request.user.current_team, datafile=request.FILES['file'])
+
+        return HttpResponseRedirect(reverse(dashboard, kwargs={'groupslug':groupslug}))
+    upload_url = reverse(dashboard, kwargs={'groupslug':groupslug}) 
+    # upload_url = blobstore.create_upload_url(reverse(upload_blob, kwargs={'groupslug':groupslug}))
     return respond(request, 'dashboard.html',{'messages':messages,'upload_url':upload_url})
     
 @team_required
 def upload_blob(request, groupslug):
-    return HttpResponse('ok')
+    print "AAA"
+    print request
+    print dir(request)
+    print "RAW" + request.raw_post_data
+    print request.FILES
+    upfile = request.FILES['file']
+    print upfile
+    print upfile.content_type
+    print upfile.read()
+    print upfile.__dict__
+    print dir(upfile)
+
+    return HttpResponseRedirect(reverse(dashboard, kwargs={'groupslug':groupslug}))
+    # return HttpResponse('ok')
 
 ### Admin Handlers & Tasks ###
 
