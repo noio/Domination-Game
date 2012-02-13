@@ -3,10 +3,11 @@
 
 {% block content %}
 
-<h1>{{brain}} <small>by {{brain.team}}</small></h1>
+<h1>{{brain}} <small>by {{brain.team.anchor}}</small></h1>
 <div class='row'>
 	<div class='span6'>
-		<table class='condensed-table'><tbody>
+        <h2>Info</h2>
+		<table><tbody>
 			<tr><td><strong>Uploaded on:</strong></td><td>{{brain.added}}</td></tr>
 			<tr><td><strong>Score:</strong></td><td>{{brain.conservative|floatformat}} 
 				<span class='light'>( {{brain.score|floatformat}} &plusmn; {{brain.uncertainty|floatformat}} )</span>
@@ -15,15 +16,35 @@
 			<tr><td><strong>Errors:</strong></td><td>{{brain.num_errors}}</td></tr>
 		</tbody></table>
 	</div>
+    <div class='span10'>
+        <h2>Games</h2>
+        <table>
+            <tbody>
+                {% for game in brain.games %}
+                <tr><td>{{game.game.added}}</td>
+                    <td>{{game.my_score}} - {{game.opp_score}}</td>
+                    <td>{{game.opponent.anchor}}</td>
+                    <td><a href="{{game.game.url}}">view</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div id='source'>
-	<h2>Source code</h2>
+	<h2>Source code &amp; Data</h2>
 	{% if not brain.released %}
 	<span class="label notice">release on {{brain.release_date}}</span>
 	{% endif %}
 	
 	{% if brain.released or user.is_admin or brain.owned_by_current_user %}
+    <p><strong>Blob:</strong> {% if brain.data %}
+        <a href="{{brain.data.download_url}}?fn={{brain.identifier}}_blob">Download</a>
+        {% else %}
+        None
+        {% endif %}
+    </p>
 	<pre id='code'>{{brain.source}}</pre>
 	<pre id='output' class="cm-s-default">
 	</pre>

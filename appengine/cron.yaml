@@ -6,4 +6,9 @@ cron:
 - description: update team scores
   url: /tasks/update_team_scores/
   schedule: every 2 hours
-  
+
+- description: cleanup database
+  url: /tasks/clean/
+  schedule: every mon,thu 00:00
+
+ 

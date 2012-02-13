@@ -5,16 +5,25 @@
 <h1>{{team}}</h1>
 
 <div class='row'>
-	<div class='span6'>
-		<table class='bordered-table'>
-			<thead><tr><th>Score</th><th>Name</th></thead>
+	<div class='span12'>
+		<table>
+			<thead><tr><th>Active</th><th>Uploaded</th><th>Score</th><th>Name</th><th>Downloads</th></thead>
 			<tbody>
-			{% for brain in team.activebrains %}<tr {% if not brain.active %}class="inactive"{%endif%}>
-			<td>{{brain.conservative}}</td>
+			{% for brain in team.allbrains %}<tr {% if not brain.active %}class="light"{%endif%}>
+            <td>{% if team.activebrains|length > 0 %}{%ifequal brain.key.id team.activebrains.0.key.id %}<strong>A</strong>{%endifequal%}{%endif%}
+                {% if team.activebrains|length > 1 %}{%ifequal brain.key.id team.activebrains.1.key.id %}<strong>B</strong>{%endifequal%}{%endif%}
+                {% if team.activebrains|length > 2 %}{%ifequal brain.key.id team.activebrains.2.key.id %}<strong>C</strong>{%endifequal%}{%endif%}</td>
+            <td>{{brain.added}}</td>
+			<td>{{brain.conservative|floatformat}}</td>
 			<td>
-				<a href='{{brain.url}}'>{{brain}}</a>
-				{% if brain.num_errors %}<span class='label warning'>err</span>{% endif %}
+                {{brain.anchor}}{% if brain.num_errors %}<span class='label warning'>err</span>{% endif %}
 			</td>
+            <td>
+                {% if brain.owned_by_current_user or user and user.is_admin %}
+                    (<a href="{{brain.download_url}}">Download</a> / 
+                    {{brain.blob_anchor}})
+                {% endif %}
+                
 			</tr>{% endfor %}
 			</tbody>
 		</table>

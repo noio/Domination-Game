@@ -178,6 +178,9 @@ class Team(db.Model):
     def url(self):
         return reverse("dominationgame.views.team", args=[self.group.slug, self.key().id()])
         
+    def anchor(self):
+        return mark_safe('<a href="%s">%s</a>' % (self.url(), str(self)))
+        
     def recent_upload_count(self):
         """ How many brains were uploaded in the last 7 days. """
         recent = datetime.now() - timedelta(days=7)
@@ -230,7 +233,10 @@ class BrainData(db.Model):
                         filename=datafile.name,
                         parent=team.group)
         braindata.put()
-    
+        
+    def download_url(self):
+        return reverse("dominationgame.views.download_data", args=[self.parent().slug, self.key().id()])
+            
 class Brain(db.Model):
     # Performance stats
     score        = db.FloatProperty(default=100.0)
@@ -284,6 +290,37 @@ class Brain(db.Model):
         
     def url(self):
         return reverse("dominationgame.views.brain", args=[self.group.slug, self.key().id()])
+        
+    def download_url(self):
+        return reverse("dominationgame.views.brain_download", args=[self.group.slug, self.key().id()])
+        
+    def blob_anchor(self):
+        if self.data and self.data.blob:
+            return mark_safe('<a href="%s?fn=%s_blob">Blob</a>'% (self.data.download_url(), self.identifier()))
+        else:
+            return mark_safe("<span>No Blob</span>")
+        
+    def anchor(self):
+        return mark_safe('<a href="%s">%s</a>' % (self.url(), str(self)))
+        
+    def games(self):
+        """ Returns list of games this brain played """
+        rgames = [{'my_score': g.score_red,
+                   'opp_score': g.score_blue,
+                   'opponent': g.blue,
+                   'game': g} for g in self.red_set ]
+        bgames = [{'my_score': g.score_blue,
+                   'opp_score': g.score_red,
+                   'opponent': g.red,
+                   'game': g} for g in self.blue_set]
+        return sorted(rgames + bgames, key=lambda g: g['game'].added, reverse=True)
+
+        
+    def data_reader(self):
+        """ Returns a reader into this brains data or None """
+        if self.data is not None:
+            return self.data.blob.open()
+        return None
                 
     def release_date(self):
         return self.added + self.group.release_delay
@@ -292,7 +329,7 @@ class Brain(db.Model):
         return self.release_date() < datetime.now()
         
     def owned_by_current_user(self):
-        return Account.current_user.team == self.team
+        return Account.current_user and (Account.current_user.team == self.team)
         
 
         
@@ -326,6 +363,8 @@ class Game(db.Model):
         logging.info("Running game: %s %s vs %s %s with %s"%(red.team, red, blue.team, blue, settings))
         dg = domcore.Game(red_brain_string=red.source,
                           blue_brain_string=blue.source,
+                          red_init={'blob':red.data_reader()},
+                          blue_init={'blob':blue.data_reader()},
                           settings=settings,
                           verbose=False, rendered=False, record=True)
         dg.run()

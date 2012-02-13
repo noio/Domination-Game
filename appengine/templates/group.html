@@ -26,7 +26,7 @@
 						<tr>
 							<td>{{forloop.counter}}</td>
 							<td>{{brain.conservative|floatformat:1}}</td>
-							<td><strong><a href="{{brain.team.url}}">{{brain.team}}</a></strong> <a href="{{brain.url}}">{{brain}}</a></td>
+							<td><strong>{{brain.team.anchor}}</strong> {{brain.anchor}}</td>
 						</tr>
 						{% endfor %}
 					</tbody>
@@ -66,10 +66,10 @@
 				<tr>
 					<td class='aright'>{{game.score_red}}</td>
 					<td class='aright'>{% if game.error_red %}<span class='label warning'>err</span>{% endif %}
-						{{game.red}}
+						{{game.red.anchor}}
 					</td>
 					<td class='acenter'><a href='{{game.url}}'>{{game.winner}}</a></td>
-					<td>{{game.blue}}
+					<td>{{game.blue.anchor}}
 						{% if game.error_red %}<span class='label warning'>err</span>{% endif %}
 					</td>
 					<td>{{game.score_blue}}</td>

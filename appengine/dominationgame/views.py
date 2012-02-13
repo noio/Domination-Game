@@ -122,6 +122,15 @@ def brain(request, groupslug, brain_id):
     brain = models.Brain.get_by_id(int(brain_id), parent=request.group)
     return respond(request, 'brain.html', {'brain':brain})
     
+def brain_download(request, groupslug, brain_id):
+    brain = models.Brain.get_by_id(int(brain_id), parent=request.group)
+    if ((request.user and request.user.is_admin) or
+        brain.released()):
+        response = HttpResponse(brain.source, content_type="application/python")
+        response['Content-Disposition'] = 'attachment; filename=%s.py' % brain.identifier()
+        return response
+    return HttpResponseForbidden()
+    
 def game(request, groupslug, game_id):
     game = models.Game.get_by_id(int(game_id), parent=request.group)
     return respond(request, 'game.html', {'game':game})
@@ -134,6 +143,21 @@ def replay(request, groupslug, game_id):
         response['X-AppEngine-BlobKey'] = game.replay.key()
         return response
     return HttpResponseNotFound()
+    
+def download_data(request, groupslug, data_id):
+    """ Download the binary data given in the data_id, 
+        if the GET 'fn' is given, download under that filename,
+        useful to set it to `agent_filename_blob`.
+    """
+    braindata = models.BrainData.get_by_id(int(data_id), parent=request.group)
+    if braindata.blob:
+        response = HttpResponse(content_type=braindata.blob.content_type)
+        filename = request.GET.get('fn', braindata.filename)
+        response['Content-Disposition'] = 'attachment; filename=%s'%filename
+        response['X-AppEngine-BlobKey'] = braindata.blob.key()
+        return response
+    return HttpResponseNotFound()
+
 
 @team_required
 def dashboard(request, groupslug):
@@ -148,7 +172,7 @@ def dashboard(request, groupslug):
             elif len(source) < 100:
                 messages.append(("error","Code is too short."))
             else:
-                if 'blobid' in request.POST:
+                if 'blobid' in request.POST and request.POST['blobid'].isdigit():
                     braindata = models.BrainData.get_by_id(int(request.POST['blobid']), parent=request.group)
                 else:
                     braindata = None
@@ -224,7 +248,8 @@ def settings(request, groupslug):
             if type(gamesettings) == dict:
                 group.gamesettings = repr(gamesettings)
                 group.put()
-    teams = models.Team.all()
+        return HttpResponseRedirect(reverse(settings, kwargs={'groupslug':groupslug}))
+    teams = models.Team.all().ancestor(group)
     return respond(request, 'settings.html', {'teams':teams})
     
 ### Task Views ###
@@ -273,3 +298,34 @@ def update_team_scores(request):
     msg += 'Success'
     logging.info(msg)
     return HttpResponse(msg)
+    
+def clean(request):
+    msg = ''
+    for team in models.Team.all():
+        if team.parent() is None:
+            msg += 'Deleted %s\n' % (team)
+            team.delete()
+    for braindata in models.BrainData.all():
+        if braindata.parent() is None:
+            braindata.delete()
+        if braindata.brain_set.count(1) == 0:
+            braindata.delete()
+    for brain in models.Brain.all():
+        if brain.parent() is None:
+            brain.delete()
+    for game in models.Game.all():
+        if game.parent() is None:
+            game.delete()
+    for account in models.Account.all():
+        teams = filter(lambda t: t, models.Team.get(account.teams))
+        account.teams = [t.key() for t in teams]
+        account.put()
+    # Clean blobs if they don't belong to replay or braindata
+    for blob in blobstore.BlobInfo.all():
+        if (datetime.now() - blob.creation > timedelta(days=1) and 
+            models.Game.all().filter('replay =', blob.key()).count(1) == 0 and
+            models.BrainData.all().filter('blob =', blob.key()).count(1) == 0):
+            blob.delete()
+    msg += 'Success\n'
+    return HttpResponse(msg)
+        
