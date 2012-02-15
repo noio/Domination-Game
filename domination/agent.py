@@ -38,6 +38,9 @@ class Agent(object):
         self.observation = observation
         self.selected = observation.selected
         
+        if observation.selected:
+            print observation
+        
     def action(self):
         """ This function is called every step and should
             return a tuple in the form: (turn, speed, shoot)
