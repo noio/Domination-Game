@@ -33,8 +33,8 @@ ASSETS_PATH = os.path.join(os.path.dirname(__file__),'assets')
 
 C_RED               = (229,100,92)
 C_BLUE              = (81,142,221)
-SPF                 = 1/30.0 # Seconds per frame
-ROTATION_FRAMES     = 6 # Number of frames for rotation animation
+SPF                 = 1/60.0 # Seconds per frame
+ROTATION_FRAMES     = 5 # Number of frames for rotation animation
 SHOOTING_FRAMES     = 10 # Number of frames for shooting animation
 DRAW_BOUNDING_BOXES = False
 DRAW_NAV_MESH       = False

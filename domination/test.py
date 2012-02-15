@@ -98,9 +98,12 @@ class TestDominationGame(unittest.TestCase):
         for l in 'abc':
             shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
         run.Scenario.tournament(from_folder=tmpdir, output_folder='_tmp')
-            
-        
-
+                    
+    def test_fields(self):
+        for i in xrange(500):
+            f = core.FieldGenerator(num_points=3, num_ammo=6).generate()
+            self.assertEqual(len(f.find(core.Field.CONTROL)), 3)
+            self.assertEqual(len(f.find(core.Field.AMMO)), 6)
 
 # def check_balance():
 #     scores = []
@@ -115,5 +118,5 @@ def run_tests():
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDominationGame)
     unittest.TextTestRunner(verbosity=2).run(suite)
 
-if __name__ == "__main__":    
+if __name__ == "__main__":   
     run_tests()
