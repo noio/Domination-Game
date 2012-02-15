@@ -232,7 +232,7 @@ class Game(object):
         else:
             print 'Playing replay.'
             if replay.version != __version__:
-                print >> sys.stderr, ("WARNING: Replay is for older game version.")
+                print >> sys.stderr, ("WARNING: Replay is for version %s, you have %s."%(replay.version, __version__))
             self.settings = replay.settings
             self.field = replay.field
             self.red_name = replay.red_name
@@ -1035,17 +1035,17 @@ class Field(object):
     @property
     def mesh(self):
         if not self._unpacked: self.unpack()
-        return self._unpacked['mesh']
+        return copy.deepcopy(self._unpacked['mesh'])
     
     @property
     def wallgrid(self):
         if not self._unpacked: self.unpack()
-        return self._unpacked['grid']
+        return copy.deepcopy(self._unpacked['grid'])
     
     @property
     def wallrects(self):
         if not self._unpacked: self.unpack()
-        return self._unpacked['wallrects']
+        return copy.deepcopy(self._unpacked['wallrects'])
     
     def get_objects(self):
         """ Creates the gameobjects and returns them """
