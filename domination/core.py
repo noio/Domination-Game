@@ -6,6 +6,8 @@ Refer to the readme for usage instructions.
 
 """
 
+__version__ = '1.2.2'
+
 ### IMPORTS ###
 # Python
 import random
