@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 
-__version__ = '1.2.2'
+__version__ = '1.2.3'
 
 ### IMPORTS ###
 # Python
@@ -1586,6 +1586,7 @@ class Observation(object):
         
 
 class ReplayData(object):
+    """ Contains the replaydata for a game. """
     def __init__(self, game):
         self.settings = game.settings
         self.version = __version__

@@ -49,15 +49,15 @@ Replays
 
 Running replays is easy, first you need to unpack them::
 
->>> import pickle
->>> from domination import core
->>> rp = pickle.load(open('replay20120215-1341_t2v1_vs_t6v1.pickle','rb'))
->>> print rp
-<domination.core.ReplayData object at 0x10fca5fd0>
+    >>> import pickle
+    >>> from domination import core
+    >>> rp = pickle.load(open('replay20120215-1341_t2v1_vs_t6v1.pickle','rb'))
+    >>> print rp
+    <domination.core.ReplayData object at 0x10fca5fd0>
 
 Then you call the play method::
 
->>> rp.play()
+    >>> rp.play()
 
 .. autoclass:: domination.core.ReplayData
    :members:
