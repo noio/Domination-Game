@@ -61,6 +61,7 @@ def mean(iterable):
     
 def stdev(iterable):
     """ Returns standard deviation of given list or generator.
+        
         >>> stdev([1,2,3])
         1.0
     """
@@ -72,12 +73,21 @@ def stdev(iterable):
 ### GEOMETRY ###
 
 def point_add(a, b):
+    """ Add the coordinates of two points 
+        (Inline this if you can, function calls are slow)
+    """
     return (a[0] + b[0], a[1] + b[1])
 
 def point_sub(a, b):
+    """ Subtract two 2d vectors 
+        (Inline this if you can, function calls are slow)
+    """
     return (a[0] - b[0], a[1] - b[1])
     
 def point_mul(a, f):
+    """ Multiply a vector by a scalar 
+        (Inline this if you can, function calls are slow)
+    """
     return (a[0]*f, a[1]*f)
     
 def point_dist(a, b):
@@ -270,7 +280,7 @@ def rect_corners(rect):
 def rects_bound(rects):
     """ Returns a rectangle that bounds all given rectangles
     
-        >>> rects_bound([(-1,-1,0,0), (0,0,1,1), (3,3,1,1), (9,1,1,1)])
+        >>> rects_bound([(0,0,1,1), (3,3,1,1)])
         (0, 0, 4, 4)
     """
     def rb((ax,ay,aw,ah), (bx,by,bw,bh)):
@@ -334,8 +344,8 @@ def reachable(grid, (x, y), border=1):
         reachable areas on given tile map from (x,y). 
         Returns as binary grid with 1 for reachable.
         
-        :param border   can be a value or a function 
-                        indicating borders of region
+        :param border:   can be a value or a function 
+                         indicating borders of region
 
         >>> reachable([[0,1,0],[0,1,0]], (0,0))
         [[1, 0, 0], [1, 0, 0]]
@@ -458,11 +468,11 @@ def find_path(start, end, mesh, grid, tilesize=16):
         >>> find_path((0,0),(4,4),mesh,grid,1)
         [(4, 1), (4, 4)]
     """
-    # Copy mesh so we can add temp nodes
-    mesh = copy.deepcopy(mesh)
     # If there is a straight line, just return the end point
     if not line_intersects_grid(start, end, grid, tilesize):
         return [end]
+    # Copy mesh so we can add temp nodes
+    mesh = copy.deepcopy(mesh)
     # Add temp notes for start
     mesh[start] = dict([(n, point_dist(start,n)) for n in mesh if not line_intersects_grid(start,n,grid,tilesize)])
     # Add temp nodes for end:

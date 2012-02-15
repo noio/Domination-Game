@@ -23,6 +23,7 @@ Contents
    agents
    scenarios
    fields
+   utils
    
 Quickstart
 ----------
