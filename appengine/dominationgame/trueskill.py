@@ -14,7 +14,7 @@ from math import *
 INITIAL_MU    = 100
 INITIAL_SIGMA = INITIAL_MU / 2.0
 BETA          = INITIAL_SIGMA / 5.0
-GAMMA         = INITIAL_SIGMA / 50.0
+GAMMA         = INITIAL_SIGMA / 100.0
 EPSILON       = 1.0 #icdf((1.1)/2) * sqrt(2) * BETA
 DRAW_MARGIN   = 0.05
 

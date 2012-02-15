@@ -32,7 +32,7 @@ import trueskill
 
 
 ### Constants ###
-APP_URL = "http://localhost:8082"
+APP_URL = "http://aamasgame.appspot.com"
 MAX_ACTIVE_BRAINS = 3
 
 ### Exceptions ###
@@ -361,10 +361,18 @@ class Game(db.Model):
         # Run a game
         settings = group.gamesettings_obj()
         logging.info("Running game: %s %s vs %s %s with %s"%(red.team, red, blue.team, blue, settings))
+        if red.data is not None:
+            red_init = {'blob':red.data_reader()}
+        else:
+            red_init = {}
+        if blue.data is not None:
+            blue_init = {'blob':blue.data_reader()}
+        else:
+            blue_init = {}
         dg = domcore.Game(red_brain_string=red.source,
                           blue_brain_string=blue.source,
-                          red_init={'blob':red.data_reader()},
-                          blue_init={'blob':blue.data_reader()},
+                          red_init=red_init,
+                          blue_init=blue_init,
                           settings=settings,
                           verbose=False, rendered=False, record=True)
         dg.run()

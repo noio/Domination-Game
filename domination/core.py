@@ -23,6 +23,7 @@ import traceback
 import bisect
 import hashlib
 import logging
+from pprint import pprint
 import cPickle as pickle
 
 from pprint import pprint
@@ -1052,11 +1053,30 @@ class Field(object):
         
 class FieldGenerator(object):
     """ Generates field objects from random distribution """
-    
-    def __init__(self, width=41, height=26, tilesize=16, mirror=True,
+
+    def __init__(self, width=41, height=24, tilesize=16, mirror=True,
                        num_red=6, num_blue=6, num_points=3, num_ammo=6, num_crumbsource=0,
-                       wall_fill=0.4, wall_len=(4,4), wall_width=4, 
-                       wall_orientation=0.5, wall_gridsize=4):
+                       wall_fill=0.4, wall_len=(3,7), wall_width=4, 
+                       wall_orientation=0.5, wall_gridsize=6):
+        """ Create a FieldGenerator object with certain parameters for a random
+            distribution of fields.
+            
+            :param width:            The width of the field in tiles
+            :param height:           The height of the field in tiles
+            :param tilesize:         The size of each tile (don't change from 16)
+            :param mirror:           Make a symmetrical map
+            :param num_blue:         The number of blue spawns
+            :param num_red:          The number of red spawns
+            :param num_points:       The number of controlpoints
+            :param num_ammo:         The number of ammo locations on the map
+            :param num_crumbsource:  The number of crumb fountains
+            :param wall_fill:        What portion of the map is occupied by walls
+            :param wall_len:         A range for the length of wall sections (min, max)
+            :param wall_width:       The width of each wall section
+            :param wall_orientation: The probability that each wall will be placed horizontally
+                                     i.e. that the walls length will be along a horizontal axis
+            :param wall_gridsize:    Place walls only at every n-th tile with their top-left 
+        """
         self.width            = width
         self.height           = height
         self.tilesize         = tilesize
@@ -1077,7 +1097,7 @@ class FieldGenerator(object):
         """ Generates a new field using the parameters for random 
             distribution set in the constructor. 
             
-            :returns: A :class:`~core.Field` instance.
+            :returns: A :class:`~domination.core.Field` instance.
         """
         # Create a new field
         field = Field(width=self.width, height=self.height, tilesize=self.tilesize)
