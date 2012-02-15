@@ -47,9 +47,6 @@ The :class:`~domination.core.Game` class has the following specification.
 Replays
 -------
 
-.. autoclass:: domination.core.ReplayData
-   :members:
-
 Running replays is easy, first you need to unpack them::
 
 >>> import pickle
@@ -61,6 +58,9 @@ Running replays is easy, first you need to unpack them::
 Then you call the play method::
 
 >>> rp.play()
+
+.. autoclass:: domination.core.ReplayData
+   :members:
 
 
 Settings
