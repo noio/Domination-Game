@@ -75,6 +75,10 @@ class TestDominationGame(unittest.TestCase):
         s = str(f)
         f2 = core.Field.from_string(s)
         self.assertEqual(f, f2)
+        for i in xrange(1000):
+            f = core.FieldGenerator(num_points=3, num_ammo=6).generate()
+            self.assertEqual(len(f.find(core.Field.CONTROL)), 3)
+            self.assertEqual(len(f.find(core.Field.AMMO)), 6)
                 
     def test_string_agent(self):
         game = core.Game(red_brain_string=RANDOM_AGENT, 
@@ -99,11 +103,6 @@ class TestDominationGame(unittest.TestCase):
             shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
         run.Scenario.tournament(from_folder=tmpdir, output_folder='_tmp')
                     
-    def test_fields(self):
-        for i in xrange(500):
-            f = core.FieldGenerator(num_points=3, num_ammo=6).generate()
-            self.assertEqual(len(f.find(core.Field.CONTROL)), 3)
-            self.assertEqual(len(f.find(core.Field.AMMO)), 6)
 
 # def check_balance():
 #     scores = []

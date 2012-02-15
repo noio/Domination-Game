@@ -1106,7 +1106,7 @@ class FieldGenerator(object):
 
         ## IMPORTANT OBJECTS
         # Add controlpoints
-        field.scatter(Field.CONTROL, self.num_points, pad = 3, mirror=self.mirror)        
+        field.scatter(Field.CONTROL, self.num_points, pad = 4, mirror=self.mirror)        
         # Add sources of crumbs
         field.scatter(Field.SOURCE, self.num_crumbsource, pad = 2, mirror=self.mirror)
         # Spawn regions
@@ -1156,11 +1156,10 @@ class FieldGenerator(object):
             pts = new.find('W_.', bounds=(x, y, x + sec_width, y + sec_height))
             if len(pts) == sec_width*sec_height:
                 new.set(pts, Field.WALL, self.mirror)
-                new.fill_unreachable()
-                # Validate
                 if new.valid():
                     field = new
-                    continue
+                    new.fill_unreachable()
+                    continue                
             attempts -= 1
         
         # Clear walls under controlpoints
