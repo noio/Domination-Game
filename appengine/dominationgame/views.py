@@ -293,7 +293,7 @@ def update_team_scores(request):
                 msg += "%s's best score from %s is %.1f\n"%(team, best, best.conservative)
                 team.maxscore = best.conservative
             else:
-                team.maxscore = 0
+                team.maxscore = 0.0
             team.put()
     msg += 'Success'
     logging.info(msg)

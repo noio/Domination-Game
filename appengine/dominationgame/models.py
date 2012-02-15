@@ -98,7 +98,7 @@ class Group(db.Model):
         return sorted(q, key=lambda b: b.conservative, reverse=True)
         
     def ladder_teams(self):
-        return self.team_set
+        return sorted(self.team_set, key=lambda x:x.maxscore, reverse=True)
         
     def recent_games(self):
         return self.game_set.order('-added').fetch(10)
