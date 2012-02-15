@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,2,4
+MAJOR,MINOR,PATCH = 1,2,5
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
