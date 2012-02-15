@@ -5,8 +5,9 @@ This is the game engine module that can simulate games, without rendering them.
 Refer to the readme for usage instructions.
 
 """
-
-__version__ = '1.2.3'
+__author__ = "Thomas van den Berg and Tim Doolan"
+MAJOR,MINOR,PATCH = 1,2,4
+__version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
 # Python
@@ -26,8 +27,6 @@ import logging
 from pprint import pprint
 import cPickle as pickle
 
-from pprint import pprint
-
 # Local
 from utilities import *
 from libs import *
@@ -44,6 +43,8 @@ cos  = math.cos
 rand = random.random
 
 ### CONSTANTS###
+RANDOMSEED = 1597671198
+
 TEAM_RED     = 0
 TEAM_BLUE    = 1
 TEAM_NEUTRAL = 2
@@ -212,8 +213,6 @@ class Game(object):
         self.replay = replay #: The replay object, can be accessed after game has run
         self.stats = None #: Instance of :class:`~core.GameStats`.
         
-        self.old_stdout = sys.stdout
-        sys.stdout = self.log
         self.step_callback = step_callback
         if self.record and self.replay is not None:
             raise Exception("Cannot record and play replay at the same time.")
@@ -231,9 +230,9 @@ class Game(object):
                 self.settings.tilesize = self.field.tilesize
         # Load up a replay
         else:
-            print '[Game]: Playing replay.'
+            print 'Playing replay.'
             if replay.version != __version__:
-                raise Exception("Replay is for older game version.")
+                print >> sys.stderr, ("WARNING: Replay is for older game version.")
             self.settings = replay.settings
             self.field = replay.field
             self.red_name = replay.red_name
@@ -266,6 +265,11 @@ class Game(object):
     def _setup(self):
         """ Sets up the game.
         """
+        # Redirect STDOUT
+        self.old_stdout = sys.stdout
+        sys.stdout = self.log
+        # Print version
+        print "Domination Game Ver. %s"%__version__
         # Read agent brains (from string or file)
         g = AGENT_GLOBALS.copy()
         if not self.replay:
@@ -292,12 +296,10 @@ class Game(object):
                 self.blue_name = "error"
             
         self.random = random.Random()
+        self.random.seed(RANDOMSEED)
         # Initialize new replay
         if self.record:
             self.replay = ReplayData(self)
-            self.replay.randomstate = self.random.getstate()
-        elif self.replay:
-            self.random.setstate(self.replay.randomstate)
         # Load field objects
         allobjects = self.field.get_objects()
         cps = [o for o in allobjects if isinstance(o, ControlPoint)]
@@ -329,7 +331,7 @@ class Game(object):
             self._add_object(o)
         self.controlpoints = cps
         # Initialize tanks
-        print "Loading agents."
+        print "Initializing agents."
         if self.record or self.replay is None:
             # Initialize new tanks with brains
             try:

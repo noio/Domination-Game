@@ -1,8 +1,7 @@
 """ Domination game engine for Reinforcement Learning research.
 
 """
-__author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,2,3
-__version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
+import core
+__version__ = core.__version__
 
 __all__ = ["core","run","renderer","test"]
