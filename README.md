@@ -1,6 +1,8 @@
 Domination Game
 ===============
 
+#### Version 1.2.5
+
 A simulation engine for a multi-agent competitive game. It is meant as an easy experimentation and evaluation
 environment for learning about cooperative and competitive autonomous systems. It is:
 
