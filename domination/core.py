@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,2,5
+MAJOR,MINOR,PATCH = 1,3,0
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -58,6 +58,7 @@ ENDGAME_SCORE  = 1 #: End game when either team has 0 score
 ENDGAME_CRUMBS = 2 #: End game when all crumbs are picked up
 
 DEFAULT_AGENT_FILE = os.path.join(os.path.dirname(__file__), 'agent.py')
+ILLEGAL_PATH_CHARS = r'[:*?"<>\|\n]+'
 
 AGENT_GLOBALS = globals().copy()
 
@@ -157,14 +158,71 @@ class GameLog(object):
     def __str__(self):
         return ''.join(self.log)
         
-# def Team(object):
-#     """ Holds info about a game's team. 
-#     """
-#     def __init__(self):
-#         self.brain_path = None
-#         self.brain_string = None
-#         self.name = None
-#         self.raised_exception = False
+class Team(object):
+    """ Holds info about a team.
+    """
+    FIND_NAME   = r'^[ \t]*NAME[ \t]*=[ \t]*[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]'
+    NAME_UNSAFE = r'[^a-z0-9\_]+'
+    
+    def __init__(self, brain=None, init_kwargs={}, name=None):
+        """ Initialize a Team object.
+        
+            :param brain: A path to the brain, or a string containing it, or an
+                            open file pointer.
+        """
+        # Do some heuristics to find out how to get the agent:
+        if brain is None:
+            self.brain_string = ''
+            self.name_external = name
+        elif type(brain) == file:
+            brain.seek(0)
+            self.brain_string = brain.read()
+            self.name_external = os.path.basename(brain.name)
+        else:
+            if re.search(ILLEGAL_PATH_CHARS, brain) is None:
+                self.brain_string = open(brain).read()
+                self.name_external = os.path.basename(brain)
+            else:
+                self.brain_string = brain
+                self.name_external = name
+        self.init_kwargs = init_kwargs
+        self.brain_class = None
+        # Fetch the NAME from the agent code
+        match = re.search(self.FIND_NAME, self.brain_string, re.M)
+        if match:
+            found = match.groups(1)[0]
+            self.name_internal = re.sub(self.NAME_UNSAFE, '_', found.lower())
+            self.name_internal = self.name_internal.strip('_')
+        else:
+            self.name_internal = 'unnamed'
+        self.raised_exception = False
+        
+    def setname(self, fullname):
+        parts = fullname.split(' (', 1)
+        if len(parts) == 1:
+            self.name_internal = parts[0]
+        else:
+            self.name_internal, ext = parts
+            self.name_external = ext[:-1]
+        
+    def fullname(self):
+        if self.name_external is None:
+            return self.name_internal
+        else:
+            return self.name_internal + ' (' + self.name_external + ')'
+        
+    def load(self, scope):
+        """ Load up the brain from the string 
+        """
+        try:
+            exec(self.brain_string, scope)
+            return scope['Agent']
+        except Exception, e:
+            self.raised_exception = True
+            print "Agent `%s` has loading error" % self.fullname()
+            print self.brain_string
+            traceback.print_exc(file=sys.stdout)
+            return None
         
 class Game(object):
     
@@ -181,16 +239,12 @@ class Game(object):
     STATE_INTERRUPT = 3
     STATE_ENDED     = 4
         
-    def __init__(self, red_brain=DEFAULT_AGENT_FILE,
-                       blue_brain=DEFAULT_AGENT_FILE,
-                       red_brain_string=None,
-                       blue_brain_string=None,
-                       red_name='',
-                       blue_name='',
-                       settings=Settings(),
-                       field=None,
+    def __init__(self, red=open(DEFAULT_AGENT_FILE),
+                       blue=open(DEFAULT_AGENT_FILE),
                        red_init={},
                        blue_init={},
+                       settings=Settings(),
+                       field=None,
                        record=False,
                        replay=None,
                        rendered=True, 
@@ -198,18 +252,15 @@ class Game(object):
                        step_callback=None):
         """ Constructor for Game class 
             
-            :param red_brain:         File that the red brain class resides in.
-            :param blue_brain:        File that the blue brain class resides in.
-            :param red_brain_string:  If passed, a string containing the blue brain class. 
-                                        Overrides red_brain argument.
-            :param blue_brain_string: Same as red_brain_string.
-            :param red_name:          The red name (for replay/GUI), defaults to basename(red_brain)
-            :param blue_name:         The blue name (for replay/GUI), defaults to basename(blue_brain)
-            :param settings:          Instance of the settings class.
-            :param field:             An instance of Field to play this game on. 
+            :param red:               Descriptor of the red agent.
+                                        Can be either a path, an open file, a string with the 
+                                        class definition, or an instance of :class:`~domination.core.Team`
+            :param blue:              Descriptor of the blue agent
             :param red_init:          A dictionary of keyword arguments passed to the red
                                         agent constructor.
             :param blue_init:         Like red_init.
+            :param settings:          Instance of the settings class.
+            :param field:             An instance of Field to play this game on. 
             :param record:            Store all actions in a game replay.
             :param replay:            Pass a game replay to play it.
             :param rendered:          Enable/disable the renderer.
@@ -218,34 +269,20 @@ class Game(object):
         """
         self.record = record
         self.verbose = verbose
+        self.step_callback = step_callback
         
         # Public properties
-        self.log = GameLog(self.verbose) #: The game log as an instance of class:`GameLog`
-        self.red_raised_exception  = False #: Whether the red agents raised an exception
-        self.blue_raised_exception = False #: Whether the blue agents raised an exception
-        self.replay = replay #: The replay object, can be accessed after game has run
-        self.stats = None #: Instance of :class:`~core.GameStats`.
+        self.log    = GameLog(self.verbose) #: The game log as an instance of class:`~domination.core.GameLog`
+        self.replay = replay  #: The replay object, can be accessed after game has run
+        self.stats  = None    #: Instance of :class:`~domination.core.GameStats`.
+        self.red  = red if isinstance(red, Team) else Team(red, red_init)    #: Instance of :class:`~domination.core.Team`.
+        self.blue = blue if isinstance(blue, Team) else Team(blue, blue_init) #: Instance of :class:`~domination.core.Team`.
         
-        self.step_callback = step_callback
         if self.record and self.replay is not None:
             raise Exception("Cannot record and play replay at the same time.")
         # Set up a new game
         if replay is None:            
             self.settings = settings
-            if red_brain_string:
-                self.red_brain_string = red_brain_string
-                self.red_name = red_name
-            else:
-                self.red_brain_string = open(red_brain,'r').read()
-                self.red_name = os.path.basename(red_brain)
-            if blue_brain_string:
-                self.blue_brain_string = blue_brain_string 
-                self.blue_name = blue_name
-            else:
-                self.blue_brain_string = open(blue_brain,'r').read()
-                self.blue_name = os.path.basename(blue_brain)
-            self.red_init = red_init
-            self.blue_init = blue_init
             if field is None:
                 self.field = FieldGenerator().generate()
             else:
@@ -253,11 +290,12 @@ class Game(object):
                 self.settings.tilesize = self.field.tilesize
         # Load up a replay
         else:
-            print 'Playing replay.'
             if replay.version != __version__:
                 print >> sys.stderr, ("WARNING: Replay is for version %s, you have %s."%(replay.version, __version__))
             self.settings = replay.settings
             self.field = replay.field
+            self.red.setname(replay.red_name)
+            self.blue.setname(replay.blue_name)
 
         # Create the renderer if needed
         if rendered:
@@ -266,22 +304,11 @@ class Game(object):
             self.renderer = None
         
         self.state = Game.STATE_NEW
-        
-    def _agent_name(self, agent_class):
-        """ Retrieves the name of an agent
-            This is defined by a static property NAME in the agent's class.
-        """
-        unsafe_chars = r'[^a-z0-9\-]+'
-        if hasattr(agent_class, "NAME"):
-            n = re.sub(unsafe_chars, '-', agent_class.NAME.lower())
-            return n[:32]
-        else:
-            return "noname"
-        
+            
     def add_renderer(self, **kwargs):
         import renderer
         globals()['renderer'] = renderer
-        self.renderer = renderer.Renderer(self.field, **kwargs)
+        self.renderer = renderer.Renderer(self, **kwargs)
         
     def _setup(self):
         """ Sets up the game.
@@ -292,40 +319,16 @@ class Game(object):
         # Print version
         print "Domination Game Ver. %s"%__version__
         # Read agent brains (from string or file)
-        g = AGENT_GLOBALS.copy()
-        if not self.replay:
-            try:
-                exec(self.red_brain_string, g)
-                self.red_brain_class = g['Agent']
-                self.red_name = self._agent_name(self.red_brain_class) + ' (%s)'%self.red_name
-            except Exception, e:
-                self.red_raised_exception = True
-                print "Red agent has loading error"
-                traceback.print_exc(file=sys.stdout)
-                self.red_brain_class = None
-                self.red_name = "error"
-            # Blue brain
-            try:
-                exec(self.blue_brain_string, g)
-                self.blue_brain_class = g['Agent']
-                self.blue_name = self._agent_name(self.blue_brain_class) + ' (%s)'%self.blue_name
-            except Exception, e:
-                self.blue_raised_exception = True
-                print "Blue agent has loading error"
-                traceback.print_exc(file=sys.stdout)
-                self.blue_brain_class = None
-                self.blue_name = "error"
-        elif not self.record:
-            self.red_name = self.replay.red_name
-            self.blue_name = self.replay.blue_name
         
-        print "Playing `%s` vs. `%s`"%(self.red_name, self.blue_name)
+        print "Playing `%s` vs. `%s`"%(self.red.fullname(), self.blue.fullname())
         
         self.random = random.Random()
         self.random.seed(RANDOMSEED)
         # Initialize new replay
         if self.record:
             self.replay = ReplayData(self)
+            self.replay.red_name = self.red.fullname()
+            self.replay.blue_name = self.blue.fullname()
         # Load field objects
         allobjects = self.field.get_objects()
         cps = [o for o in allobjects if isinstance(o, ControlPoint)]
@@ -360,37 +363,38 @@ class Game(object):
         print "Initializing agents."
         if self.record or self.replay is None:
             # Initialize new tanks with brains
+            brain_kwargs = {'settings': self.settings}
+            if self.settings.field_known:
+                brain_kwargs.update({'field_rects': self.field.wallrects, 
+                                     'field_grid': self.field.wallgrid,
+                                     'nav_mesh': self.field.mesh})
             try:
-                if self.red_brain_class is not None:
+                red_brain_class = self.red.load(scope=AGENT_GLOBALS.copy())
+                if red_brain_class is not None:
                     for i,s in enumerate(reds):
-                        if self.settings.field_known:
-                            brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), 
-                                        field_rects=copy.deepcopy(self.field.wallrects), field_grid=copy.deepcopy(self.field.wallgrid), 
-                                        nav_mesh=copy.deepcopy(self.field.mesh), **self.red_init)
-                        else:
-                            brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
+                        kwargs = copy.deepcopy(brain_kwargs)
+                        kwargs.update(self.red.init_kwargs)
+                        brain = red_brain_class(i, TEAM_RED, **kwargs)
                         t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
                         self.tanks.append(t)
                         self._add_object(t)
             except Exception, e:
-                self.red_raised_exception = True
+                self.red.raised_exception = True
                 print "Red agent has __init__ error"
                 traceback.print_exc(file=sys.stdout)
                 
             try: 
-                if self.blue_brain_class is not None:
+                blue_brain_class = self.blue.load(scope=AGENT_GLOBALS.copy())
+                if blue_brain_class is not None:
                     for i,s in enumerate(blues):
-                        if self.settings.field_known:
-                            brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), 
-                                        field_rects=copy.deepcopy(self.field.wallrects), field_grid=copy.deepcopy(self.field.wallgrid), 
-                                        nav_mesh=copy.deepcopy(self.field.mesh), **self.blue_init)
-                        else:
-                            brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), **self.blue_init)
+                        kwargs = copy.deepcopy(brain_kwargs)
+                        kwargs.update(self.blue.init_kwargs)
+                        brain = blue_brain_class(i, TEAM_BLUE, **kwargs)
                         t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
                         self.tanks.append(t)
                         self._add_object(t)
             except Exception, e:
-                self.blue_raised_exception = True
+                self.blue.raised_exception = True
                 print "Blue agent has __init__ error"
                 traceback.print_exc(file=sys.stdout)
             
@@ -534,8 +538,6 @@ class Game(object):
         if self.record:
             self.replay.settings = copy.copy(self.settings)
             self.replay.field = self.field
-            self.replay.red_name = self.red_name
-            self.replay.blue_name = self.blue_name
             self.replay.actions_red = [tank.actions for tank in self.tanks_red]
             self.replay.actions_blue = [tank.actions for tank in self.tanks_blue]
         # Finalize tanks brains.
@@ -834,13 +836,13 @@ class Game(object):
                 t.selected = False 
     
     def __str__(self):
-        args = ','.join(['%r'%self.red_name,
-                         '%r'%self.blue_name,
+        args = ','.join(['%r'%self.red.fullname(),
+                         '%r'%self.blue.fullname(),
                          'settings=%r'%self.settings])
-        if self.red_init != {}:
-            args += ',red_init=%r'%self.red_init
-        if self.blue_init != {}:
-            args += ',blue_init=%r'%self.blue_init
+        if self.red.init_kwargs != {}:
+            args += ',red_init=%r'%self.red.init_kwargs
+        if self.blue.init_kwargs != {}:
+            args += ',blue_init=%r'%self.blue.init_kwargs
         return 'Game(%s)'%args
 
 
@@ -1373,9 +1375,9 @@ class Tank(GameObject):
                 self.brain.observe(obs)
             except Exception, e:
                 if self.team == TEAM_RED:
-                    self.game.red_raised_exception = True
+                    self.game.red.raised_exception = True
                 else:
-                    self.game.blue_raised_exception = True
+                    self.game.blue.raised_exception = True
                 print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)
@@ -1394,9 +1396,9 @@ class Tank(GameObject):
                 (turn,speed,shoot) = self.brain.action()
             except Exception, e:
                 if self.team == TEAM_RED:
-                    self.game.red_raised_exception = True
+                    self.game.red.raised_exception = True
                 else:
-                    self.game.blue_raised_exception = True
+                    self.game.blue.raised_exception = True
                 print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
                 print '-'*60
                 traceback.print_exc(file=sys.stdout)

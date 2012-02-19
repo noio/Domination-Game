@@ -47,7 +47,7 @@ class Renderer(object):
     UI_WIDTH            = 640
     
     """Renderer"""
-    def __init__(self, field, skin=''):
+    def __init__(self, game, skin=''):
         # Global pygame init
         pg.init()
         
@@ -58,6 +58,7 @@ class Renderer(object):
         self.active_team = 0
                 
         # Setup screen/surfaces
+        field = game.field
         fw = field.width*field.tilesize # Field width and height
         fh = field.height*field.tilesize
         self.upscale = 1
@@ -106,7 +107,7 @@ class Renderer(object):
         
         # Set up window
         pg.display.set_icon(self.ims['icon'])
-        pg.display.set_caption("Domination Game")
+        pg.display.set_caption("Domination Game: %s vs %s"%(game.red.fullname(), game.blue.fullname()))
         
         # Create a map surface
         self.mapsurface = pg.Surface((field.width*field.tilesize,field.height*field.tilesize))

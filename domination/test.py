@@ -60,7 +60,28 @@ w w w w w w w w w w w w w w w w w w w
 class TestDominationGame(unittest.TestCase):
         
     def test_basic(self):
-        core.Game(rendered=False).run()
+        core.Game(rendered=False, verbose=False).run()
+        
+    def test_team(self):
+        tmpdir = '_tmp'
+        if not os.path.exists(tmpdir):
+            os.mkdir(tmpdir)
+        agentpath = os.path.join(tmpdir,'agent.py')
+        shutil.copy(core.DEFAULT_AGENT_FILE, agentpath)
+
+        team = core.Team(agentpath)
+        self.assertEqual(team.brain_string, open(agentpath).read())
+
+        team = core.Team(open(agentpath))
+        self.assertEqual(team.brain_string, open(agentpath).read())
+
+        team = core.Team(open(agentpath,'r').read())
+        self.assertEqual(team.brain_string, open(agentpath).read())
+
+        team = core.Team(name='ya')
+        teamb = core.Team()
+        teamb.setname(team.fullname())
+        self.assertEqual(team.fullname(), teamb.fullname())
         
     def test_render(self):
         try:
@@ -81,8 +102,8 @@ class TestDominationGame(unittest.TestCase):
             self.assertEqual(len(f.find(core.Field.AMMO)), 6)
                 
     def test_string_agent(self):
-        game = core.Game(red_brain_string=RANDOM_AGENT, 
-                         blue_brain_string=RANDOM_AGENT, 
+        game = core.Game(red=RANDOM_AGENT, 
+                         blue=RANDOM_AGENT, 
                          rendered=False)
         game.run()
     
@@ -91,7 +112,7 @@ class TestDominationGame(unittest.TestCase):
         for i in range(40):
             game = core.Game(settings=settings, record=True, rendered=False, verbose=False)
             game.run()
-            replaygame = core.Game(replay=game.replay, rendered=False)
+            replaygame = core.Game(replay=game.replay, rendered=False, verbose=False)
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
             
@@ -101,7 +122,7 @@ class TestDominationGame(unittest.TestCase):
             os.mkdir(tmpdir)
         for l in 'abc':
             shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
-        run.Scenario.tournament(from_folder=tmpdir, output_folder='_tmp')
+        run.Scenario.tournament(folder=tmpdir, output_folder='_tmp')
                     
 
 # def check_balance():

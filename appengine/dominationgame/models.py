@@ -268,10 +268,7 @@ class Brain(db.Model):
         kwargs['version'] = team.brain_ver + 1
         kwargs['group'] = team.group
         # Try to extract a name
-        namerx = r'NAME *= *[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]'
-        match = re.search(r'NAME *= *[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]', source)
-        if match:
-            kwargs['name'] = match.groups(1)[0]
+        kwargs['name'] = domcore.Team(source).name_internal
         # Create entity and put
         brain = cls(team=team, source=source, parent=team.group, **kwargs)
         team.brain_ver += 1
@@ -369,8 +366,8 @@ class Game(db.Model):
             blue_init = {'blob':blue.data_reader()}
         else:
             blue_init = {}
-        dg = domcore.Game(red=red.source,
-                          blue=blue.source,
+        dg = domcore.Game(red=domcore.Team(red.source, name=red.identifier()),
+                          blue=domcore.Team(blue.source, name=blue.identifier()),
                           red_init=red_init,
                           blue_init=blue_init,
                           settings=settings,
