@@ -243,7 +243,7 @@ class Brain(db.Model):
     uncertainty  = db.FloatProperty(default=30.0)
     conservative = db.FloatProperty(default=0.0)
     active       = db.BooleanProperty(default=False)
-    games_played = db.IntegerProperty(default=1)
+    games_played = db.IntegerProperty(default=0)
     num_errors   = db.IntegerProperty(default=0)
     # Identity
     group   = db.ReferenceProperty(Group, required=True)
