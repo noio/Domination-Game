@@ -32,10 +32,11 @@ class Scenario(object):
     #: The settings with which these games will be played
     SETTINGS     = core.Settings()
     #: The field that these games will be played on
-    FIELD        = core.FieldGenerator().generate() 
-    REPEATS      = 10     #: How many times to repeat each game
-    SWAP_TEAMS   = True  #: Repeat each run with blue/red swapped
-    DRAW_MARGIN  = 0.05
+    GENERATOR   = core.FieldGenerator() #: Will generate FIELD before each game if defined
+    FIELD       = None   #: Will play on this field if GENERATOR is None
+    REPEATS     = 10     #: How many times to repeat each game
+    SWAP_TEAMS  = True   #: Repeat each run with blue/red swapped
+    DRAW_MARGIN = 0.05
             
     def setup(self):
         """ Function is called once before any games 
@@ -63,6 +64,8 @@ class Scenario(object):
         """ Runs a single game, returns results, called repeatedly
             by :meth:`Scenario._multi`.
         """
+        if self.GENERATOR is not None:
+            self.FIELD = self.GENERATOR.generate()
         self.before_each()
         # Open blobs for reading if we can find 'em
         red_blob = os.path.splitext(red)[0] + '_blob'

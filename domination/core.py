@@ -338,8 +338,9 @@ class Game(object):
                 if self.red_brain_class is not None:
                     for i,s in enumerate(reds):
                         if self.settings.field_known:
-                            brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
-                                                     field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.red_init)
+                            brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), 
+                                        field_rects=copy.deepcopy(self.field.wallrects), field_grid=copy.deepcopy(self.field.wallgrid), 
+                                        nav_mesh=copy.deepcopy(self.field.mesh), **self.red_init)
                         else:
                             brain = self.red_brain_class(i,TEAM_RED,settings=copy.copy(self.settings), **self.red_init)
                         t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
@@ -354,8 +355,9 @@ class Game(object):
                 if self.blue_brain_class is not None:
                     for i,s in enumerate(blues):
                         if self.settings.field_known:
-                            brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), field_rects=self.field.wallrects,
-                                                     field_grid=self.field.wallgrid, nav_mesh=self.field.mesh, **self.blue_init)
+                            brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), 
+                                        field_rects=copy.deepcopy(self.field.wallrects), field_grid=copy.deepcopy(self.field.wallgrid), 
+                                        nav_mesh=copy.deepcopy(self.field.mesh), **self.blue_init)
                         else:
                             brain = self.blue_brain_class(i,TEAM_BLUE,settings=copy.copy(self.settings), **self.blue_init)
                         t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
@@ -1035,17 +1037,17 @@ class Field(object):
     @property
     def mesh(self):
         if not self._unpacked: self.unpack()
-        return copy.deepcopy(self._unpacked['mesh'])
+        return self._unpacked['mesh']
     
     @property
     def wallgrid(self):
         if not self._unpacked: self.unpack()
-        return copy.deepcopy(self._unpacked['grid'])
+        return self._unpacked['grid']
     
     @property
     def wallrects(self):
         if not self._unpacked: self.unpack()
-        return copy.deepcopy(self._unpacked['wallrects'])
+        return self._unpacked['wallrects']
     
     def get_objects(self):
         """ Creates the gameobjects and returns them """
