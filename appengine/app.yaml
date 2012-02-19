@@ -1,5 +1,5 @@
 application: aamasgame
-version: 0-2
+version: 1-3-0-alpha
 runtime: python
 api_version: 1
 

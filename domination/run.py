@@ -76,7 +76,7 @@ class Scenario(object):
         game = core.Game(red, blue, 
                     red_init=red_init, blue_init=blue_init,
                     field=self.FIELD, settings=self.SETTINGS,
-                    record=True, verbose=True, rendered=False)
+                    record=True, verbose=False, rendered=False)
         if rendered:
             game.add_renderer()
         game.run()
@@ -100,7 +100,7 @@ class Scenario(object):
             teams = teams + [(b, r) for (r, b) in teams]
         # Run the games
         gameinfo = []
-        print '\n'.join("%r vs. %r"%(r,b) for (r, b) in teams)
+        # print '\n'.join("%r vs. %r"%(r,b) for (r, b) in teams)
         for i, (red, blue) in enumerate(teams):
             (stats, replay) = self._single(red, blue, rendered=rendered)
             print "======= Game %d/%d done. =======" % (i+1, len(teams))
@@ -206,7 +206,7 @@ class Scenario(object):
         scen._multi([(red, blue)], output_folder=output_folder)
         
     @classmethod
-    def tournament(cls, agents=None, folder=None, output_folder=None):
+    def tournament(cls, folder=None, agents=None, output_folder=None):
         """ Runs a full tournament between the agents specified,
             respecting the REPEATS and SWAP_TEAMS settings.
         
@@ -239,7 +239,6 @@ def markdown_table(body, header=None):
     if header:
         body = [header] + body
     maxlen = [max(len(str(cell)) for cell in col) for col in zip(*body)]
-    print maxlen
     if header:
         s += makerow(body[0])
         s += '|'+'|'.join('-'*(m+2) for m in maxlen)+'|\n'
