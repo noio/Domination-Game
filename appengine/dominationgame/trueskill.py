@@ -15,7 +15,7 @@ INITIAL_MU    = 100
 INITIAL_SIGMA = INITIAL_MU / 2.0
 BETA          = INITIAL_SIGMA / 5.0
 GAMMA         = INITIAL_SIGMA / 100.0
-EPSILON       = 1.0 #icdf((1.1)/2) * sqrt(2) * BETA
+EPSILON       = 5.0 #icdf((1.1)/2) * sqrt(2) * BETA
 DRAW_MARGIN   = 0.05
 
 ### Functions ###
@@ -45,9 +45,11 @@ def cdf(x):
 # https://github.com/dougz/trueskill
 
 def v_win(t, e):
+    """Updates score"""
     return pdf(t-e) / cdf(t-e)
   
 def w_win(t, e):
+    """Updates sigma"""
     return v_win(t, e) * (v_win(t, e) + t - e)
 
 def v_draw(t, e):
@@ -61,7 +63,7 @@ def adjust((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON,
     """ Implements the 2-player skill update as described on
         http://research.microsoft.com/en-us/projects/trueskill/details.aspx#update
     """
-    c = sqrt(2*beta**2 + sig_w + sig_l**2)
+    c = sqrt(2*beta**2 + sig_w + sig_l)
     e = epsilon/c
     if draw:
         v = v_draw
@@ -80,6 +82,7 @@ def adjust((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON,
 if __name__ == "__main__":
     a = (98.2, 29.4)
     b = ( 93.2, 26.1 )
+    
     
     (a, b) = adjust(a, b)
     print a,b
