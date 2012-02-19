@@ -157,6 +157,15 @@ class GameLog(object):
     def __str__(self):
         return ''.join(self.log)
         
+# def Team(object):
+#     """ Holds info about a game's team. 
+#     """
+#     def __init__(self):
+#         self.brain_path = None
+#         self.brain_string = None
+#         self.name = None
+#         self.raised_exception = False
+        
 class Game(object):
     
     """ The main game class. Contains game data and methods for
@@ -176,6 +185,8 @@ class Game(object):
                        blue_brain=DEFAULT_AGENT_FILE,
                        red_brain_string=None,
                        blue_brain_string=None,
+                       red_name='',
+                       blue_name='',
                        settings=Settings(),
                        field=None,
                        red_init={},
@@ -192,6 +203,8 @@ class Game(object):
             :param red_brain_string:  If passed, a string containing the blue brain class. 
                                         Overrides red_brain argument.
             :param blue_brain_string: Same as red_brain_string.
+            :param red_name:          The red name (for replay/GUI), defaults to basename(red_brain)
+            :param blue_name:         The blue name (for replay/GUI), defaults to basename(blue_brain)
             :param settings:          Instance of the settings class.
             :param field:             An instance of Field to play this game on. 
             :param red_init:          A dictionary of keyword arguments passed to the red
@@ -219,8 +232,18 @@ class Game(object):
         # Set up a new game
         if replay is None:            
             self.settings = settings
-            self.red_brain_string = red_brain_string if red_brain_string else open(red_brain,'r').read()
-            self.blue_brain_string = blue_brain_string if blue_brain_string else open(blue_brain,'r').read()
+            if red_brain_string:
+                self.red_brain_string = red_brain_string
+                self.red_name = red_name
+            else:
+                self.red_brain_string = open(red_brain,'r').read()
+                self.red_name = os.path.basename(red_brain)
+            if blue_brain_string:
+                self.blue_brain_string = blue_brain_string 
+                self.blue_name = blue_name
+            else:
+                self.blue_brain_string = open(blue_brain,'r').read()
+                self.blue_name = os.path.basename(blue_brain)
             self.red_init = red_init
             self.blue_init = blue_init
             if field is None:
@@ -235,8 +258,6 @@ class Game(object):
                 print >> sys.stderr, ("WARNING: Replay is for version %s, you have %s."%(replay.version, __version__))
             self.settings = replay.settings
             self.field = replay.field
-            self.red_name = replay.red_name
-            self.blue_name = replay.blue_name
 
         # Create the renderer if needed
         if rendered:
@@ -276,7 +297,7 @@ class Game(object):
             try:
                 exec(self.red_brain_string, g)
                 self.red_brain_class = g['Agent']
-                self.red_name = self._agent_name(self.red_brain_class)
+                self.red_name = self._agent_name(self.red_brain_class) + ' (%s)'%self.red_name
             except Exception, e:
                 self.red_raised_exception = True
                 print "Red agent has loading error"
@@ -287,14 +308,19 @@ class Game(object):
             try:
                 exec(self.blue_brain_string, g)
                 self.blue_brain_class = g['Agent']
-                self.blue_name = self._agent_name(self.blue_brain_class)
+                self.blue_name = self._agent_name(self.blue_brain_class) + ' (%s)'%self.blue_name
             except Exception, e:
                 self.blue_raised_exception = True
                 print "Blue agent has loading error"
                 traceback.print_exc(file=sys.stdout)
                 self.blue_brain_class = None
                 self.blue_name = "error"
-            
+        elif not self.record:
+            self.red_name = self.replay.red_name
+            self.blue_name = self.replay.blue_name
+        
+        print "Playing `%s` vs. `%s`"%(self.red_name, self.blue_name)
+        
         self.random = random.Random()
         self.random.seed(RANDOMSEED)
         # Initialize new replay
