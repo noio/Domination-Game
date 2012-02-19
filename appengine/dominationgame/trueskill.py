@@ -80,8 +80,8 @@ def adjust((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON,
     
     
 if __name__ == "__main__":
-    a = (98.2, 29.4)
-    b = ( 93.2, 26.1 )
+    a = (70.2, 29.4)
+    b = ( 70.2, 26.1 )
     
     
     (a, b) = adjust(a, b)

@@ -22,4 +22,6 @@ urlpatterns = patterns('',
     (r"^(?P<groupslug>[\w\-]+)/replay/(?P<game_id>\d+)$", "dominationgame.views.replay"),
     (r"^(?P<groupslug>[\w\-]+)/download_data/(?P<data_id>\d+)$", "dominationgame.views.download_data"),
     (r"^(?P<groupslug>[\w\-]+)/settings/$", "dominationgame.views.settings"),
+    (r"^(?P<groupslug>[\w\-]+)/games/csv/$", "dominationgame.views.games_csv"),
+    (r"^(?P<groupslug>[\w\-]+)/brains/csv/$", "dominationgame.views.brains_csv"),
 )

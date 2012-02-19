@@ -32,3 +32,9 @@ indexes:
   - name: group
   - name: added
     direction: desc
+
+- kind: Game
+  ancestor: yes
+  properties:
+  - name: added
+    direction: desc

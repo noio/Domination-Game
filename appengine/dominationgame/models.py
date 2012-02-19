@@ -369,8 +369,8 @@ class Game(db.Model):
             blue_init = {'blob':blue.data_reader()}
         else:
             blue_init = {}
-        dg = domcore.Game(red_brain_string=red.source,
-                          blue_brain_string=blue.source,
+        dg = domcore.Game(red=red.source,
+                          blue=blue.source,
                           red_init=red_init,
                           blue_init=blue_init,
                           settings=settings,
@@ -412,16 +412,16 @@ class Game(db.Model):
         
         # Adjust agent scores:
         logging.info("Storing game.")
-        red.played_game(red_new, error=dg.red_raised_exception)
-        blue.played_game(blue_new, error=dg.blue_raised_exception)
+        red.played_game(red_new, error=dg.red.raised_exception)
+        blue.played_game(blue_new, error=dg.blue.raised_exception)
         
         # Store stuff
         game = cls(red=red, 
                    blue=blue,
                    score_red=stats.score_red,
                    score_blue=stats.score_blue,
-                   error_red=dg.red_raised_exception,
-                   error_blue=dg.blue_raised_exception,
+                   error_red=dg.red.raised_exception,
+                   error_blue=dg.blue.raised_exception,
                    red_score_diff=red_new[0] - red_score[0],
                    blue_score_diff=blue_new[0] - blue_score[0],
                    stats=repr(dg.stats.__dict__), 
