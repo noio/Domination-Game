@@ -162,7 +162,7 @@ class Team(object):
     """ Holds info about a team.
     """
     FIND_NAME   = r'^[ \t]*NAME[ \t]*=[ \t]*[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]'
-    NAME_UNSAFE = r'[^a-z0-9\_]+'
+    NAME_UNSAFE = r'[^a-zA-Z0-9\_]+'
     
     def __init__(self, brain=None, init_kwargs={}, name=None):
         """ Initialize a Team object.
@@ -191,7 +191,7 @@ class Team(object):
         match = re.search(self.FIND_NAME, self.brain_string, re.M)
         if match:
             found = match.groups(1)[0]
-            self.name_internal = re.sub(self.NAME_UNSAFE, '_', found.lower())
+            self.name_internal = re.sub(self.NAME_UNSAFE, '_', found)
             self.name_internal = self.name_internal.strip('_')
         else:
             self.name_internal = 'unnamed'
