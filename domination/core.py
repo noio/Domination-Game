@@ -154,6 +154,13 @@ class GameLog(object):
             except:
                 pass
         self.log.append(string)
+    
+    def truncated(self, kbs=16):
+        s = str(self)
+        if len(s) > kbs*1024:
+            msg = "\n== LOG TRUNCATED TO %dKB ==\n"%(kbs,)
+            s = s[:kbs*1024-len(msg)] + msg
+        return s
         
     def __str__(self):
         return ''.join(self.log)

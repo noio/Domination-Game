@@ -402,10 +402,7 @@ class Game(db.Model):
         replaykey = files.blobstore.get_blob_key(blobfile)
         
         # Truncate game log if needed
-        log = str(dg.log)
-        if len(log) > 16*1024:
-            msg = "\n== LOG TRUNCATED TO 16KB ==\n"
-            log = log[:16*1024-len(msg)] + msg
+        log = dg.log.truncated()
         
         # Adjust agent scores:
         logging.info("Storing game.")
