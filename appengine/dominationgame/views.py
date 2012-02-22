@@ -290,6 +290,8 @@ def laddermatch(request):
             brains = filter(lambda two: two != one, brains)
             if brains:
                 two = random.choice(brains)
+                if random.random() < 0.5:
+                    one, two = two, one
                 # Execute now if this is a direct request, queue if cron
                 if 'X-AppEngine-Cron' in request.META:
                     deferred.defer(models.Game.play, group.key(), one.key(), two.key())
