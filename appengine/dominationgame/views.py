@@ -285,7 +285,7 @@ def laddermatch(request):
         brains = group.brain_set.filter("active", True).fetch(10000)
         msg += '== Group %s ==\n'%(group)
         if brains:
-            brains = sorted(brains,key=lambda b: (b.games_played, b.added))
+            brains = sorted(brains,key=lambda b: (b.games_played, b.last_played))
             one = brains[0]
             brains = filter(lambda two: two != one, brains)
             if brains:
