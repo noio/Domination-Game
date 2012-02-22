@@ -15,11 +15,12 @@ class Agent(object):
         self.grid = field_grid
         self.settings = settings
         self.goal = None
+        self.callsign = '%s-%d'% (('BLU' if team == TEAM_BLUE else 'RED'), id)
         
         # Read the binary blob, we're not using it though
         if blob is not None:
-            print "Agent %s-%d received binary blob of %s" % (
-                ('BLU' if team else 'RED'), id, type(pickle.loads(blob.read())))
+            print "Agent %s received binary blob of %s" % (
+               self.callsign, type(pickle.loads(blob.read())))
             # Reset the file so other agents can read it.
             blob.seek(0) 
         
@@ -40,7 +41,7 @@ class Agent(object):
         
         if observation.selected:
             print observation
-        
+                    
     def action(self):
         """ This function is called every step and should
             return a tuple in the form: (turn, speed, shoot)
