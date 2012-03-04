@@ -78,7 +78,7 @@ class Settings(object):
                        spawn_time=10,
                        tilesize=16,
                        think_time=0.010,
-                       capture_mode=CAPTURE_MODE_NEUTRAL,
+                       capture_mode=CAPTURE_MODE_MAJORITY,
                        end_condition=ENDGAME_SCORE):
         """ Constructor for Settings class
         

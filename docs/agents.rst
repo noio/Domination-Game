@@ -149,12 +149,12 @@ of policy representation. The convention for doing this is to pass an open file-
     Game(..., red_init={'blob': open('my_q_table','rb')} )
 
 This is also the way that your data will be passed to the agent in the web app. If you have stored your data as a
-pickled file, you can simply read it with::
+pickled file, you can simply read it using `file.read() <http://docs.python.org/library/stdtypes.html#file.read>`_, then unpickle its contents from a string using `pickle.loads() <http://docs.python.org/library/pickle.html#pickle.loads>`_ ::
 
     # In class Agent
     def __init__(..., blob=None ):
         if blob is not None:
-            my_data = pickle.reads(blob.read())
+            my_data = pickle.loads(blob.read())
             blob.seek(0) #: Reset the filepointer for the next agent.
                          #  if you omit this, the next agent will raise an EOFError
             
