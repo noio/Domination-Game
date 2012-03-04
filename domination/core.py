@@ -563,14 +563,12 @@ class Game(object):
                 try:
                     tank.brain.finalize(interrupted)
                 except Exception, e:
-                    if self.team == TEAM_RED:
+                    if tank.team == TEAM_RED:
                         self.red.raised_exception = True
                     else:
                         self.blue.raised_exception = True
-                    print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
-                    print '-'*60
+                    print "Agent raised finalize exception."
                     traceback.print_exc(file=sys.stdout)
-                    print '-'*60
                     
         # Set the stdout back to whatever it was before
         sys.stdout = self.old_stdout
