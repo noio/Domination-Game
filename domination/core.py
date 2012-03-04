@@ -383,6 +383,7 @@ class Game(object):
                     for i,s in enumerate(reds):
                         kwargs = copy.deepcopy(brain_kwargs)
                         kwargs.update(self.red.init_kwargs)
+                        print "Constructing red agent with kwargs: %s"%(', '.join(kwargs.keys()))
                         brain = red_brain_class(i, TEAM_RED, **kwargs)
                         t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
                         self.tanks.append(t)
@@ -398,6 +399,7 @@ class Game(object):
                     for i,s in enumerate(blues):
                         kwargs = copy.deepcopy(brain_kwargs)
                         kwargs.update(self.blue.init_kwargs)
+                        print "Constructing blue agent with kwargs: %s"%(', '.join(kwargs.keys()))
                         brain = blue_brain_class(i, TEAM_BLUE, **kwargs)
                         t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
                         self.tanks.append(t)
@@ -558,7 +560,18 @@ class Game(object):
         # Finalize tanks brains.
         if self.record or self.replay is None:
             for tank in self.tanks:
-                tank.brain.finalize(interrupted)
+                try:
+                    tank.brain.finalize(interrupted)
+                except Exception, e:
+                    if self.team == TEAM_RED:
+                        self.red.raised_exception = True
+                    else:
+                        self.blue.raised_exception = True
+                    print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
+                    print '-'*60
+                    traceback.print_exc(file=sys.stdout)
+                    print '-'*60
+                    
         # Set the stdout back to whatever it was before
         sys.stdout = self.old_stdout
     
