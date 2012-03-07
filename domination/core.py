@@ -378,7 +378,7 @@ class Game(object):
                                      'field_grid': self.field.wallgrid,
                                      'nav_mesh': self.field.mesh})
             try:
-                red_brain_class = self.red.load(scope=copy.deepcopy(AGENT_GLOBALS))
+                red_brain_class = self.red.load(scope=AGENT_GLOBALS.copy())
                 if red_brain_class is not None:
                     for i,s in enumerate(reds):
                         kwargs = copy.deepcopy(brain_kwargs)
@@ -394,7 +394,7 @@ class Game(object):
                 traceback.print_exc(file=sys.stdout)
                 
             try: 
-                blue_brain_class = self.blue.load(scope=copy.deepcopy(AGENT_GLOBALS))
+                blue_brain_class = self.blue.load(scope=AGENT_GLOBALS.copy())
                 if blue_brain_class is not None:
                     for i,s in enumerate(blues):
                         kwargs = copy.deepcopy(brain_kwargs)
