@@ -1357,6 +1357,7 @@ class Tank(GameObject):
             self.respawn_in -= 1
             
     def send_observation(self):
+        """ Send an observation to this agent's brain, if it has one """
         rng = self.game.settings.max_see
         obs = self.observation
         siz = self.width / 2.0
@@ -1406,7 +1407,8 @@ class Tank(GameObject):
             self.grid_y = yi
         
         last_clock = time.clock()
-        self.game._agent_call(self.brain.observe, args=[obs], team=self.team)
+        if self.brain is not None:
+            self.game._agent_call(self.brain.observe, args=[obs], team=self.team)
         self.time_thought = time.clock() - last_clock
         
     def get_action(self):
