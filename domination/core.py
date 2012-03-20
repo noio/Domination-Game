@@ -265,7 +265,7 @@ class Game(object):
                        replay=None,
                        rendered=True, 
                        verbose=True,
-                       hard_errors=True,
+                       hard_errors=False,
                        step_callback=None):
         """ Constructor for Game class 
             
