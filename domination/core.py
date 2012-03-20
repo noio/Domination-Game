@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,3,1
+MAJOR,MINOR,PATCH = 1,3,2
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -223,16 +223,23 @@ class Team(object):
     def load(self, scope):
         """ Load up the brain from the string 
         """
-        try:
-            exec(self.brain_string, scope)
-            return scope['Agent']
-        except Exception, e:
-            self.raised_exception = True
-            print "Agent `%s` has loading error" % self.fullname()
-            print self.brain_string
-            traceback.print_exc(file=sys.stdout)
-            return None
+        exec(self.brain_string, scope)
+        return scope['Agent']
         
+class AgentStub(object):
+    """ Brains are replaced by this code when they can't
+        be loaded for some reason.
+    """
+    def __init__(*args, **kwargs): pass
+
+    def observe(self,o): pass
+        
+    def action(self): return (0,0,False)
+    
+    def finalize(self): pass
+        
+    def debug(self, surface): pass
+            
 class Game(object):
     
     """ The main game class. Contains game data and methods for
@@ -258,6 +265,7 @@ class Game(object):
                        replay=None,
                        rendered=True, 
                        verbose=True,
+                       hard_errors=True,
                        step_callback=None):
         """ Constructor for Game class 
             
@@ -274,11 +282,13 @@ class Game(object):
             :param replay:            Pass a game replay to play it.
             :param rendered:          Enable/disable the renderer.
             :param verbose:           Print game log to output.
+            :param hard_errors:       Enable to make agent errors interrupt the game.
             :param step_callback:     Function that is called on every step. Useful for debugging.
         """
         self.record = record
         self.verbose = verbose
         self.step_callback = step_callback
+        self.hard_errors = hard_errors
         
         # Public properties
         self.log    = GameLog(self.verbose) #: The game log as an instance of class:`~domination.core.GameLog`
@@ -313,6 +323,26 @@ class Game(object):
             self.renderer = None
         
         self.state = Game.STATE_NEW
+        
+    def _agent_call(self, method, args=[], kwargs={}, team=TEAM_NEUTRAL, default=None):
+        """ Calls a method on an agent, wrapping it in a try/catch block
+            to prevent agents from crashing the game.
+        """
+        if self.hard_errors:
+            return method(*args, **kwargs)
+        else:
+            try:
+                return method(*args, **kwargs)
+            except Exception, e:
+                if team == TEAM_RED:
+                    self.red.raised_exception = True
+                else:
+                    self.blue.raised_exception = True
+                print "\n%s raised exception in < %s() >" % ('RED' if team == TEAM_RED else 'BLU', method.__name__)
+                print '-' * 60
+                traceback.print_exc(file=sys.stdout)
+                print '-' * 60
+                return default
             
     def add_renderer(self, **kwargs):
         import renderer
@@ -377,37 +407,22 @@ class Game(object):
                 brain_kwargs.update({'field_rects': self.field.wallrects, 
                                      'field_grid': self.field.wallgrid,
                                      'nav_mesh': self.field.mesh})
-            try:
-                red_brain_class = self.red.load(scope=AGENT_GLOBALS.copy())
-                if red_brain_class is not None:
-                    for i,s in enumerate(reds):
-                        kwargs = copy.deepcopy(brain_kwargs)
-                        kwargs.update(self.red.init_kwargs)
-                        print "Constructing red agent with kwargs: %s"%(', '.join(kwargs.keys()))
-                        brain = red_brain_class(i, TEAM_RED, **kwargs)
-                        t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_RED, brain=brain, spawn=s, record=self.record)
-                        self.tanks.append(t)
-                        self._add_object(t)
-            except Exception, e:
-                self.red.raised_exception = True
-                print "Red agent has __init__ error"
-                traceback.print_exc(file=sys.stdout)
+            
+            red_brain_class = self._agent_call(self.red.load, kwargs={'scope':AGENT_GLOBALS.copy()}, team=TEAM_RED, default=AgentStub)
+            blue_brain_class = self._agent_call(self.blue.load, kwargs={'scope':AGENT_GLOBALS.copy()}, team=TEAM_BLUE, default=AgentStub)
+            
+            def construct_tanks(brainclass, init_kwargs, team, spawns):
+                for i,s in enumerate(spawns):
+                    kwargs = copy.deepcopy(brain_kwargs)
+                    kwargs.update(init_kwargs)
+                    brain = self._agent_call(brainclass, args=[i, team], kwargs=kwargs, default=AgentStub())
+                    t = Tank(s.x+2, s.y+2, s.angle, i, team=team, brain=brain, spawn=s, record=self.record)
+                    self.tanks.append(t)
+                    self._add_object(t)
+                    
+            construct_tanks(red_brain_class, self.red.init_kwargs, TEAM_RED, reds)
                 
-            try: 
-                blue_brain_class = self.blue.load(scope=AGENT_GLOBALS.copy())
-                if blue_brain_class is not None:
-                    for i,s in enumerate(blues):
-                        kwargs = copy.deepcopy(brain_kwargs)
-                        kwargs.update(self.blue.init_kwargs)
-                        print "Constructing blue agent with kwargs: %s"%(', '.join(kwargs.keys()))
-                        brain = blue_brain_class(i, TEAM_BLUE, **kwargs)
-                        t = Tank(s.x+2, s.y+2, s.angle, i, team=TEAM_BLUE, brain=brain, spawn=s, record=self.record)
-                        self.tanks.append(t)
-                        self._add_object(t)
-            except Exception, e:
-                self.blue.raised_exception = True
-                print "Blue agent has __init__ error"
-                traceback.print_exc(file=sys.stdout)
+            construct_tanks(blue_brain_class, self.blue.init_kwargs, TEAM_BLUE, blues)
             
         else:
             # Initialize tanks to play replays
@@ -560,15 +575,7 @@ class Game(object):
         # Finalize tanks brains.
         if self.record or self.replay is None:
             for tank in self.tanks:
-                try:
-                    tank.brain.finalize(interrupted)
-                except Exception, e:
-                    if tank.team == TEAM_RED:
-                        self.red.raised_exception = True
-                    else:
-                        self.blue.raised_exception = True
-                    print "Agent raised finalize exception."
-                    traceback.print_exc(file=sys.stdout)
+                self._agent_call(tank.brain.finalize, args=[interrupted], team=tank.team)
                     
         # Set the stdout back to whatever it was before
         sys.stdout = self.old_stdout
@@ -1397,20 +1404,10 @@ class Tank(GameObject):
                         obs.walls[oi][oj] = 1
             self.grid_x = xj
             self.grid_y = yi
-        if self.brain is not None:
-            last_clock = time.clock()
-            try:
-                self.brain.observe(obs)
-            except Exception, e:
-                if self.team == TEAM_RED:
-                    self.game.red.raised_exception = True
-                else:
-                    self.game.blue.raised_exception = True
-                print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60            
-            self.time_thought = time.clock() - last_clock
+        
+        last_clock = time.clock()
+        self.game._agent_call(self.brain.observe, args=[obs], team=self.team)
+        self.time_thought = time.clock() - last_clock
         
     def get_action(self):
         ## Ask brain for action (or replay)
@@ -1420,18 +1417,7 @@ class Tank(GameObject):
             (turn, speed, shoot) = self.actions.pop(0)
         else:
             last_clock = time.clock()
-            try:
-                (turn,speed,shoot) = self.brain.action()
-            except Exception, e:
-                if self.team == TEAM_RED:
-                    self.game.red.raised_exception = True
-                else:
-                    self.game.blue.raised_exception = True
-                print "[Game]: Agent %s-%d raised exception:"%('RED' if self.team == 0 else 'BLU',self.id)
-                print '-'*60
-                traceback.print_exc(file=sys.stdout)
-                print '-'*60
-                (turn,speed,shoot) = (0,0,False)
+            (turn, speed, shoot) = self.game._agent_call(self.brain.action, default=(0,0,False), team=self.team)
             self.time_thought += time.clock() - last_clock
             # Ignore action (NO-OP) if agent thought too long.
             if self.time_thought > self.game.settings.think_time:
