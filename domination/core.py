@@ -1419,7 +1419,14 @@ class Tank(GameObject):
             (turn, speed, shoot) = self.actions.pop(0)
         else:
             last_clock = time.clock()
-            (turn, speed, shoot) = self.game._agent_call(self.brain.action, default=(0,0,False), team=self.team)
+            
+            def _act():
+                action = self.brain.action()
+                if action is None or len(action) != 3:
+                    raise Exception("Action should be a 3-tuple of (turn, speed, shoot)")
+                return action
+            
+            (turn, speed, shoot) = self.game._agent_call(_act, default=(0,0,False), team=self.team)
             self.time_thought += time.clock() - last_clock
             # Ignore action (NO-OP) if agent thought too long.
             if self.time_thought > self.game.settings.think_time:
