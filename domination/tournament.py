@@ -42,10 +42,10 @@ def run_game(gamekwargs, load_blobs=True):
         blue_blob_path = os.path.splitext(gamekwargs['blue'])[0] + '_blob'
         if os.path.exists(red_blob_path):
             red_blob = open(red_blob_path,'rb')
+            gamekwargs['red_init']['blob'] = red_blob
         if os.path.exists(blue_blob_path):
             blue_blob = open(blue_blob_path,'rb')
-        gamekwargs['red_init']['blob'] = red_blob
-        gamekwargs['blue_init']['blob'] = blue_blob
+            gamekwargs['blue_init']['blob'] = blue_blob
     # Run the actual game
     game = Game(**gamekwargs).run()
     # Close the blobs neatly
@@ -167,10 +167,13 @@ if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-f", "--folder", help="Folder that agents reside in [default: %default]", default="agents")    
     parser.add_option("-r", "--repeats", help="Number of times to repeat each game [default: %default]", default=2)
-    parser.add_option("-s", "--noswap", help="Disable swapping of red/blue teams", action="store_false", dest='swap', default=True)
+    parser.add_option("-x", "--noswap", help="Disable swapping of red/blue teams", action="store_false", dest='swap', default=True)
+    parser.add_option("-s", "--settings", help="Python dict of settings as a string [default: %default]", default="{}")
     (options, args) = parser.parse_args()
     if len(sys.argv) < 2:
         parser.print_help()
         print
         quit()
-    full(folder=options.folder,repeats=options.repeats,swap=options.swap)
+    settings = Settings(**eval(options.settings))
+    print settings
+    full(folder=options.folder, settings=settings, repeats=options.repeats,swap=options.swap)
