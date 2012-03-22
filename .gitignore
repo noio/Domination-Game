@@ -8,7 +8,6 @@ t/*
 domination/test.pickle
 .tm_properties
 test.py
-tournament.py
 buggy_replay
 vacubot.py
 agent_vacubot.py

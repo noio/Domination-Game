@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Testing module for Domination game engine
 
 Running this script will test if the domination game is
@@ -11,10 +12,11 @@ import os
 import unittest
 import shutil
 import tempfile
+import cPickle as pickle
 
 # Local Imports
 import core
-import run
+import tournament
 from utilities import *
 
 ### CONSTANTS
@@ -68,16 +70,16 @@ class TestDominationGame(unittest.TestCase):
             os.mkdir(tmpdir)
         agentpath = os.path.join(tmpdir,'agent.py')
         shutil.copy(core.DEFAULT_AGENT_FILE, agentpath)
-
+    
         team = core.Team(agentpath)
         self.assertEqual(team.brain_string, open(agentpath).read())
-
+    
         team = core.Team(open(agentpath))
         self.assertEqual(team.brain_string, open(agentpath).read())
-
+    
         team = core.Team(open(agentpath,'r').read())
         self.assertEqual(team.brain_string, open(agentpath).read())
-
+    
         team = core.Team(name='ya')
         teamb = core.Team()
         teamb.setname(team.fullname())
@@ -116,13 +118,14 @@ class TestDominationGame(unittest.TestCase):
             replaygame.run()
             self.assertEqual(replaygame.score_red, game.score_red)
             
-    def test_scenario(self):
+    def test_tournament(self):
         tmpdir = '_tmp'
         if not os.path.exists(tmpdir):
             os.mkdir(tmpdir)
         for l in 'abc':
             shutil.copy(core.DEFAULT_AGENT_FILE,os.path.join(tmpdir,'agent%s.py'%l))
-        run.Scenario.tournament(folder=tmpdir, output_folder='_tmp')
+            pickle.dump("This is agent %s's blob."%l, open(os.path.join(tmpdir,'agent%s_blob'%l),'wb'))
+        tournament.full(folder='_tmp')
                     
 
 # def check_balance():
