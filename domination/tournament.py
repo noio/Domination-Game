@@ -19,7 +19,7 @@ from optparse import OptionParser
 
 # Local
 from core import *
-from utilities import *s
+from utilities import *
 
 ### FUNCTIONS ###
 
