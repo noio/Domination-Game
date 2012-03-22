@@ -92,7 +92,7 @@ def full(agents=[], settings=Settings(), field=FieldGenerator(),
         return {'red':  red,
                 'blue': blue,
                 'settings': settings,
-                'field': field.generate() if isinstance(field, FieldGenerator) else field,
+                'field': field,
                 'record':   True,
                 'verbose':  False,
                 'rendered': False}
