@@ -19,11 +19,9 @@ from optparse import OptionParser
 
 # Local
 from core import *
-from utilities import *
+from utilities import *s
 
-### CONSTANTS ###
-MAX_CPUS = 12
-
+### FUNCTIONS ###
 
 def run_game(gamekwargs, load_blobs=True):
     """ Runs a single game. This function can be used by Pool.map 
@@ -57,7 +55,7 @@ def run_game(gamekwargs, load_blobs=True):
                                               game.score_blue, game.blue.fullname())
     return (game.stats, game.replay, game.log)
     
-def run_games(gamekwargs):
+def run_games(gamekwargs, max_threads=2):
     """ Runs multiple games, using Pool.map if 
         multiprocessing can be imported.
         
@@ -65,9 +63,9 @@ def run_games(gamekwargs):
     """
     try:
         from multiprocessing import Pool, cpu_count
-        use_cpus = min(MAX_CPUS, cpu_count())
-        print "Using %d CPUs to run games." % (use_cpus)
-        pool = Pool(use_cpus)
+        threads = min(max_threads, cpu_count())
+        print "Using %d threads to run games." % (threads)
+        pool = Pool(threads)
         games = pool.map(run_game, gamekwargs)
     except ImportError:
         print "No multithreading available, running on single CPU."
@@ -76,7 +74,8 @@ def run_games(gamekwargs):
     return games
     
 def full(agents=[], settings=Settings(), field=FieldGenerator(), 
-        repeats=2, swap=True, folder=None, output_folder=None, draw_margin=0.05):
+        repeats=2, swap=True, folder=None, output_folder=None, draw_margin=0.05,
+        max_threads=2):
     """ Runs a full tournament between given agents. 
     """
     if folder is not None:
@@ -99,7 +98,7 @@ def full(agents=[], settings=Settings(), field=FieldGenerator(),
                 'rendered': False}
     gamekwargs = map(_m, pairs)
     print "Running %d games." % (len(gamekwargs))
-    gameinfo = run_games(gamekwargs)
+    gameinfo = run_games(gamekwargs, max_threads=max_threads)
     
     if os.path.exists(output_folder):
         print "WARNING: Output directory exists; overwriting results"
@@ -163,10 +162,13 @@ def full(agents=[], settings=Settings(), field=FieldGenerator(),
         row.update(by_match[team])
         sf.writerow(row)
 
+### COMMAND LINE INTERFACE ###
+
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-f", "--folder", help="Folder that agents reside in [default: %default]", default="agents")    
     parser.add_option("-r", "--repeats", help="Number of times to repeat each game [default: %default]", default=2)
+    parser.add_option("-t", "--threads", help="How many threads to use [default: %default]", default=2)    
     parser.add_option("-x", "--noswap", help="Disable swapping of red/blue teams", action="store_false", dest='swap', default=True)
     parser.add_option("-s", "--settings", help="Python dict of settings as a string [default: %default]", default="{}")
     (options, args) = parser.parse_args()
@@ -177,4 +179,5 @@ if __name__ == '__main__':
     settings = Settings(**eval(options.settings))
     print settings
     full(folder=options.folder, settings=settings, 
-         repeats=int(options.repeats), swap=options.swap)
+         repeats=int(options.repeats), swap=options.swap,
+         max_threads=int(options.threads))
