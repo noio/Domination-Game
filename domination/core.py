@@ -302,7 +302,7 @@ class Game(object):
         # Set up a new game
         if replay is None:            
             self.settings = settings
-            if field is None:
+            if field is None or isinstance(field, FieldGenerator):
                 self.field = FieldGenerator().generate()
             else:
                 self.field = field
