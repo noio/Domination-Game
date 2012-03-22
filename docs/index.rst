@@ -38,14 +38,13 @@ If you're not going to read any of the other documentation, just do the followin
 
 3. Create another file, put the following code in there, and run it::
 
-	from domination import core, run
-    
-	class MyScenario(run.Scenario):
-	   REPEATS = 10
-	   SETTINGS = core.Settings(max_steps=100)
-   
-	MyScenario.test(red='my_agent.py', blue='domination/agent.py')
-  
+	from domination import core
+	
+	# Setup
+	my_settings = core.Settings(max_steps=100)
+	my_game     = core.Game(red='my_agent.py', blue='domination/agent.py', settings=my_settings)
+	# Run it
+	my_game.run()  
 
 
 Indices and tables
