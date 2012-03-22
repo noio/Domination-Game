@@ -176,4 +176,5 @@ if __name__ == '__main__':
         quit()
     settings = Settings(**eval(options.settings))
     print settings
-    full(folder=options.folder, settings=settings, repeats=options.repeats,swap=options.swap)
+    full(folder=options.folder, settings=settings, 
+         repeats=int(options.repeats), swap=options.swap)
