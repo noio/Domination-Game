@@ -12,13 +12,13 @@ import os
 import csv
 import glob
 import sys
-import cPickle as pickle
+import pickle
 import zipfile
 from collections import defaultdict
 from optparse import OptionParser
 
 # Local
-from core import *
+import core
 from utilities import *
 
 ### FUNCTIONS ###
@@ -45,7 +45,7 @@ def run_game(gamekwargs, load_blobs=True):
             blue_blob = open(blue_blob_path,'rb')
             gamekwargs['blue_init']['blob'] = blue_blob
     # Run the actual game
-    game = Game(**gamekwargs).run()
+    game = core.Game(**gamekwargs).run()
     # Close the blobs neatly
     if red_blob is not None:
         red_blob.close()
@@ -73,7 +73,7 @@ def run_games(gamekwargs, max_threads=2):
 
     return games
     
-def full(agents=[], settings=Settings(), field=FieldGenerator(), 
+def full(agents=[], settings=core.Settings(), field=core.FieldGenerator(), 
         repeats=2, swap=True, folder=None, output_folder=None, draw_margin=0.05,
         max_threads=2, save_all=True):
     """ Runs a full tournament between given agents. 
@@ -180,7 +180,7 @@ if __name__ == '__main__':
         parser.print_help()
         print
         quit()
-    settings = Settings(**eval(options.settings))
+    settings = core.Settings(**eval(options.settings))
     print settings
     full(folder=options.folder, settings=settings, 
          repeats=int(options.repeats), swap=options.swap,
