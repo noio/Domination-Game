@@ -302,7 +302,7 @@ class Renderer(object):
                         if rect_contains_point((6,37,58,22),(uix,uiy)):
                             self.toggle_team(game)
                 elif event.button == 3:
-                    game._click((x,y))
+                    game._click((x, y), pg.key.get_mods() & pg.KMOD_SHIFT)
             # Catch mouse dragging for selection
             elif event.type == pg.MOUSEMOTION:
                 x = (event.pos[0]-self.vp_rect[0])//self.upscale
@@ -314,6 +314,8 @@ class Renderer(object):
             # Catch mouse release
             elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
                 self.mouse_down = False
+                if self.selection_rect is not None:
+                    game._select_tanks(self.selection_rect,team=self.active_team)
                 self.selection_rect = None
             # Catch space bar for pausing
             elif event.type == pg.KEYDOWN:

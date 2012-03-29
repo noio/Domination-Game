@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,4,0
+MAJOR,MINOR,PATCH = 1,4,1
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -378,7 +378,6 @@ class Game(object):
         self.score_blue  = self.settings.max_score / 2
         self.step        = 0
         self.interrupted = False
-        self.clicked     = None
         self.keys        = []
         # Simulation variables
         self.object_uid    = 0
@@ -466,6 +465,7 @@ class Game(object):
                 # Compute shooting
                 for tank in self.tanks:
                     tank.hit = None
+                    tank.clicked = []
                     if tank.shoots:
                         tcx, tcy = tank._x + tank.width/2, tank._y + tank.height/2
                         target = (cos(tank.angle) * settings.max_range + tcx, 
@@ -499,7 +499,6 @@ class Game(object):
                     break
                 ## RESET SOME STUFF
                 if render:
-                    self.clicked = None
                     self.keys = []
                 ## SIMULATE AND RENDER
                 for o in self.objects:
@@ -836,11 +835,12 @@ class Game(object):
         hits.sort(key=lambda h: h[0])
         return hits
     
-    def _click(self, pos):
+    def _click(self, (x,y), shift):
         """ Tells the game that the right-mouse button was clicked
             somewhere on the field.
         """
-        self.clicked = pos
+        for t in self.tanks:
+            t.send_click((x, y, shift, t.selected))
     
     def _keypress(self, key):
         """ Tells the game that some key on the keyboard was pressed.
@@ -1322,6 +1322,7 @@ class Tank(GameObject):
         self.team        = team
         self.ammo        = 0
         self.selected    = False
+        self.clicked     = []
         self.shoots      = False
         self.hit         = None     #: What the tank hit. Can be None/TEAM_RED/TEAM_BLUE
         self.respawn_in  = -1
@@ -1372,7 +1373,7 @@ class Tank(GameObject):
         obs.hit        = self.hit
         obs.score      = (self.game.score_red, self.game.score_blue)
         obs.selected   = self.selected
-        obs.clicked    = self.game.clicked
+        obs.clicked    = self.clicked
         obs.keys       = self.game.keys
         close = self.game._get_objects_in_bounds(self.x - rng, self.x + self.width + rng,
                     self.y - rng, self.y + self.height + rng, solid_only=False)
@@ -1455,6 +1456,9 @@ class Tank(GameObject):
             self.observation.collided = True
         elif isinstance(other, Wall):
             self.observation.collided = True
+            
+    def send_click(self, clicktuple):
+        self.clicked.append(clicktuple)
             
 
 class Wall(GameObject):
@@ -1631,7 +1635,7 @@ class Observation(object):
         # The following properties are only set when
         # the renderer is enabled:
         self.selected = False   #: Indicates if the agent is selected in the UI
-        self.clicked = None     #: Indicates the position of a right-button click, if there was one
+        self.clicked = []       #: A list of mouse-clicks, tuples of (x, y, shift, selected)
         self.keys = []          #: A list of all keys pressed in the previous turn
         
     def __str__(self):
