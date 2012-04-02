@@ -302,7 +302,7 @@ class Renderer(object):
                         if rect_contains_point((6,37,58,22),(uix,uiy)):
                             self.toggle_team(game)
                 elif event.button == 3:
-                    game._click((x, y), pg.key.get_mods() & pg.KMOD_SHIFT)
+                    game._click((x-self.vp_rect[0], y-self.vp_rect[1]), pg.key.get_mods() & pg.KMOD_SHIFT)
             # Catch mouse dragging for selection
             elif event.type == pg.MOUSEMOTION:
                 x = (event.pos[0]-self.vp_rect[0])//self.upscale
