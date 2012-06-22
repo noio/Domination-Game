@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,4,1
+MAJOR,MINOR,PATCH = 1,4,2
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -726,8 +726,8 @@ class Game(object):
         objects_switched = False
         if ((object1.shape == GameObject.SHAPE_CIRC) and
             (object2.shape == GameObject.SHAPE_CIRC)):
-            circleproxy = (object1._x + object1.width, object1._y + object1.height, object1.width/2)
-            sep_as_cicles = True
+            circleproxy = (object1._x, object1._y, object1.width/2)
+            sep_as_circles = True
         elif ((object1.shape == GameObject.SHAPE_RECT) and
             (object2.shape == GameObject.SHAPE_RECT)):
             sep_as_circles = False
