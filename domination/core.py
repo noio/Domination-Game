@@ -722,7 +722,6 @@ class Game(object):
         # Find out what kind of collision we're dealing with
         # The circle proxy is either a real circle, or a rect's corner 
         # that another circle collides with.
-        sep_as_circles   = False
         objects_switched = False
         if ((object1.shape == GameObject.SHAPE_CIRC) and
             (object2.shape == GameObject.SHAPE_CIRC)):
@@ -740,6 +739,7 @@ class Game(object):
             ra   = object2.width/2
             l, t = object1._x, object1._y
             r, b = l + object1.width, t + object1.height
+            sep_as_circles = False
             if cx < l:
                 if cy < t:
                     circleproxy    = (l,t,0.0)
