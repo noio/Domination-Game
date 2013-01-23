@@ -57,8 +57,9 @@ class Agent(object):
             self.goal = ammopacks[0][0:2]
             
         # Drive to where the user clicked
+        # Clicked is a list of tuples of (x, y, shift_down, is_selected)
         if self.selected and self.observation.clicked:
-            self.goal = self.observation.clicked
+            self.goal = self.observation.clicked[0][0:2]
         
         # Walk to random CP
         if self.goal is None:
