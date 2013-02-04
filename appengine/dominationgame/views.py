@@ -21,7 +21,7 @@ from google.appengine.api import urlfetch
 from django import forms
 from django.shortcuts import render_to_response
 from django.conf import settings as django_settings
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.template import Context, Template, RequestContext
@@ -255,18 +255,29 @@ def settings(request, groupslug):
             teamname = request.POST['teamname']
             team = models.Team.create(name=teamname, group=group)
             team.put()
-        elif 'teamid' in request.POST:
+        
+        if 'teamid' in request.POST:
             team = models.Team.get_by_id(int(request.POST['teamid']), parent=request.group)
             if request.POST['bsubmit'] == 'Invite users':                
                 team.send_invites([e.strip() for e in request.POST['emails'].split(',')])
             elif request.POST['bsubmit'] == 'Connect me':
                 request.user.teams.append(team.key())
+                request.user.teams = list(set(request.user.teams))
                 request.user.put()
-        elif 'gamesettings' in request.POST:
+        
+        if 'gamesettings' in request.POST:
             gamesettings = eval(request.POST['gamesettings'])
             if type(gamesettings) == dict:
                 group.gamesettings = repr(gamesettings)
                 group.put()
+        
+        if 'fieldascii' in request.POST:
+            field = request.POST['fieldascii']
+            if len(field) > 10:
+                group.field = field
+            else:
+                group.field = None
+            group.put()
         return HttpResponseRedirect(reverse(settings, kwargs={'groupslug':groupslug}))
     teams = models.Team.all().ancestor(group)
     return respond(request, 'settings.html', {'teams':teams})

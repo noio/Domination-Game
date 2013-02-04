@@ -82,7 +82,8 @@ class Group(db.Model):
     active = db.BooleanProperty(default=True)
     # Group settings
     gamesettings  = db.TextProperty(default="{}")
-    release_delay = TimeDeltaProperty(default=timedelta(days=10))
+    field         = db.TextProperty(default="")
+    release_delay = TimeDeltaProperty(default=timedelta(days=5))
     max_uploads   = db.IntegerProperty(default=10)
     
     def __str__(self):
@@ -108,6 +109,14 @@ class Group(db.Model):
             return domcore.Settings(**eval(self.gamesettings))
         except:
             return domcore.Settings()
+            
+    def field_obj(self):
+        if self.field is None:
+            return None
+        try:
+            return domcore.Field.from_string(self.field)
+        except:
+            return None
     
 class Team(db.Model):
     group       = db.ReferenceProperty(Group, required=True)
@@ -357,6 +366,7 @@ class Game(db.Model):
         
         # Run a game
         settings = group.gamesettings_obj()
+        field = group.field_obj()
         logging.info("Running game: %s %s vs %s %s with %s"%(red.team, red, blue.team, blue, settings))
         if red.data is not None:
             red_init = {'blob':red.data_reader()}
@@ -368,7 +378,7 @@ class Game(db.Model):
             blue_init = {}
         dg = domcore.Game(red=domcore.Team(red.source, name=red.identifier(), init_kwargs=red_init),
                           blue=domcore.Team(blue.source, name=blue.identifier(), init_kwargs=blue_init),
-                          settings=settings,
+                          settings=settings, field=field,
                           verbose=False, rendered=False, record=True)
         dg.run()
         logging.info("Game done.")
