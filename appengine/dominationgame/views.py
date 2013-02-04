@@ -274,7 +274,7 @@ def settings(request, groupslug):
         if 'fieldascii' in request.POST:
             field = request.POST['fieldascii']
             if len(field) > 10:
-                group.field = field
+                group.field = field.strip()
             else:
                 group.field = None
             group.put()
