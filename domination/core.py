@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,4,2
+MAJOR,MINOR,PATCH = 1,5,0
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -277,7 +277,7 @@ class Game(object):
                                         agent constructor.
             :param blue_init:         Like red_init.
             :param settings:          Instance of the settings class.
-            :param field:             An instance of Field to play this game on. 
+            :param field:             An instance of Field to play this game on, or a generator.
             :param record:            Store all actions in a game replay.
             :param replay:            Pass a game replay to play it.
             :param rendered:          Enable/disable the renderer.

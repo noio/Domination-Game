@@ -102,6 +102,7 @@ class TestDominationGame(unittest.TestCase):
             f = core.FieldGenerator(num_points=3, num_ammo=6).generate()
             self.assertEqual(len(f.find(core.Field.CONTROL)), 3)
             self.assertEqual(len(f.find(core.Field.AMMO)), 6)
+        f3 = core.Field.from_string(SMALL_FIELD)
                 
     def test_string_agent(self):
         game = core.Game(red=RANDOM_AGENT, 

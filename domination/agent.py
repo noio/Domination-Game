@@ -69,17 +69,17 @@ class Agent(object):
         shoot = False
         if (obs.ammo > 0 and 
             obs.foes and 
-            point_dist(obs.foes[0][0:2], obs.loc) < self.settings.max_range
-            and not line_intersects_grid(obs.loc, obs.foes[0][0:2], self.grid, self.settings.tilesize)):
+            point_dist(obs.foes[0][0:2], obs.loc) < self.settings.max_range and
+            not line_intersects_grid(obs.loc, obs.foes[0][0:2], self.grid, self.settings.tilesize)):
             self.goal = obs.foes[0][0:2]
             shoot = True
 
         # Compute path, angle and drive
         path = find_path(obs.loc, self.goal, self.mesh, self.grid, self.settings.tilesize)
         if path:
-            dx = path[0][0]-obs.loc[0]
-            dy = path[0][1]-obs.loc[1]
-            turn = angle_fix(math.atan2(dy, dx)-obs.angle)
+            dx = path[0][0] - obs.loc[0]
+            dy = path[0][1] - obs.loc[1]
+            turn = angle_fix(math.atan2(dy, dx) - obs.angle)
             if turn > self.settings.max_turn or turn < -self.settings.max_turn:
                 shoot = False
             speed = (dx**2 + dy**2)**0.5

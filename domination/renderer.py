@@ -62,7 +62,7 @@ class Renderer(object):
         fw = field.width*field.tilesize # Field width and height
         fh = field.height*field.tilesize
         self.upscale = 1
-        if fw < 400 and fh < 300:
+        if fw <= 400 and fh <= 300:
             self.upscale = 2
         sw = max(fw*self.upscale, Renderer.UI_WIDTH)
         vp_x = (sw - fw*self.upscale) // 2
