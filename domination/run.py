@@ -60,7 +60,7 @@ class Scenario(object):
     """ You shouldn't have to override any
         of the methods below, but you may.
     """ 
-    def _single(self, red, blue, rendered=False):
+    def _single(self, red, blue, rendered=False, verbose=False):
         """ Runs a single game, returns results, called repeatedly
             by :meth:`Scenario._multi`.
         """
@@ -76,7 +76,7 @@ class Scenario(object):
         game = core.Game(red, blue, 
                     red_init=red_init, blue_init=blue_init,
                     field=self.FIELD, settings=self.SETTINGS,
-                    record=True, verbose=False, rendered=False)
+                    record=True, verbose=verbose, rendered=False)
         if rendered:
             game.add_renderer()
         game.run()
@@ -89,7 +89,7 @@ class Scenario(object):
         return game
         
         
-    def _multi(self, teams, output_folder=None, rendered=False):
+    def _multi(self, teams, output_folder=None, rendered=False, verbose=False):
         """ Runs multiple games, given as  a list of
             (red, red_init, blue, blue_init) tuples. 
         """
@@ -102,7 +102,7 @@ class Scenario(object):
         gameinfo = []
         # print '\n'.join("%r vs. %r"%(r,b) for (r, b) in teams)
         for i, (red, blue) in enumerate(teams):
-            game = self._single(red, blue, rendered=rendered)
+            game = self._single(red, blue, rendered=rendered, verbose=verbose)
             print "======= Game %d/%d done. =======" % (i+1, len(teams))
             print game.stats
             gameinfo.append((red, blue, game.stats, game.replay, game.log))
@@ -196,7 +196,7 @@ class Scenario(object):
         scen = cls()
         scen.REPEATS = 1
         scen.SWAP_TEAMS = False
-        scen._multi([(red, blue)], rendered=True)
+        scen._multi([(red, blue)], rendered=True, verbose=True)
     
     @classmethod
     def one_on_one(cls, red, blue, output_folder=None):

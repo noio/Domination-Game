@@ -38,7 +38,7 @@ class Agent(object):
         """
         self.observation = observation
         self.selected = observation.selected
-        
+
         if observation.selected:
             print observation
                     
