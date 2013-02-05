@@ -87,7 +87,7 @@ class Settings(object):
             :param max_speed:     Number of game units each tank can drive in its turn
             :param max_turn:      The maximum angle that a tank can rotate in a turn
             :param max_range:     The shooting range of tanks in game units
-            :param max_see:       How far tanks can see (Manhattan distance)
+            :param max_see:       How far tanks can see (vision is a square with sides that are 2x this value)
             :param field_known:   Whether the agents have knowledge of the field at game start
             :param ammo_rate:     How long it takes for ammo to reappear
             :param ammo_amount:   How many bullets there are in each ammo pack
