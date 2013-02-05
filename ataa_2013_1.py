@@ -1,3 +1,4 @@
+import math
 from domination import core
 from domination import run
 
@@ -28,8 +29,9 @@ class Tournament1(run.Scenario):
                               spawn_time=10, 
                               ammo_rate=14, 
                               max_see=70, 
+                              max_turn=math.pi/4,
                               max_score=100)
 
 
 # Tournament1.one_on_one(red="domination/agent.py", blue="domination/agent.py", output_folder='_tmp')
-Tournament1.test(red="domination/agent_adjustable.py", blue="domination/agent.py")
+Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
