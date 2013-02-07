@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,5,1
+MAJOR,MINOR,PATCH = 1,5,2
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -1442,7 +1442,7 @@ class Tank(GameObject):
         self.shoots = False
         if self.respawn_in == -1:
             max_turn = self.game.settings.max_turn
-            speed = min(self.game.settings.max_speed, speed)
+            speed = max(-self.game.settings.max_speed, min(self.game.settings.max_speed, speed))
             turn = max(-max_turn, min(max_turn, angle_fix(turn)))
             self.angle += turn
             self.x += math.cos(self.angle)*speed

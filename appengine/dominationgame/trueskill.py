@@ -1,5 +1,5 @@
 """ Tiny pure-python implementation of Microsoft's TrueSkill
-    algorithm, only for 1-on-1 matches. TrueSkill is ELO with 
+    algorithm, only for 1-on-1 matches. TrueSkill is Elo with 
     adjustments for uncertainty of skill level.
 """
 
