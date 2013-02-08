@@ -46,11 +46,17 @@
         {% endif %}
     </p>
 	<pre id='code'>{{brain.source}}</pre>
-	<pre id='output' class="cm-s-default">
+    <!-- <pre id='output' class="cm-s-default"> -->
 	</pre>
 	<script type="text/javascript" charset="utf-8">
-	CodeMirror.runMode($("code").get('text'),  {name: "python"}, $('output'));
-	$('code').destroy();
+    var content = $('code').get('text');
+    $('code').empty()
+    var a = CodeMirror($('code'), {'value': content,
+                           'name': 'python',
+                           'lineNumbers': true,
+                           'readOnly': true});
+    // CodeMirror.runMode($("code").get('text'),  {name: "python", lineNumbers: 'true'}, $('output'));
+    // $('code').destroy();
 	</script>
 	{% endif %}
 </div>

@@ -184,7 +184,7 @@ def dashboard(request, groupslug):
     if request.method == 'POST':
 
         if 'newbrain' in request.POST:
-            source = str(request.POST['newbrain']).strip()
+            source = str(request.POST['newbrain']).strip() + '\n'
             source = re.sub(r'(\r\n|\r|\n)', '\n', source)
             if request.user.current_team.recent_upload_count() >= request.group.max_uploads:
                 messages.append(("error", "Max uploads exceeded."))

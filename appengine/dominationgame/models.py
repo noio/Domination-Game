@@ -376,8 +376,8 @@ class Game(db.Model):
             blue_init = {'blob':blue.data_reader()}
         else:
             blue_init = {}
-        dg = domcore.Game(red=domcore.Team(red.source, name=red.identifier(), init_kwargs=red_init),
-                          blue=domcore.Team(blue.source, name=blue.identifier(), init_kwargs=blue_init),
+        dg = domcore.Game(red=domcore.Team(red.source + '\n', name=red.identifier(), init_kwargs=red_init),
+                          blue=domcore.Team(blue.source + '\n', name=blue.identifier(), init_kwargs=blue_init),
                           settings=settings, field=field,
                           verbose=False, rendered=False, record=True)
         dg.run()
