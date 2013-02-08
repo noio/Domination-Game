@@ -236,7 +236,7 @@ class AgentStub(object):
         
     def action(self): return (0,0,False)
     
-    def finalize(self): pass
+    def finalize(self, interrupted=False): pass
         
     def debug(self, surface): pass
             
@@ -810,7 +810,7 @@ class Game(object):
     def _raycast(self, p0, p1, exclude=None):
         """ Shoots a ray from p0 to p1 and determines
             which objects are hit and at what time
-            in the parametric line equation p0 + t*(p1-p0)
+            in the parametric line equation p0 + t * (p1 - p0)
         """
         p0x, p0y = p0
         p1x, p1y = p1
