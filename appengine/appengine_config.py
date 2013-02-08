@@ -1,8 +1,8 @@
 import logging, os, re
 
 # Declare the Django version we need.
-from google.appengine.dist import use_library
-use_library('django', '1.2')
+# from google.appengine.dist import use_library
+# use_library('django', '1.2')
 import django
 
 # Custom Django configuration.

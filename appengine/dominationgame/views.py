@@ -6,6 +6,7 @@ import logging
 import urllib
 import random
 import re
+import platform
 from datetime import datetime, time, date, timedelta
 
 # AppEngine imports
@@ -112,7 +113,9 @@ def connect_account(request):
     
 def group(request, groupslug):
     """ A group's home page, basically the front page """
-    return respond(request, 'group.html', {'group':request.group, 'version':core.__version__ })
+    return respond(request, 'group.html', {'group':request.group, 
+                                           'dgversion':core.__version__, 
+                                           'pyversion':platform.python_version()})
     
 def team(request, groupslug, team_id):
     team = models.Team.get_by_id(int(team_id), parent=request.group)
