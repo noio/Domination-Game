@@ -1,6 +1,7 @@
 application: aamasgame
 version: 1-3-0-alpha
-runtime: python
+runtime: python27
+threadsafe: true
 api_version: 1
 
 handlers:
