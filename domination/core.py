@@ -416,7 +416,7 @@ class Game(object):
                 for i,s in enumerate(spawns):
                     kwargs = copy.deepcopy(brain_kwargs)
                     kwargs.update(init_kwargs)
-                    brain = self._agent_call(brainclass, args=[i, team], kwargs=kwargs, default=AgentStub())
+                    brain = self._agent_call(brainclass, args=[i, team], kwargs=kwargs, team=team, default=AgentStub())
                     t = Tank(s.x+2, s.y+2, s.angle, i, team=team, brain=brain, spawn=s, record=self.record)
                     self.tanks.append(t)
                     self._add_object(t)
