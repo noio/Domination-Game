@@ -15,6 +15,7 @@ import glob
 import cPickle as pickle
 import zipfile
 import math
+import hashlib
 from collections import defaultdict
 
 # Local
@@ -24,7 +25,30 @@ from utilities import *
 # Shortcuts
 pi = math.pi
 
+### CONSTANTS ###
+SCORING_LINEAR = 'linear'
+SCORING_CONSTANT = 'constant'
+
 ### CLASSES ###
+
+class MatchInfo(object):
+    """ An instance of this object is passed to agents to let them know
+        that they are participating in a match consisting of multiple games,
+        and which game they are currently in.
+    """
+    
+    def __init__(self, num_games, current, match_id, score_weight):
+        """ Constructor for MatchInfo 
+            :param num_games:    The total number of games in this match
+            :param current:      The current game with 1 being the first game.
+            :param match_id:     A unique id of the opponent the agent is playing against.
+            :param score_weight: How much weight is assigned to the score of the current match.
+        """
+        self.num_games    = num_games
+        self.current      = current
+        self.match_id     = match_id
+        self.score_weight = score_weight
+        
 
 class Scenario(object):
     """ A scenario is used to run multiple games under the same conditions. """
@@ -34,9 +58,10 @@ class Scenario(object):
     #: The field that these games will be played on
     GENERATOR   = core.FieldGenerator() #: Will generate FIELD before each game if defined
     FIELD       = None   #: Will play on this field if GENERATOR is None
-    REPEATS     = 2      #: How many times to repeat each game
+    REPEATS     = 4      #: How many times to repeat each game
     SWAP_TEAMS  = True   #: Repeat each run with blue/red swapped
     DRAW_MARGIN = 0.05
+    SCORING     = SCORING_LINEAR
             
     def setup(self):
         """ Function is called once before any games 
@@ -60,7 +85,7 @@ class Scenario(object):
     """ You shouldn't have to override any
         of the methods below, but you may.
     """ 
-    def _single(self, red, blue, rendered=False, verbose=False):
+    def _single(self, red, blue, matchinfo=None, rendered=False, verbose=False):
         """ Runs a single game, returns results, called repeatedly
             by :meth:`Scenario._multi`.
         """
@@ -70,8 +95,17 @@ class Scenario(object):
         # Open blobs for reading if we can find 'em
         red_blob = os.path.splitext(red)[0] + '_blob'
         blue_blob = os.path.splitext(blue)[0] + '_blob'
-        red_init = {'blob': open(red_blob,'rb')} if os.path.exists(red_blob) else {}
-        blue_init = {'blob': open(blue_blob,'rb')} if os.path.exists(blue_blob) else {}
+        # Build the initializer arguments
+        red_init = {}
+        blue_init = {}
+        if matchinfo is not None:
+            red_init['matchinfo'] = matchinfo
+            blue_init['matchinfo'] = matchinfo
+        if os.path.exists(red_blob):
+            red_init['blob'] = open(red_blob,'rb')
+        if os.path.exists(blue_blob):
+            blue_init['blob'] = open(blue_blob,'rb')
+        
         # Run the game
         game = core.Game(red, blue, 
                     red_init=red_init, blue_init=blue_init,
@@ -88,24 +122,20 @@ class Scenario(object):
         self.after_each(game)
         return game
         
-        
-    def _multi(self, teams, output_folder=None, rendered=False, verbose=False):
+    def _multi(self, games, output_folder=None, rendered=False, verbose=False):
         """ Runs multiple games, given as  a list of
             (red, red_init, blue, blue_init) tuples. 
         """
         self.setup()
-        # Manipulate the playlist a bit
-        teams = teams * self.REPEATS
-        if self.SWAP_TEAMS:
-            teams = teams + [(b, r) for (r, b) in teams]
+
         # Run the games
         gameinfo = []
         # print '\n'.join("%r vs. %r"%(r,b) for (r, b) in teams)
-        for i, (red, blue) in enumerate(teams):
-            game = self._single(red, blue, rendered=rendered, verbose=verbose)
-            print "======= Game %d/%d done. =======" % (i+1, len(teams))
+        for i, (red, blue, matchinfo) in enumerate(games):
+            game = self._single(red, blue, matchinfo=matchinfo, rendered=rendered, verbose=verbose)
+            print "======= Game %d/%d done. =======" % (i+1, len(games))
             print game.stats
-            gameinfo.append((red, blue, game.stats, game.replay, game.log))
+            gameinfo.append((red, blue, matchinfo, game.stats, game.replay, game.log))
             
         if output_folder is not None:
             self._write(gameinfo, output_folder)
@@ -119,7 +149,7 @@ class Scenario(object):
         else:
             os.makedirs(output_folder)
         # Write stats to a CSV
-        fieldnames = ('red_file', 'blue_file', 'score', 'score_red', 'score_blue', 'steps', 'ammo_red', 'ammo_blue')
+        fieldnames = ('red_file', 'blue_file', 'score', 'weight', 'score_red', 'score_blue', 'steps', 'ammo_red', 'ammo_blue')
         now = datetime.datetime.now()
         fn = os.path.join(output_folder,'%s'%now.strftime("%Y%m%d-%H%M"))
         csvf = csv.DictWriter(open(fn+'_games.csv','w'), fieldnames, extrasaction='ignore')
@@ -127,11 +157,15 @@ class Scenario(object):
         # Create a zip with the replays
         zipf = zipfile.ZipFile(fn+'_replays.zip','w')
         logs = zipfile.ZipFile(fn+'_logs.zip','w')
+        
+        # Remove the prefix from the agent paths
+        all_agents = set(a for g in gameinfo for a in (g[0], g[1]))
+        prefix = os.path.commonprefix(all_agents).rfind('/') + 1
             
-        for i, (r, b, stats, replay, log) in enumerate(gameinfo):
+        for i, (r, b, matchinfo, stats, replay, log) in enumerate(gameinfo):
             # Write to the csv file
             s = stats.__dict__
-            s.update([('red_file',r),('blue_file',b)])
+            s.update([('red_file',r[prefix:]), ('blue_file',b[prefix:]), ('weight', matchinfo.score_weight)])
             csvf.writerow(s)
             # Write a replay
             r = os.path.splitext(os.path.basename(r))[0]
@@ -149,13 +183,15 @@ class Scenario(object):
         by_match = defaultdict(lambda: [0, 0])
         by_team = defaultdict(lambda: 0)
         # Compile scores by color/team/matchup
-        for (r, b, stats, _, _) in gameinfo:
+        for (r, b, matchinfo, stats, _, _) in gameinfo:
+            r = r[prefix:]
+            b = b[prefix:]
             if abs(stats.score - 0.5) < self.DRAW_MARGIN:
-                points_red, points_blue = (1, 1)
+                points_red, points_blue = (matchinfo.score_weight, matchinfo.score_weight)
             elif stats.score > 0.5:
-                points_red, points_blue = (2, 0)
+                points_red, points_blue = (2 * matchinfo.score_weight, 0)
             else:
-                points_red, points_blue = (0, 2)
+                points_red, points_blue = (0, 2 * matchinfo.score_weight)
             by_color[(r,b)][0] += points_red
             by_color[(r,b)][1] += points_blue
             if r < b:
@@ -182,7 +218,6 @@ class Scenario(object):
         sf.write(markdown_table(table, header=['']+order[1:]))
         sf.write('\n')
         sf.write(markdown_table(ranking, header=['Team','Points']))
-        
     
     @classmethod
     def test(cls, red, blue):
@@ -194,9 +229,7 @@ class Scenario(object):
             :param blue: Path to blue agent
         """
         scen = cls()
-        scen.REPEATS = 1
-        scen.SWAP_TEAMS = False
-        scen._multi([(red, blue)], rendered=True, verbose=True)
+        scen._multi([(red, blue, None)], rendered=True, verbose=True)
     
     @classmethod
     def one_on_one(cls, red, blue, output_folder=None):
@@ -205,8 +238,7 @@ class Scenario(object):
             
             :param output_folder: Folder in which results will be stored
         """
-        scen = cls()
-        scen._multi([(red, blue)], output_folder=output_folder)
+        cls.tournament(agents=[red, blue], output_folder=output_folder)
         
     @classmethod
     def tournament(cls, folder=None, agents=None, output_folder=None):
@@ -222,8 +254,22 @@ class Scenario(object):
             if output_folder is None:
                 output_folder = folder
         pairs = list(all_pairs(agents))
-        scen = cls()
-        scen._multi(pairs, output_folder=output_folder)
+        # Add swapped version
+        if cls.SWAP_TEAMS:
+            pairs += [(t1, t2) for (t2, t1) in pairs]
+            
+        # Create games list
+        games = []
+        for (red, blue) in pairs:
+            for i in range(cls.REPEATS):
+                if cls.SCORING == SCORING_LINEAR:
+                    score_weight = 2.0 * i / (cls.REPEATS - 1)
+                elif cls.SCORING == SCORING_CONSTANT:
+                    score_weight = 1.0
+                matchinfo = MatchInfo(cls.REPEATS, i, hash((red, blue)), score_weight)
+                games.append((red, blue, matchinfo))
+        scenario = cls()
+        scenario._multi(games, output_folder=output_folder)
         
 
 ### HELPER FUNCTIONS ###
@@ -253,6 +299,6 @@ def markdown_table(body, header=None):
 
         
 if __name__ == '__main__':
-    Scenario.one_on_one(red=core.DEFAULT_AGENT_FILE, blue=core.DEFAULT_AGENT_FILE, output_folder='_tmp')
+    Scenario.one_on_one(red='domination/agent.py', blue='domination/agent_adjustable.py', output_folder='_tmp')
 
         

@@ -62,6 +62,7 @@ def w_draw(t, e):
 def adjust((mu_w, sig_w), (mu_l, sig_l), draw=False, beta=BETA, epsilon=EPSILON, gamma=GAMMA):
     """ Implements the 2-player skill update as described on
         http://research.microsoft.com/en-us/projects/trueskill/details.aspx#update
+        Winner first, then loser.
     """
     c = sqrt(2*beta**2 + sig_w + sig_l)
     e = epsilon/c
@@ -83,12 +84,6 @@ if __name__ == "__main__":
     a = (70.2, 29.4)
     b = ( 70.2, 26.1 )
     
-    
-    (a, b) = adjust(a, b)
-    print a,b
-    (a, b) = adjust(a, b)
-    print a,b
-    (a, b) = adjust(a, b)
-    print a,b
-    (a, b) = adjust(a, b)
-    print a,b
+    for x in range(20):
+        (a, b) = adjust(a, b)
+        print a,b

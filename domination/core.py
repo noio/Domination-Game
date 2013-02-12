@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,5,3
+MAJOR,MINOR,PATCH = 1,6,0
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -66,7 +66,7 @@ AGENT_GLOBALS = globals().copy()
 
 class Settings(object):
     def __init__(self, max_steps=600,
-                       max_score=1000,
+                       max_score=400,
                        max_turn=pi/3,
                        max_speed=40,
                        max_range=60,
