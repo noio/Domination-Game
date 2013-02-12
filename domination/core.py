@@ -170,7 +170,7 @@ class GameLog(object):
 class Team(object):
     """ Holds info about a team.
     """
-    FIND_NAME   = r'^[ \t]*NAME[ \t]*=[ \t]*[\'\"]([a-zA-Z0-9\-\_ ]+)[\'\"]'
+    FIND_NAME   = r'^[ \t]*NAME[ \t]*=[ \t]*[\'\"]([a-zA-Z0-9\-\_ ]{3,20})[\'\"]'
     NAME_UNSAFE = r'[^a-zA-Z0-9\_]+'
     
     def __init__(self, brain=None, init_kwargs={}, name=None):
