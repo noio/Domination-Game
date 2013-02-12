@@ -267,7 +267,7 @@ class Brain(db.Model):
     data         = db.ReferenceProperty(BrainData)    
     
     def __str__(self):
-        return mark_safe("%s v%d"%(self.name, self.version))
+        return mark_safe("%s v%d"%(self.name[:20], self.version))
         
     def identifier(self):
         return "t%dv%d"%(self.team.number, self.version)
