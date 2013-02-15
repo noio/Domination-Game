@@ -21,14 +21,14 @@ We can now run our scenario and save the results::
     MyScenario.one_on_one('agent_one.py', 'agent_two.py', output_folder='results')
 
 
-When a tournament is run, using :meth:`domination.run.Scenario.tournament` a :class:`~domination.run.MatchInfo` object is passed to the agent constructor.
+When a tournament is run, using :meth:`domination.scenarios.Scenario.tournament` a :class:`~domination.scenarios.MatchInfo` object is passed to the agent constructor.
 
 
 Reference
 ---------
 
-.. autoclass:: domination.run.Scenario
+.. autoclass:: domination.scenarios.Scenario
    :members:
    
-.. autoclass:: domination.run.MatchInfo
+.. autoclass:: domination.scenarios.MatchInfo
    :members:
