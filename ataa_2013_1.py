@@ -1,6 +1,5 @@
 import math
-from domination import core
-from domination import run
+from domination import core, scenarios
 
 FIELD = """
 w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
@@ -22,17 +21,23 @@ w _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ w
 w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
 """
 
-class Tournament1(run.Scenario):
+class Tournament1(scenarios.Scenario):
+    REPEATS   = 1000
     GENERATOR = None
     FIELD     = core.Field.from_string(FIELD)
-    SETTINGS  = core.Settings(ammo_amount=1, 
-                              spawn_time=10, 
-                              ammo_rate=9, 
-                              max_see=70,
-                              think_time=0.06,
+    SETTINGS  = core.Settings(max_steps=300,
+                              max_score=100,
+                              spawn_time=10,
+                              ammo_amount=1,  
+                              ammo_rate=9,
+                              max_range=60,
+                              max_see=80,
                               max_turn=math.pi/4,
-                              max_score=100)
+                              think_time=0.06,)
 
 
-# Tournament1.one_on_one(red="domination/agent.py", blue="domination/agent.py", output_folder='_tmp')
+
 Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
+
+# This is what is used to run the tournament:
+# Tournament1.tournament(agents=["domination/agent.py", "domination/agent_controllable.py"], output_folder='_tmp')

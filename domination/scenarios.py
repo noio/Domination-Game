@@ -39,6 +39,7 @@ class MatchInfo(object):
     
     def __init__(self, num_games, current, match_id, score_weight):
         """ Constructor for MatchInfo 
+        
             :param num_games:    The total number of games in this match
             :param current:      The current game with 1 being the first game.
             :param match_id:     A unique id of the opponent the agent is playing against.
