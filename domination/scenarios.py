@@ -29,6 +29,15 @@ pi = math.pi
 SCORING_LINEAR = 'linear'
 SCORING_CONSTANT = 'constant'
 
+
+### FUNCTIONS ###
+
+def callfunc(tup):
+    """ Function to ensure compatibility with Pool.map
+    """
+    (ob, fun, args, kwds) = tup
+    return getattr(ob, fun)(*args, **kwds)
+
 ### CLASSES ###
 
 class MatchInfo(object):
@@ -121,7 +130,8 @@ class Scenario(object):
         if 'blob' in blue_init:
             blue_init['blob'].close()
         self.after_each(game)
-        return game
+        print game.stats
+        return (red, blue, matchinfo, game.stats, game.replay, game.log)
         
     def _multi(self, games, output_folder=None, rendered=False, verbose=False):
         """ Runs multiple games, given as  a list of
@@ -129,15 +139,19 @@ class Scenario(object):
         """
         self.setup()
 
+        gameargs = [(self, '_single', (red, blue, matchinfo, rendered, verbose), {}) 
+                        for (red, blue, matchinfo) in games]
         # Run the games
-        gameinfo = []
-        # print '\n'.join("%r vs. %r"%(r,b) for (r, b) in teams)
-        for i, (red, blue, matchinfo) in enumerate(games):
-            game = self._single(red, blue, matchinfo=matchinfo, rendered=rendered, verbose=verbose)
-            print "======= Game %d/%d done. =======" % (i+1, len(games))
-            print game.stats
-            gameinfo.append((red, blue, matchinfo, game.stats, game.replay, game.log))
-            
+        try:
+            from multiprocessing import Pool, cpu_count
+            threads = cpu_count() - 1
+            print "Using %d threads to run games." % (threads)
+            pool = Pool(threads)
+            gameinfo = pool.map(callfunc, gameargs)
+        except ImportError:
+            print "No multithreading available, running on single CPU."
+            gameinfo = map(callfunc, gameargs)
+
         if output_folder is not None:
             self._write(gameinfo, output_folder)
             
@@ -300,6 +314,6 @@ def markdown_table(body, header=None):
 
         
 if __name__ == '__main__':
-    Scenario.one_on_one(red='domination/agent.py', blue='domination/agent_adjustable.py', output_folder='_tmp')
+    Scenario.one_on_one(red='agent.py', blue='agent_adjustable.py', output_folder='_tmp')
 
         
