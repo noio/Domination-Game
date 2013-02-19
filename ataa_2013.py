@@ -41,7 +41,7 @@ class Tournament1(scenarios.Scenario):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
     else:
         Tournament1.tournament(agents=sys.argv[1:], output_folder='_tmp')        
