@@ -145,7 +145,7 @@ class Scenario(object):
         # Run the games
         try:
             from multiprocessing import Pool, cpu_count
-            threads = cpu_count() - 1
+            threads = max(1, cpu_count() - 1)
             print "Using %d threads to run games." % (threads)
             pool = Pool(threads)
             gameinfo = pool.map(callfunc, gameargs)
