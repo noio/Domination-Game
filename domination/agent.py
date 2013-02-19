@@ -16,6 +16,7 @@ class Agent(object):
         self.settings = settings
         self.goal = None
         self.callsign = '%s-%d'% (('BLU' if team == TEAM_BLUE else 'RED'), id)
+        self.blobpath = None
         
         # Read the binary blob, we're not using it though
         if blob is not None:
@@ -23,6 +24,8 @@ class Agent(object):
                self.callsign, type(pickle.loads(blob.read())))
             # Reset the file so other agents can read it.
             blob.seek(0) 
+            # Remember the blob path so we can write back to it
+
         
         # Recommended way to share variables between agents.
         if id == 0:

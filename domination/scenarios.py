@@ -16,6 +16,7 @@ import cPickle as pickle
 import zipfile
 import math
 import hashlib
+import copy
 from collections import defaultdict
 
 # Local
@@ -189,10 +190,9 @@ class Scenario(object):
         for i, (r, b, matchinfo, stats, replay, log) in enumerate(gameinfo):
             r = r[prefix:]
             b = b[prefix:]
-            rbase = os.path.splitext(os.path.basename(r))[0]
-            bbase = os.path.splitext(os.path.basename(b))[0]
-
+            
             # Compute weighted score
+            print stats
             if abs(stats.score - 0.5) < self.DRAW_MARGIN:
                 points_red, points_blue = (matchinfo.score_weight, matchinfo.score_weight)
             elif stats.score > 0.5:
@@ -213,13 +213,17 @@ class Scenario(object):
             by_team[b] += points_blue
             
             # Write to the csv file
-            s = stats.__dict__
+            s = copy.copy(stats.__dict__)
+            print points_red, points_blue
             s.update([('red_file',r), 
                       ('blue_file',b), 
                       ('weight', matchinfo.score_weight), 
                       ('points_red', points_red), 
                       ('points_blue', points_blue)])
+            print s
             csvf.writerow(s)
+            rbase = os.path.splitext(os.path.basename(r))[0]
+            bbase = os.path.splitext(os.path.basename(b))[0]
             zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, rbase, bbase), pickle.dumps(replay, pickle.HIGHEST_PROTOCOL))
             logs.writestr('log_%04d_%s_vs_%s.txt'%(i, rbase, bbase), log.truncated(kbs=32))
             
@@ -244,7 +248,6 @@ class Scenario(object):
         sf.write(markdown_table(ranking, header=['Team','Points']))
 
         # Close all files
-        csvf.close()
         zipf.close()
         logs.close()
         sf.close()
