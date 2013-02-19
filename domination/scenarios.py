@@ -192,7 +192,6 @@ class Scenario(object):
             b = b[prefix:]
             
             # Compute weighted score
-            print stats
             if abs(stats.score - 0.5) < self.DRAW_MARGIN:
                 points_red, points_blue = (matchinfo.score_weight, matchinfo.score_weight)
             elif stats.score > 0.5:
@@ -214,13 +213,11 @@ class Scenario(object):
             
             # Write to the csv file
             s = copy.copy(stats.__dict__)
-            print points_red, points_blue
             s.update([('red_file',r), 
                       ('blue_file',b), 
                       ('weight', matchinfo.score_weight), 
                       ('points_red', points_red), 
                       ('points_blue', points_blue)])
-            print s
             csvf.writerow(s)
             rbase = os.path.splitext(os.path.basename(r))[0]
             bbase = os.path.splitext(os.path.basename(b))[0]
