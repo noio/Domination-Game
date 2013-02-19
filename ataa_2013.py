@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import sys
 import math
 from domination import core, scenarios
 
-FIELD = """
+FIELD1 = """
 w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
 w _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ w
 w _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ w
@@ -26,7 +27,7 @@ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
 class Tournament1(scenarios.Scenario):
     REPEATS   = 1000
     GENERATOR = None
-    FIELD     = core.Field.from_string(FIELD)
+    FIELD     = core.Field.from_string(FIELD1)
     SETTINGS  = core.Settings(max_steps=300,
                               max_score=100,
                               spawn_time=10,
@@ -39,7 +40,9 @@ class Tournament1(scenarios.Scenario):
 
 
 
-# Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
-
+if __name__ == '__main__':
+    if len(sys.argv) == 0:
+        Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
+    else:
+        Tournament1.tournament(agents=sys.argv[1:], output_folder='_tmp')        
 # This is what is used to run the tournament:
-Tournament1.tournament(agents=["domination/agent.py", "domination/agent.py"], output_folder='_tmp')
