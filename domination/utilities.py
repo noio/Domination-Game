@@ -152,6 +152,9 @@ def line_intersects_circ((p0x,p0y), (p1x,p1y), (cx,cy), r):
         
         >>> line_intersects_circ((0,0), (2,0), (2,0), 1)
         [(0.5, (1.0, 0.0))]
+
+        >>> line_intersects_circ((0,1), (2,1), (1,0), 1)
+        [(0.5, (1.0, 1.0))]
         
         >>> line_intersects_circ((0,0), (0,1), (2,0), 1)
         False
@@ -163,7 +166,7 @@ def line_intersects_circ((p0x,p0y), (p1x,p1y), (cx,cy), r):
     b = 2 * (dx*fx + dy*fy)
     c = (fx*fx + fy*fy) - r*r
 
-    discriminant = b*b-4*a*c;
+    discriminant = b * b - 4 * a * c;
     if discriminant < 0:
         return False
     else:
@@ -175,7 +178,7 @@ def line_intersects_circ((p0x,p0y), (p1x,p1y), (cx,cy), r):
         if t1 >= 0 and t1 <= 1:
             p1 = p0x + dx*t1, p0y + dy*t1
             isects.append((t1,p1))
-        if t2 >= 0 and t2 <= 1:
+        if discriminant > 0 and t2 >= 0 and t2 <= 1:
             p2 = p0x + dx*t2, p0y + dy*t2
             isects.append((t2,p2))
         if not isects:
