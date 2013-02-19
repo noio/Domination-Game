@@ -163,50 +163,44 @@ class Scenario(object):
             print "WARNING: Output directory exists; overwriting results"
         else:
             os.makedirs(output_folder)
-        # Write stats to a CSV
-        fieldnames = ('red_file', 'blue_file', 'score', 'weight', 'score_red', 'score_blue', 'steps', 'ammo_red', 'ammo_blue')
+        
+        # Find the prefix from the agent paths
+        all_agents = set(a for g in gameinfo for a in (g[0], g[1]))
+        prefix = os.path.commonprefix(all_agents).rfind('/') + 1
+        
+        # Configure the CSV
+        fieldnames = ('red_file', 'blue_file', 'score_red', 'score_blue', 'score', 
+                      'weight', 'points_red', 'points_blue', 'steps', 'ammo_red', 'ammo_blue')
         now = datetime.datetime.now()
         fn = os.path.join(output_folder,'%s'%now.strftime("%Y%m%d-%H%M"))
         csvf = csv.DictWriter(open(fn+'_games.csv','w'), fieldnames, extrasaction='ignore')
         csvf.writerow(dict(zip(fieldnames, fieldnames)))
-        # Create a zip with the replays
+
+        # Open other files
         zipf = zipfile.ZipFile(fn+'_replays.zip','w')
         logs = zipfile.ZipFile(fn+'_logs.zip','w')
-        
-        # Remove the prefix from the agent paths
-        all_agents = set(a for g in gameinfo for a in (g[0], g[1]))
-        prefix = os.path.commonprefix(all_agents).rfind('/') + 1
-            
-        for i, (r, b, matchinfo, stats, replay, log) in enumerate(gameinfo):
-            # Write to the csv file
-            s = stats.__dict__
-            s.update([('red_file',r[prefix:]), ('blue_file',b[prefix:]), ('weight', matchinfo.score_weight)])
-            csvf.writerow(s)
-            # Write a replay
-            r = os.path.splitext(os.path.basename(r))[0]
-            b = os.path.splitext(os.path.basename(b))[0]
-            zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, r, b), pickle.dumps(replay, pickle.HIGHEST_PROTOCOL))
-            logs.writestr('log_%04d_%s_vs_%s.txt'%(i,r,b), log.truncated(kbs=32))
-        
-        zipf.close()
-        logs.close()
-        
-        # Write summary
         sf = open(fn+'_summary.md','w')
         sf.write('In total, %d games were played.\n\n' % len(gameinfo))
+        
         by_color = defaultdict(lambda: [0, 0])
         by_match = defaultdict(lambda: [0, 0])
         by_team = defaultdict(lambda: 0)
-        # Compile scores by color/team/matchup
-        for (r, b, matchinfo, stats, _, _) in gameinfo:
+        
+        for i, (r, b, matchinfo, stats, replay, log) in enumerate(gameinfo):
             r = r[prefix:]
             b = b[prefix:]
+            rbase = os.path.splitext(os.path.basename(r))[0]
+            bbase = os.path.splitext(os.path.basename(b))[0]
+
+            # Compute weighted score
             if abs(stats.score - 0.5) < self.DRAW_MARGIN:
                 points_red, points_blue = (matchinfo.score_weight, matchinfo.score_weight)
             elif stats.score > 0.5:
                 points_red, points_blue = (2 * matchinfo.score_weight, 0)
             else:
                 points_red, points_blue = (0, 2 * matchinfo.score_weight)
+
+            # Add scores to tables by color/team/matchup
             by_color[(r,b)][0] += points_red
             by_color[(r,b)][1] += points_blue
             if r < b:
@@ -217,6 +211,19 @@ class Scenario(object):
                 by_match[(b,r)][1] += points_red
             by_team[r] += points_red
             by_team[b] += points_blue
+            
+            # Write to the csv file
+            s = stats.__dict__
+            s.update([('red_file',r), 
+                      ('blue_file',b), 
+                      ('weight', matchinfo.score_weight), 
+                      ('points_red', points_red), 
+                      ('points_blue', points_blue)])
+            csvf.writerow(s)
+            zipf.writestr('replay_%04d_%s_vs_%s.pickle'%(i, rbase, bbase), pickle.dumps(replay, pickle.HIGHEST_PROTOCOL))
+            logs.writestr('log_%04d_%s_vs_%s.txt'%(i, rbase, bbase), log.truncated(kbs=32))
+            
+        
         # Put the matches into a matchup matrix (team a on left, team b on top)
         matrix = defaultdict(lambda: defaultdict(lambda: None))
         for (a, b), (points) in by_match.items():
@@ -225,14 +232,23 @@ class Scenario(object):
         table = [] #[[for _ in range(len(order)+1)] for _ in range(len(order))]
         for left in order[:-1]:
             table.append([left] + [matrix[left][top] for top in order[1:]])
+        
         # Final ranking
         ranking = sorted(by_team.items(), key=lambda x: x[1], reverse=True)
+        
         # Write to output
         sf.write(markdown_table([(r,b,pr,pb) for ((r,b),(pr,pb)) in by_color.items()], header=['Red','Blue','R','B']))
         sf.write('\n')
         sf.write(markdown_table(table, header=['']+order[1:]))
         sf.write('\n')
         sf.write(markdown_table(ranking, header=['Team','Points']))
+
+        # Close all files
+        csvf.close()
+        zipf.close()
+        logs.close()
+        sf.close()
+        
     
     @classmethod
     def test(cls, red, blue):

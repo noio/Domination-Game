@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import math
 from domination import core, scenarios
 
@@ -22,7 +24,7 @@ w w w w w w w w w w w w w w w w w w w w w w w w w w w w w
 """
 
 class Tournament1(scenarios.Scenario):
-    REPEATS   = 1000
+    REPEATS   = 10
     GENERATOR = None
     FIELD     = core.Field.from_string(FIELD)
     SETTINGS  = core.Settings(max_steps=300,
