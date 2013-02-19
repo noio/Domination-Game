@@ -9,6 +9,7 @@ class Agent(object):
             Note that the properties pertaining to the game field might not be
             given for each game.
         """
+        a = numpy.array([0,0])
         self.id = id
         self.team = team
         self.mesh = nav_mesh

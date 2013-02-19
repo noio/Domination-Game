@@ -6,7 +6,7 @@ Refer to the readme for usage instructions.
 
 """
 __author__ = "Thomas van den Berg and Tim Doolan"
-MAJOR,MINOR,PATCH = 1,6,1
+MAJOR,MINOR,PATCH = 1,6,2
 __version__ = '%d.%d.%d'%(MAJOR,MINOR,PATCH)
 
 ### IMPORTS ###
@@ -26,6 +26,10 @@ import hashlib
 import logging
 from pprint import pprint
 import cPickle as pickle
+try:
+    import numpy
+except ImportError:
+    pass
 
 # Local
 from utilities import *

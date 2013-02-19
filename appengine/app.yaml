@@ -1,5 +1,5 @@
 application: aamasgame
-version: 1-6-0-alpha
+version: 1-6-2-beta
 runtime: python27
 threadsafe: false
 api_version: 1
@@ -18,7 +18,7 @@ handlers:
 - url: /tasks/.*
   script: main.py
   login: admin
-  
+
 - url: /.*
   script: main.py
 
@@ -27,4 +27,6 @@ builtins:
 
 libraries:
 - name: django
-  version: 1.2
+  version: '1.2'
+- name: numpy
+  version: '1.6.1'
