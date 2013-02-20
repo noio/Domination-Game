@@ -178,8 +178,8 @@ class Scenario(object):
         csvf.writerow(dict(zip(fieldnames, fieldnames)))
 
         # Open other files
-        zipf = zipfile.ZipFile(fn+'_replays.zip','w')
-        logs = zipfile.ZipFile(fn+'_logs.zip','w')
+        zipf = zipfile.ZipFile(fn+'_replays.zip','w', zipfile.ZIP_DEFLATED, True)
+        logs = zipfile.ZipFile(fn+'_logs.zip','w', zipfile.ZIP_DEFLATED, True)
         sf = open(fn+'_summary.md','w')
         sf.write('In total, %d games were played.\n\n' % len(gameinfo))
         
