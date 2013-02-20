@@ -13,7 +13,7 @@
 	<h4>Members</h4>
 	<ul class='unstyled'>
 		{% for member in user.current_team.members %}
-			<li>{{member.nickname}} ({{member.key.name}})</li>
+			<li>{{member.short_name}} ({{member.key.name}})</li>
 		{% endfor %}
 	</ul>
 	</div>

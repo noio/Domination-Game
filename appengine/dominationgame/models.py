@@ -221,7 +221,11 @@ class Account(db.Model):
     
     current_user = None
     current_team = None
-    
+
+    def short_name(self):
+        return self.nickname[:20]
+
+
 class BrainData(db.Model):
     """ Stores reference to binary data blob for an
         agent brain

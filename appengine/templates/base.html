@@ -47,7 +47,7 @@
 					{% if group and user.is_admin %}<li><a href='{% url dominationgame.views.settings group.slug %}'>Admin Settings</a></li>{%endif%} 
 					{% if user.current_team %} 
 						<li><a href='{% url dominationgame.views.dashboard user.current_team.group.slug %}'>Dashboard</a></li>{% endif %}
-					<li><a href='{{user.logout_url}}'>Logout ({{user.nickname}})</a></li>
+					<li><a href='{{user.logout_url}}'>Logout ({{user.short_name}})</a></li>
 				{% else %}
 					<li><a href='/login'>Login</a></li>
 				{% endif %}
