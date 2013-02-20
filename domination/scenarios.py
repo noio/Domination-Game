@@ -17,6 +17,8 @@ import zipfile
 import math
 import hashlib
 import copy
+import uuid
+import shutil
 from collections import defaultdict
 
 # Local
@@ -73,19 +75,21 @@ class Scenario(object):
     SWAP_TEAMS  = True   #: Repeat each run with blue/red swapped
     DRAW_MARGIN = 0.05
     SCORING     = SCORING_LINEAR
+
+    MULTITHREADING = True
             
     def setup(self):
         """ Function is called once before any games 
         """
         pass
         
-    def before_each(self):
+    def before_game(self):
         """ Function that is run before each game.
             Use it to regenerate the map, for example.
         """
         pass
         
-    def after_each(self, game):
+    def after_game(self, game):
         """ Function that is run after each game.
             
             :param game: The previous game
@@ -102,7 +106,7 @@ class Scenario(object):
         """
         if self.GENERATOR is not None:
             self.FIELD = self.GENERATOR.generate()
-        self.before_each()
+        self.before_game()
         # Open blobs for reading if we can find 'em
         red_blob = os.path.splitext(red)[0] + '_blob'
         blue_blob = os.path.splitext(blue)[0] + '_blob'
@@ -130,31 +134,69 @@ class Scenario(object):
             red_init['blob'].close()
         if 'blob' in blue_init:
             blue_init['blob'].close()
-        self.after_each(game)
+        self.after_game(game)
         print game.stats
-        return (red, blue, matchinfo, game.stats, game.replay, game.log)
+        return (matchinfo, game.stats, game.replay, game.log)
+
+    def _match(self, red, blue, output_folder):
+        """ Runs a single match consisting of multiple games 
+            Copies the agents to a temporary subfolder so that
+            they can write to a unique blob.
+        """
+        # Create a folder for the agent copies
+        now = datetime.datetime.now()
+        uid = uuid.uuid4().hex[:8]
+        path = os.path.join(output_folder,'%s_matchups'%now.strftime("%Y%m%d-%H%M"))
+        rbase = os.path.splitext(os.path.basename(red))[0]
+        bbase = os.path.splitext(os.path.basename(blue))[0]
+        folder = os.path.join(path, '%s_vs_%s_%s' % (rbase, bbase, uid))
+        os.makedirs(folder)
+
+        # Copy the agents and blobs
+        newred = os.path.join(folder, 'red_' + os.path.basename(red))
+        newblue = os.path.join(folder, 'blue_' + os.path.basename(blue))
+        shutil.copyfile(red, newred)
+        shutil.copyfile(blue, newblue)
+        red_blob = os.path.splitext(red)[0] + '_blob'
+        blue_blob = os.path.splitext(blue)[0] + '_blob'
+        if os.path.exists(red_blob):
+            shutil.copyfile(red_blob, os.path.splitext(newred)[0] + '_blob')
+        if os.path.exists(blue_blob):
+            shutil.copyfile(blue_blob, os.path.splitext(newblue)[0] + '_blob')
         
-    def _multi(self, games, output_folder=None, rendered=False, verbose=False):
-        """ Runs multiple games, given as  a list of
-            (red, red_init, blue, blue_init) tuples. 
+        # Run the matches
+        gameinfo = []
+        for i in range(self.REPEATS):
+            if self.SCORING == SCORING_LINEAR:
+                score_weight = 2.0 * i / (self.REPEATS - 1)
+            elif self.SCORING == SCORING_CONSTANT:
+                score_weight = 1.0
+            matchinfo = MatchInfo(self.REPEATS, i, hash((red, blue)), score_weight)
+            gameinfo.append((red, blue) + self._single(newred, newblue, matchinfo))
+        return gameinfo
+        
+    def _multi(self, games, output_folder, rendered=False, verbose=False):
+        """ Runs multiple matches, given as  a list of
+            (red,  blue) tuples. 
         """
         self.setup()
 
-        gameargs = [(self, '_single', (red, blue, matchinfo, rendered, verbose), {}) 
-                        for (red, blue, matchinfo) in games]
+        calls = [(self, '_match', (red, blue, output_folder), {}) 
+                        for (red, blue) in games]
         # Run the games
         try:
             from multiprocessing import Pool, cpu_count
             threads = max(1, cpu_count() - 1)
             print "Using %d threads to run games." % (threads)
             pool = Pool(threads)
-            gameinfo = pool.map(callfunc, gameargs)
+            gameinfos = pool.map(callfunc, calls)
         except ImportError:
             print "No multithreading available, running on single CPU."
-            gameinfo = map(callfunc, gameargs)
+            gameinfos = map(callfunc, calls)
 
+        gameinfos = [gameinfo for l in gameinfos for gameinfo in l]
         if output_folder is not None:
-            self._write(gameinfo, output_folder)
+            self._write(gameinfos, output_folder)
             
     def _write(self, gameinfo, output_folder, include_replays=True):
         """ Write a csv with all game results, all the replays in a zip and
@@ -260,10 +302,10 @@ class Scenario(object):
             :param blue: Path to blue agent
         """
         scen = cls()
-        scen._multi([(red, blue, None)], rendered=True, verbose=True)
+        scen._single(red, blue, None, rendered=True, verbose=True)
     
     @classmethod
-    def one_on_one(cls, red, blue, output_folder=None):
+    def one_on_one(cls, output_folder, red, blue):
         """ Runs the set amount of REPEATS and SWAP_TEAMS if
             desired, between two given agents.
             
@@ -272,7 +314,7 @@ class Scenario(object):
         cls.tournament(agents=[red, blue], output_folder=output_folder)
         
     @classmethod
-    def tournament(cls, folder=None, agents=None, output_folder=None):
+    def tournament(cls, output_folder, folder=None, agents=None):
         """ Runs a full tournament between the agents specified,
             respecting the REPEATS and SWAP_TEAMS settings.
         
@@ -284,23 +326,13 @@ class Scenario(object):
             agents = glob.glob(os.path.join(folder,'*.py'))
             if output_folder is None:
                 output_folder = folder
-        pairs = list(all_pairs(agents))
+        matchups = list(all_pairs(agents))
         # Add swapped version
         if cls.SWAP_TEAMS:
-            pairs += [(t1, t2) for (t2, t1) in pairs]
-            
-        # Create games list
-        games = []
-        for (red, blue) in pairs:
-            for i in range(cls.REPEATS):
-                if cls.SCORING == SCORING_LINEAR:
-                    score_weight = 2.0 * i / (cls.REPEATS - 1)
-                elif cls.SCORING == SCORING_CONSTANT:
-                    score_weight = 1.0
-                matchinfo = MatchInfo(cls.REPEATS, i, hash((red, blue)), score_weight)
-                games.append((red, blue, matchinfo))
+            matchups += [(t1, t2) for (t2, t1) in matchups]
+        
         scenario = cls()
-        scenario._multi(games, output_folder=output_folder)
+        scenario._multi(matchups, output_folder=output_folder)
         
 
 ### HELPER FUNCTIONS ###

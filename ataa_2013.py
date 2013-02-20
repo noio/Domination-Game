@@ -39,7 +39,10 @@ class Tournament1(scenarios.Scenario):
                               think_time=0.06,)
 
 
-
+# This is the code that is used for running a tournament, in order to run a 
+# tournament in parallel, agents are temporarily copied, and blob data is not
+# preserved. Please refer to "Running a Game" in the documentation for how
+# to set up your own learning environment.
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
