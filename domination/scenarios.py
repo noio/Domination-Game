@@ -144,9 +144,8 @@ class Scenario(object):
             they can write to a unique blob.
         """
         # Create a folder for the agent copies
-        now = datetime.datetime.now()
         uid = uuid.uuid4().hex[:8]
-        path = os.path.join(output_folder,'%s_matchups'%now.strftime("%Y%m%d-%H%M"))
+        path = os.path.join(output_folder,'matchups')
         rbase = os.path.splitext(os.path.basename(red))[0]
         bbase = os.path.splitext(os.path.basename(blue))[0]
         folder = os.path.join(path, '%s_vs_%s_%s' % (rbase, bbase, uid))
@@ -202,11 +201,6 @@ class Scenario(object):
         """ Write a csv with all game results, all the replays in a zip and
             a textfile with a summary to the output_folder
         """
-        if os.path.exists(output_folder):
-            print "WARNING: Output directory exists; overwriting results"
-        else:
-            os.makedirs(output_folder)
-        
         # Find the prefix from the agent paths
         all_agents = set(a for g in gameinfo for a in (g[0], g[1]))
         prefix = os.path.commonprefix(all_agents).rfind('/') + 1
@@ -214,15 +208,13 @@ class Scenario(object):
         # Configure the CSV
         fieldnames = ('red_file', 'blue_file', 'score_red', 'score_blue', 'score', 
                       'weight', 'points_red', 'points_blue', 'steps', 'ammo_red', 'ammo_blue')
-        now = datetime.datetime.now()
-        fn = os.path.join(output_folder,'%s'%now.strftime("%Y%m%d-%H%M"))
-        csvf = csv.DictWriter(open(fn+'_games.csv','w'), fieldnames, extrasaction='ignore')
+        csvf = csv.DictWriter(open(os.path.join(output_folder, 'games.csv'),'w'), fieldnames, extrasaction='ignore')
         csvf.writerow(dict(zip(fieldnames, fieldnames)))
 
         # Open other files
-        zipf = zipfile.ZipFile(fn+'_replays.zip','w', zipfile.ZIP_DEFLATED, True)
-        logs = zipfile.ZipFile(fn+'_logs.zip','w', zipfile.ZIP_DEFLATED, True)
-        sf = open(fn+'_summary.md','w')
+        zipf = zipfile.ZipFile(os.path.join(output_folder, 'replays.zip'),'w', zipfile.ZIP_DEFLATED, True)
+        logs = zipfile.ZipFile(os.path.join(output_folder, 'logs.zip'),'w', zipfile.ZIP_DEFLATED, True)
+        sf = open(os.path.join(output_folder, 'summary.md'),'w')
         sf.write('In total, %d games were played.\n\n' % len(gameinfo))
         
         by_color = defaultdict(lambda: [0, 0])
@@ -322,6 +314,11 @@ class Scenario(object):
             :param folder:        A folder that contains all agents, overrides the agents parameter.
             :param output_folder: Folder in which results will be stored.
         """
+        if os.path.exists(output_folder):
+            print "WARNING: Output directory exists; overwriting results"
+        else:
+            os.makedirs(output_folder)
+        
         if folder is not None:
             agents = glob.glob(os.path.join(folder,'*.py'))
             if output_folder is None:
@@ -362,6 +359,8 @@ def markdown_table(body, header=None):
 
         
 if __name__ == '__main__':
-    Scenario.one_on_one(red='agent.py', blue='agent_adjustable.py', output_folder='_tmp')
+    now = datetime.datetime.now()
+    folder = os.path.join('tournaments', now.strftime("%Y%m%d-%H%M"))
+    Scenario.one_on_one(red='agent.py', blue='agent_adjustable.py', output_folder=folder)
 
-        
+    

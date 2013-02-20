@@ -2,6 +2,8 @@
 
 import sys
 import math
+import os
+import datetime
 from domination import core, scenarios
 
 FIELD1 = """
@@ -47,5 +49,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         Tournament1.test(red="domination/agent.py", blue="domination/agent.py")
     else:
-        Tournament1.tournament(agents=sys.argv[1:], output_folder='_tmp')        
+        now = datetime.datetime.now()
+        folder = os.path.join('tournaments', now.strftime("%Y%m%d-%H%M"))
+        Tournament1.tournament(agents=sys.argv[1:], output_folder=folder)
 # This is what is used to run the tournament:
