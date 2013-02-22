@@ -1,14 +1,13 @@
 cron:
 - description: run ladder match
   url: /tasks/laddermatch/
-  schedule: every 50 mins
+  schedule: every 30 mins
 
 - description: update team scores
   url: /tasks/update_team_scores/
-  schedule: every 2 hours
+  schedule: every 24 hours
 
 - description: cleanup database
   url: /tasks/clean/
-  schedule: every mon,thu 00:00
+  schedule: every mon 00:00
 
- 

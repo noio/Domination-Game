@@ -166,10 +166,10 @@ class Scenario(object):
         # Run the matches
         gameinfo = []
         for i in range(self.REPEATS):
-            if self.SCORING == SCORING_LINEAR:
-                score_weight = 2.0 * i / (self.REPEATS - 1)
-            elif self.SCORING == SCORING_CONSTANT:
+            if self.SCORING == SCORING_CONSTANT or self.REPEATS == 1:
                 score_weight = 1.0
+            elif self.SCORING == SCORING_LINEAR:
+                score_weight = 2.0 * i / (self.REPEATS - 1)
             matchinfo = MatchInfo(self.REPEATS, i, hash((red, blue)), score_weight)
             gameinfo.append((red, blue) + self._single(newred, newblue, matchinfo))
         return gameinfo
@@ -217,9 +217,9 @@ class Scenario(object):
         sf = open(os.path.join(output_folder, 'summary.md'),'w')
         sf.write('In total, %d games were played.\n\n' % len(gameinfo))
         
-        by_color = defaultdict(lambda: [0, 0])
-        by_match = defaultdict(lambda: [0, 0])
-        by_team = defaultdict(lambda: 0)
+        by_color = defaultdict(lambda: [0., 0.])
+        by_match = defaultdict(lambda: [0., 0.])
+        by_team = defaultdict(lambda: 0.)
         
         for i, (r, b, matchinfo, stats, replay, log) in enumerate(gameinfo):
             r = r[prefix:]
@@ -340,14 +340,20 @@ def markdown_table(body, header=None):
         :param header:  The header to print
     """
     s = ""
+    def cellstr(cell):
+        if type(cell) == float:
+            return ("%.2f" % cell)
+        if type(cell) in (list, tuple):
+            return ', '.join(cellstr(e) for e in cell)
+        return str(cell)
     
     def makerow(row):
-        rowstrs = [str(cell).ljust(maxlen[i]) for i,cell in enumerate(row)]
+        rowstrs = [cellstr(cell).rjust(maxlen[i]) for i,cell in enumerate(row)]
         return '| ' + ' | '.join(rowstrs) + ' |\n'
     
     if header:
         body = [header] + body
-    maxlen = [max(len(str(cell)) for cell in col) for col in zip(*body)]
+    maxlen = [max(len(cellstr(cell)) for cell in col) for col in zip(*body)]
     if header:
         s += makerow(body[0])
         s += '|'+'|'.join('-'*(m+2) for m in maxlen)+'|\n'
