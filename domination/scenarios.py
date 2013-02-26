@@ -69,12 +69,12 @@ class Scenario(object):
     #: The settings with which these games will be played
     SETTINGS     = core.Settings()
     #: The field that these games will be played on
-    GENERATOR   = core.FieldGenerator() #: Will generate FIELD before each game if defined
-    FIELD       = None   #: Will play on this field if GENERATOR is None
-    REPEATS     = 4      #: How many times to repeat each game
-    SWAP_TEAMS  = True   #: Repeat each run with blue/red swapped
-    DRAW_MARGIN = 0.05
-    SCORING     = SCORING_LINEAR
+    GENERATOR         = core.FieldGenerator() #: Will generate FIELD before each game if defined
+    FIELD             = None   #: Will play on this field if GENERATOR is None
+    REPEATS           = 4      #: How many times to repeat each game
+    SWAP_TEAMS        = True   #: Repeat each run with blue/red swapped
+    DRAW_MARGIN       = 0.05
+    SCORING           = SCORING_LINEAR
 
     MULTITHREADING = True
             
@@ -138,7 +138,7 @@ class Scenario(object):
         print game.stats
         return (matchinfo, game.stats, game.replay, game.log)
 
-    def _match(self, red, blue, output_folder):
+    def _match(self, red, blue, output_folder, rendered, verbose):
         """ Runs a single match consisting of multiple games 
             Copies the agents to a temporary subfolder so that
             they can write to a unique blob.
@@ -171,7 +171,7 @@ class Scenario(object):
             elif self.SCORING == SCORING_LINEAR:
                 score_weight = 2.0 * i / (self.REPEATS - 1)
             matchinfo = MatchInfo(self.REPEATS, i, hash((red, blue)), score_weight)
-            gameinfo.append((red, blue) + self._single(newred, newblue, matchinfo))
+            gameinfo.append((red, blue) + self._single(newred, newblue, matchinfo, rendered, verbose))
         return gameinfo
         
     def _multi(self, games, output_folder, rendered=False, verbose=False):
@@ -180,7 +180,7 @@ class Scenario(object):
         """
         self.setup()
 
-        calls = [(self, '_match', (red, blue, output_folder), {}) 
+        calls = [(self, '_match', (red, blue, output_folder, rendered, verbose), {}) 
                         for (red, blue) in games]
         # Run the games
         try:
@@ -306,7 +306,7 @@ class Scenario(object):
         cls.tournament(agents=[red, blue], output_folder=output_folder)
         
     @classmethod
-    def tournament(cls, output_folder, folder=None, agents=None):
+    def tournament(cls, output_folder, folder=None, agents=None, rendered=False):
         """ Runs a full tournament between the agents specified,
             respecting the REPEATS and SWAP_TEAMS settings.
         
@@ -329,7 +329,7 @@ class Scenario(object):
             matchups += [(t1, t2) for (t2, t1) in matchups]
         
         scenario = cls()
-        scenario._multi(matchups, output_folder=output_folder)
+        scenario._multi(matchups, output_folder=output_folder, rendered=rendered)
         
 
 ### HELPER FUNCTIONS ###

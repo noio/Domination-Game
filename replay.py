@@ -7,6 +7,7 @@ import gzip
 import sys
 import glob
 import os
+import random
 
 import domination
 
@@ -21,7 +22,9 @@ def run_replay(path, rendered=True):
 
 if __name__ == '__main__':
     if os.path.isdir(sys.argv[1]):
-        for f in glob.glob(os.path.join(sys.argv[1], '*.pickle')):
+    	files = glob.glob(os.path.join(sys.argv[1], '*.pickle'))
+    	# random.shuffle(files)
+        for f in files:
             run_replay(f)
     else:
         rendered = '-s' not in sys.argv
