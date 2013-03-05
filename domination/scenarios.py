@@ -297,16 +297,16 @@ class Scenario(object):
         scen._single(red, blue, None, rendered=True, verbose=True)
     
     @classmethod
-    def one_on_one(cls, output_folder, red, blue):
+    def one_on_one(cls, output_folder, red, blue, rendered=False, verbose=False):
         """ Runs the set amount of REPEATS and SWAP_TEAMS if
             desired, between two given agents.
             
             :param output_folder: Folder in which results will be stored
         """
-        cls.tournament(agents=[red, blue], output_folder=output_folder)
+        cls.tournament(agents=[red, blue], output_folder=output_folder, rendered=rendered, verbose=verbose)
         
     @classmethod
-    def tournament(cls, output_folder, folder=None, agents=None, rendered=False):
+    def tournament(cls, output_folder, folder=None, agents=None, rendered=False, verbose=False):
         """ Runs a full tournament between the agents specified,
             respecting the REPEATS and SWAP_TEAMS settings.
         
@@ -329,7 +329,7 @@ class Scenario(object):
             matchups += [(t1, t2) for (t2, t1) in matchups]
         
         scenario = cls()
-        scenario._multi(matchups, output_folder=output_folder, rendered=rendered)
+        scenario._multi(matchups, output_folder=output_folder, rendered=rendered, verbose=verbose)
         
 
 ### HELPER FUNCTIONS ###
