@@ -87,5 +87,5 @@ if __name__ == '__main__':
     else:
         now = datetime.datetime.now()
         folder = os.path.join('tournaments', now.strftime("%Y%m%d-%H%M"))
-        Tournament2.tournament(agents=sys.argv[1:], output_folder=folder, rendered=False)
+        Tournament2.tournament(agents=sys.argv[1:], output_folder=folder, rendered=False, verbose=False)
 # This is what is used to run the tournament:

@@ -80,6 +80,22 @@ def respond(request, template, params={}):
         params['group'] = request.group
     return render_to_response(template, params)
 
+def uniqify(seq, idfun=None): 
+   # order preserving
+   if idfun is None:
+       def idfun(x): return x
+   seen = {}
+   result = []
+   for item in seq:
+       marker = idfun(item)
+       # in old Python versions:
+       # if seen.has_key(marker)
+       # but in new ones:
+       if marker in seen: continue
+       seen[marker] = 1
+       result.append(item)
+   return result
+
 ### Page Handlers ###
 
 def frontpage(request):
@@ -104,7 +120,8 @@ def connect_account(request):
         team = models.Team.get_by_secret_code(secret_code)
         if team:
             if team not in request.user.teams:
-                request.user.teams.append(team.key())
+                request.user.teams.insert(0, team.key())
+                request.user.teams = uniqify(request.user.teams)
             request.user.put()
             return HttpResponseRedirect('/')
         return HttpResponse("Invalid code")
