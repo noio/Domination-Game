@@ -95,7 +95,7 @@
 		<p>Upload a binary blob here. A <em>reader</em> to this file will be passed to your agent in the <code>__init__</code>
 			method, with an argument name <code>blob</code>. If you pickled an object into this file, use it with 
 			<code>obj = pickle.reads(blob.read())</code>. Feel free to store any kind of data in here (pickled is a good choice), 
-			but keep it under 4 MB. 
+			but keep it <strong>under 10 MB</strong>. 
 		</p>
 		<form class='form-stacked flushleft' method="POST" action="{{upload_url}}" enctype="multipart/form-data">	
 			<fieldset>

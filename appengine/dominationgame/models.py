@@ -333,7 +333,9 @@ class Brain(db.Model):
     def data_reader(self):
         """ Returns a reader into this brains data or None """
         if self.data is not None:
-            return self.data.blob.open()
+            reader = self.data.blob.open()
+            if not hasattr(reader, 'name'):
+                reader.name = None
         return None
                 
     def release_date(self):
